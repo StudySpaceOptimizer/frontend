@@ -1,0 +1,45 @@
+@import './base.css';
+
+#app {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100vh;
+}
+
+/* Seat Illustration style */
+:root {
+  --seat-size: 20px;
+  --color-available: hsla(160, 100%, 37%);
+  --color-booked: hsla(0, 100%, 37%);
+  --color-partially-booked: hsl(53, 100%, 37%);
+  --color-unavailable: hsl(0, 0%, 50%);
+}
+
+.seat{
+  display: inline-block;
+}
+
+.seat::before {
+  content: '';
+  display: inline-block;
+  margin: 0 5px;
+  vertical-align: middle;
+  width: var(--seat-size);
+  height: var(--seat-size);
+}
+
+.seat-available::before {
+  background-color: var(--color-available);
+}
+
+.seat-booked::before {
+  background-color: var(--color-booked);
+}
+
+.seat-partially-booked::before {
+  background-color: var(--color-partially-booked);
+}
+
+.seat-unavailable::before {
+  background-color: var(--color-unavailable);
+}
