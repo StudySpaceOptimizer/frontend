@@ -2,8 +2,8 @@
 import { RouterView } from 'vue-router'
 import TheFooter from '@/components/TheFooter.vue'
 import TheNavbar from '@/components/TheNavbar.vue'
-import SignIn from './components/SignIn.vue'
-import SignUp from './components/SignUp.vue'
+import SignInModal from './components/SignInModal.vue'
+import SignUpModal from './components/SignUpModal.vue'
 </script>
 
 <template>
@@ -14,8 +14,8 @@ import SignUp from './components/SignUp.vue'
   <TheFooter />
 
   <!-- Dialog -->
-  <SignIn />
-  <SignUp />
+  <SignInModal />
+  <SignUpModal />
 </template>
 
 <style scoped lang="scss">

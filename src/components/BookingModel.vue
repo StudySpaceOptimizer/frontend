@@ -2,7 +2,7 @@
   <div class="date">
   </div>
 
-  <li class="seat-list" v-for="" :key="">
+  <li class="seat-list">
     <ul>
       <span class="time"></span>
       <div class="seat-available"></div>

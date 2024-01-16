@@ -11,7 +11,7 @@ const activeRoute = computed(() => route.path.split('/')[2])
   <div class="container">
     <div class="row">
       <div class="col-2">
-        <RouterLink to="/admin/booking" :class="(activeRoute == 'booking' || activeRoute == '' ? 'active' : '')">所有預約列表</RouterLink>
+        <RouterLink to="/admin/booking" :class="(activeRoute == 'booking' || activeRoute == null ? 'active' : '')">所有預約列表</RouterLink>
         <RouterLink to="/admin/user" :class="(activeRoute == 'user' ? 'active' : '')">所有使用者列表</RouterLink>
         <RouterLink to="/admin/visitor" :class="(activeRoute == 'visitor' ? 'active' : '')">校外人士註冊</RouterLink>
         <RouterLink to="/admin/seat" :class="(activeRoute == 'seat' ? 'active' : '')">座位設定</RouterLink>
@@ -58,7 +58,7 @@ const activeRoute = computed(() => route.path.split('/')[2])
         color: #ccc !important;
       }
 
-      &:hover {
+      &:hover:not(.active) {
         background-color: #ccc;
       }
 

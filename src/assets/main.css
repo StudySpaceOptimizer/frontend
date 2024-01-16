@@ -9,10 +9,10 @@
 /* Seat Illustration style */
 :root {
   --seat-size: 20px;
-  --color-available: hsla(160, 100%, 37%);
-  --color-booked: hsla(0, 100%, 37%);
-  --color-partially-booked: hsl(53, 100%, 37%);
-  --color-unavailable: hsl(0, 0%, 50%);
+  --color-available: #00bd7e;
+  --color-booked: #bd0000;
+  --color-partially-booked: #bda700;
+  --color-unavailable: #808080;
 }
 
 .seat{

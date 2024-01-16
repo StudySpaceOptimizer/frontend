@@ -33,7 +33,7 @@ const data: Data[] = [
       start: '09:00',
       end: '12:00'
     },
-    actions: ['提前離開'],
+    actions: ['延長預約'],
   }
 ]
 </script>

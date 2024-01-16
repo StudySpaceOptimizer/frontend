@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import SeatIllustration from '@/components/SeatIllustration.vue'
 import BookingFiliter from '@/components/BookingFilter.vue'
+import SeatMap from '@/components/SeatMap.vue'
 </script>
 
 <template>
@@ -10,6 +11,7 @@ import BookingFiliter from '@/components/BookingFilter.vue'
   <BookingFiliter />
   <!-- TODO: the seat status map -->
   <div class="map">
+    <SeatMap />
     <p>座位即時圖</p>
   </div>
 </template>

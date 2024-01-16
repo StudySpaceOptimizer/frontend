@@ -5,6 +5,9 @@ import { useAccountStore } from '@/stores/account'
 const accountStore = useAccountStore()
 const identity = ref('student')
 
+const vFocus = {
+  mounted: (el: any) => el.focus()
+}
 </script>
 
 <template>
@@ -14,12 +17,12 @@ const identity = ref('student')
       <p>Sign Up</p>
       <div class="button-group">
         <button type="button" @click="identity = 'student'" :class="(identity == 'student' ? 'select' : '')">學生</button>
-        <button type="button" @click="identity = 'teacher'" :class="(identity == 'teacher' ? 'select' : '')">教師</button>
+        <button type="button" @click="identity = 'others'" :class="(identity == 'others' ? 'select' : '')">校外人士</button>
       </div>
 
       <template v-if="identity == 'student'">
         <label for="student_id">學號</label>
-        <input type="text" name="student_id" />
+        <input type="text" name="student_id" v-focus/>
   
         <label for="password">密碼</label>
         <input type="password" name="password" />
@@ -29,7 +32,7 @@ const identity = ref('student')
       </template>
       <template v-else>
         <label for="name" >姓名</label>
-        <input type="text" name="name" />
+        <input type="text" name="name" v-focus />
   
         <label for="telphone">手機</label>
         <input type="text" name="telphone" />
@@ -40,11 +43,12 @@ const identity = ref('student')
         <label for="email">電子郵件</label>
         <input type="text" name="email" />
   
-        <p>註冊完後需要到圖書館二樓進行驗證</p>
       </template>
       <input type="submit" value="Sign Up">
+      
+      <p v-if="identity == 'others'">註冊完後需要到圖書館二樓進行驗證</p>
 
-      <p @click="accountStore.toggleDialog('signIn')" style="cursor: pointer;">已經有帳號了？</p>
+      <p @click="accountStore.toggleDialog('signIn')" style="cursor: pointer;">已經有帳號了？ Sign In</p>
     </form>
   </div>
 </template>
