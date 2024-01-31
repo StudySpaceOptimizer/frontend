@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { genGroups, SEAT_TAMPLATE } from './seats'
+import { ref, computed } from 'vue'
+import { genGroups } from './seats'
 import seatJsonData from './seats.json'
 
 import KonvaRecursiveComponent from './KonvaRecursiveComponent.vue'
@@ -8,13 +8,15 @@ import KonvaRecursiveComponent from './KonvaRecursiveComponent.vue'
 const props = defineProps({
   width: {
     type: Number,
-    default: 1440
+    default: 1200
   }
 })
 
+const width = computed(() => props.width)
+
 const stageRef = ref()
 const stageSize = ref({ 
-  width: props.width, 
+  width: width, 
   height: 1200,
   x: 0,
   y: 0
@@ -26,9 +28,9 @@ const gropus = genGroups('group', seatJsonData)
 const konvaComponents = ref<any[]>([{
   type: 'v-group',
   config: {
-    x: -50,
+    x: -100,
     y: 500,
-    width: props.width,
+    width: width,
     height: 1200,
     rotation: -45,
     draggable: true

@@ -3,10 +3,18 @@ import SeatIllustration from '@/components/SeatIllustration.vue'
 import BookingFiliter from '@/components/BookingFilter.vue'
 import SeatMap from '@/components/SeatMap.vue'
 
-import { ref, computed } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 
 const mapRef = ref()
-const mapRefWidth = computed(() => mapRef.value?.offsetWidth)
+const mapRefWidth = ref(mapRef.value?.offsetWidth)
+
+onMounted(async () => {
+  await nextTick()
+
+  if (mapRef.value) {
+    mapRefWidth.value = mapRef.value.offsetWidth
+  }
+})
 
 </script>
 
