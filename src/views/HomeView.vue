@@ -2,6 +2,12 @@
 import SeatIllustration from '@/components/SeatIllustration.vue'
 import BookingFiliter from '@/components/BookingFilter.vue'
 import SeatMap from '@/components/SeatMap.vue'
+
+import { ref, computed } from 'vue'
+
+const mapRef = ref()
+const mapRefWidth = computed(() => mapRef.value?.offsetWidth)
+
 </script>
 
 <template>
@@ -10,9 +16,9 @@ import SeatMap from '@/components/SeatMap.vue'
   <!-- TODO: the filter -->
   <BookingFiliter />
   <!-- TODO: the seat status map -->
-  <div class="map">
-    <SeatMap />
-    <p>座位即時圖</p>
+  <div class="map" ref="mapRef">
+    <SeatMap :width="mapRefWidth"/>
+    <!-- <p>座位即時圖</p> -->
   </div>
 </template>
 
@@ -20,7 +26,7 @@ import SeatMap from '@/components/SeatMap.vue'
 .map {
   position: relative;
   margin-top: 16px;
-  height: 500px;
+  height: 1200px;
   width: 80%;
   border-radius: 6px;
   background-color: #e8e8e8;
