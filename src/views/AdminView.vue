@@ -11,11 +11,23 @@ const activeRoute = computed(() => route.path.split('/')[2])
   <div class="container">
     <div class="row">
       <div class="col-2">
-        <RouterLink to="/admin/booking" :class="(activeRoute == 'booking' || activeRoute == null ? 'active' : '')">所有預約列表</RouterLink>
-        <RouterLink to="/admin/user" :class="(activeRoute == 'user' ? 'active' : '')">所有使用者列表</RouterLink>
-        <RouterLink to="/admin/visitor" :class="(activeRoute == 'visitor' ? 'active' : '')">校外人士註冊</RouterLink>
-        <RouterLink to="/admin/seat" :class="(activeRoute == 'seat' ? 'active' : '')">座位設定</RouterLink>
-        <RouterLink to="/admin/book" :class="(activeRoute == 'book' ? 'active' : '')">預約設定</RouterLink>
+        <RouterLink
+          to="/admin/booking"
+          :class="activeRoute == 'booking' || activeRoute == null ? 'active' : ''"
+          >所有預約列表</RouterLink
+        >
+        <RouterLink to="/admin/user" :class="activeRoute == 'user' ? 'active' : ''"
+          >所有使用者列表</RouterLink
+        >
+        <RouterLink to="/admin/visitor" :class="activeRoute == 'visitor' ? 'active' : ''"
+          >校外人士註冊</RouterLink
+        >
+        <RouterLink to="/admin/seat" :class="activeRoute == 'seat' ? 'active' : ''"
+          >座位設定</RouterLink
+        >
+        <RouterLink to="/admin/book" :class="activeRoute == 'book' ? 'active' : ''"
+          >預約設定</RouterLink
+        >
       </div>
       <div class="col-10 child-view">
         <RouterView />
@@ -64,7 +76,7 @@ const activeRoute = computed(() => route.path.split('/')[2])
 
       &:active {
         background-color: #aaa;
-      } 
+      }
 
       &:visited {
         color: #000;

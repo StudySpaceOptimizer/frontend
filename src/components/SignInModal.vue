@@ -18,19 +18,25 @@ const vFocus = {
 </script>
 
 <template>
-  <div class="container" v-if="accountStore.dialogStatus.signIn" @click="accountStore.toggleDialog()">
+  <div
+    class="container"
+    v-if="accountStore.dialogStatus.signIn"
+    @click="accountStore.toggleDialog()"
+  >
     <form @submit.prevent="signIn()" @click.stop="">
       <p>Sign In</p>
 
       <label for="username">Username</label>
-      <input type="text" name="username" v-model="username" v-focus/>
-  
+      <input type="text" name="username" v-model="username" v-focus />
+
       <label for="password">Password</label>
       <input type="password" name="password" v-model="password" />
-  
-      <input type="submit" value="Sign In">
-      
-      <p @click="accountStore.toggleDialog('signUp')" style="cursor: pointer;">還沒有帳號？ Sign Up</p>
+
+      <input type="submit" value="Sign In" />
+
+      <p @click="accountStore.toggleDialog('signUp')" style="cursor: pointer">
+        還沒有帳號？ Sign Up
+      </p>
     </form>
   </div>
 </template>
@@ -43,7 +49,7 @@ const vFocus = {
   z-index: 100;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, .5);
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -56,7 +62,7 @@ const vFocus = {
     border-radius: 8px;
 
     label {
-      margin-bottom: .5rem;
+      margin-bottom: 0.5rem;
     }
 
     input {
@@ -64,7 +70,7 @@ const vFocus = {
     }
 
     button {
-      padding: .5rem;
+      padding: 0.5rem;
       border-radius: 8px;
       background-color: #2033dc;
       color: white;

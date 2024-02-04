@@ -14,11 +14,13 @@ const accountStore = useAccountStore()
     </div>
     <div class="user">
       <template v-if="accountStore.isSignIn">
-        <span class="toggle">Hi, {{ accountStore.username == '' ? 'guest' : accountStore.username }}</span>
+        <span class="toggle"
+          >Hi, {{ accountStore.username == '' ? 'guest' : accountStore.username }}</span
+        >
         <div class="dropdown">
           <button @click="accountStore.signOut()">Sign Out</button>
-          <RouterLink to="/profile">Profile</RouterLink>          
-          <RouterLink to="/admin">admin</RouterLink>          
+          <RouterLink to="/profile">Profile</RouterLink>
+          <RouterLink to="/admin">admin</RouterLink>
         </div>
       </template>
       <template v-else>

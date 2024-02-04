@@ -1,16 +1,14 @@
-<script setup lang="ts">
-
-</script>
+<script setup lang="ts"></script>
 
 <template>
   <form>
     <label for="start">開始時間</label>
     <input type="datetime-local" name="start" id="start" step="1800" />
-    
+
     <label for="end">結束時間</label>
     <input type="datetime-local" name="end" />
 
-    <input type="button" value="開始篩選">
+    <input type="button" value="開始篩選" />
   </form>
 </template>
 
@@ -23,7 +21,8 @@ form {
   width: 80%;
   padding: 20px;
 
-  label, input {
+  label,
+  input {
     margin: 0 10px;
     font-size: 1.2em;
   }

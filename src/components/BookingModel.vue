@@ -1,6 +1,5 @@
 <template>
-  <div class="date">
-  </div>
+  <div class="date"></div>
 
   <li class="seat-list">
     <ul>

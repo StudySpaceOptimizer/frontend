@@ -12,43 +12,55 @@ const vFocus = {
 
 <template>
   <div class="container" v-if="accountStore.dialogStatus.signUp" @click="accountStore.toggleDialog">
-    
     <form @submit.prevent="" @click.stop="">
       <p>Sign Up</p>
       <div class="button-group">
-        <button type="button" @click="identity = 'student'" :class="(identity == 'student' ? 'select' : '')">學生</button>
-        <button type="button" @click="identity = 'others'" :class="(identity == 'others' ? 'select' : '')">校外人士</button>
+        <button
+          type="button"
+          @click="identity = 'student'"
+          :class="identity == 'student' ? 'select' : ''"
+        >
+          學生
+        </button>
+        <button
+          type="button"
+          @click="identity = 'others'"
+          :class="identity == 'others' ? 'select' : ''"
+        >
+          校外人士
+        </button>
       </div>
 
       <template v-if="identity == 'student'">
         <label for="student_id">學號</label>
-        <input type="text" name="student_id" v-focus/>
-  
+        <input type="text" name="student_id" v-focus />
+
         <label for="password">密碼</label>
         <input type="password" name="password" />
-  
+
         <label for="password_confirm">確認密碼</label>
         <input type="password" name="password_confirm" />
       </template>
       <template v-else>
-        <label for="name" >姓名</label>
+        <label for="name">姓名</label>
         <input type="text" name="name" v-focus />
-  
+
         <label for="telphone">手機</label>
         <input type="text" name="telphone" />
-  
+
         <label for="id">身分證字號</label>
         <input type="text" name="id" />
-  
+
         <label for="email">電子郵件</label>
         <input type="text" name="email" />
-  
       </template>
-      <input type="submit" value="Sign Up">
-      
+      <input type="submit" value="Sign Up" />
+
       <p v-if="identity == 'others'">註冊完後需要到圖書館二樓進行驗證</p>
 
-      <p @click="accountStore.toggleDialog('signIn')" style="cursor: pointer;">已經有帳號了？ Sign In</p>
+      <p @click="accountStore.toggleDialog('signIn')" style="cursor: pointer">
+        已經有帳號了？ Sign In
+      </p>
     </form>
   </div>
 </template>
@@ -61,7 +73,7 @@ const vFocus = {
   z-index: 100;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, .5);
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -74,7 +86,7 @@ const vFocus = {
     border-radius: 8px;
 
     label {
-      margin-bottom: .5rem;
+      margin-bottom: 0.5rem;
     }
 
     input {
@@ -82,7 +94,7 @@ const vFocus = {
     }
 
     form button {
-      padding: .5rem;
+      padding: 0.5rem;
       border-radius: 8px;
       background-color: #2033dc;
       color: white;
@@ -98,14 +110,14 @@ const vFocus = {
 
   button {
     flex: 1;
-    padding: .5rem;
+    padding: 0.5rem;
     border-radius: 8px;
     background-color: #979797;
     color: white;
     border: none;
-    
+
     &:first-child {
-      margin-right: .5rem;
+      margin-right: 0.5rem;
     }
 
     &.select {

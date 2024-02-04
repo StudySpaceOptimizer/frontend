@@ -11,7 +11,7 @@ const data: Data[] = [
       identity: '校外人士',
       email: '234@com',
       idCard: 'A123456789',
-      applyDate: '2024-01-01',
+      applyDate: '2024-01-01'
     },
     actions: ['同意', '刪除']
   }
@@ -19,7 +19,7 @@ const data: Data[] = [
 </script>
 
 <template>
-  <ListView :data="data"/>
+  <ListView :data="data" />
 </template>
 
 <style scoped></style>

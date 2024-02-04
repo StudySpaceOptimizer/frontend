@@ -1,6 +1,4 @@
-<script setup lang="ts">
-
-</script>
+<script setup lang="ts"></script>
 
 <template>
   <div class="button-group">
@@ -11,13 +9,13 @@
   <div class="container">
     <form @submit.prevent="">
       <label for="">平日開館</label>
-      <input type="text">
+      <input type="text" />
       <label for="">假日開館</label>
-      <input type="text">
+      <input type="text" />
       <label for="">單次預約時間上限</label>
-      <input type="text">
+      <input type="text" />
 
-      <input type="submit" value="確認">
+      <input type="submit" value="確認" />
     </form>
   </div>
 </template>

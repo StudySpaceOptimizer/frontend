@@ -20,7 +20,7 @@ const data: Data[] = [
       ban: {
         points: 0,
         banned: '2024-01-15',
-        until: '2024-01-18' 
+        until: '2024-01-18'
       }
     },
     actions: ['解除禁止']
@@ -39,9 +39,9 @@ const data: Data[] = [
       identity: '校外人士',
       email: 'user2@com',
       ban: {
-        points: 5,
+        points: 5
         // banned: '2024-01-15',
-        // until: '2024-01-18' 
+        // until: '2024-01-18'
       }
     },
     actions: ['加點']
@@ -51,7 +51,7 @@ const data: Data[] = [
 
 <template>
   <BookingFilter />
-  <ListView :data="data"/>
+  <ListView :data="data" />
 </template>
 
 <style scoped></style>
