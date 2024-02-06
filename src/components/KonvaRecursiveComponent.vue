@@ -14,11 +14,11 @@ const components = ref<any[]>(props.components)
   <template v-for="component in components" :key="component.id">
     <template v-if="component.type === 'v-group'">
       <v-group :config="component.config">
-        <KonvaRecursiveComponent :components="component.children"/>
+        <KonvaRecursiveComponent :components="component.children" />
       </v-group>
     </template>
     <template v-else>
-      <component :is="component.type" :config="component.config"/>
+      <component :is="component.type" :config="component.config" />
     </template>
   </template>
 </template>

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { genGroups } from './seats'
-import seatJsonData from './seats.json'
+import DrawStage from './seats/stage'
 
 import KonvaRecursiveComponent from './KonvaRecursiveComponent.vue'
+import seats_data from './seats_data.json'
 
 const props = defineProps({
   width: {
@@ -14,29 +14,18 @@ const props = defineProps({
 
 const width = computed(() => props.width)
 
-const stageRef = ref()
-const stageSize = ref({ 
-  width: width, 
+const stageConfig = ref({
+  width: width.value,
   height: 1200,
   x: 0,
   y: 0
 })
+
+const stageRef = ref()
 const isDragging = ref(false)
 let lastPos = { x: 0, y: 0 }
 
-const gropus = genGroups('group', seatJsonData)
-const konvaComponents = ref<any[]>([{
-  type: 'v-group',
-  config: {
-    x: -100,
-    y: 500,
-    width: width,
-    height: 1200,
-    rotation: -45,
-    draggable: true
-  },
-  children: gropus
-}])
+const drawStage = new DrawStage(width, ref(1200), seats_data)
 
 const handleWheel = (e: any) => {
   e.evt.preventDefault()
@@ -66,10 +55,8 @@ const handleWheel = (e: any) => {
 }
 
 function handleMouseDown(e: any) {
-  if (e.target === stageRef.value.getStage()) {
-    isDragging.value = true
-    lastPos = { x: e.evt.clientX, y: e.evt.clientY }
-  }
+  isDragging.value = true
+  lastPos = { x: e.evt.clientX, y: e.evt.clientY }
 }
 
 function handleMouseUp() {
@@ -80,8 +67,8 @@ function handleMouseMove(e: any) {
   if (isDragging.value) {
     const deltaX = e.evt.clientX - lastPos.x
     const deltaY = e.evt.clientY - lastPos.y
-    stageSize.value.x += deltaX
-    stageSize.value.y += deltaY
+    drawStage.x += deltaX
+    drawStage.y += deltaY
     lastPos = { x: e.evt.clientX, y: e.evt.clientY }
   }
 }
@@ -91,14 +78,15 @@ function handleMouseMove(e: any) {
   <v-stage
     ref="stageRef"
     class="map"
-    :config="stageSize"
+    :config="drawStage.config"
     @wheel="handleWheel"
     @mousemove="handleMouseMove"
     @mousedown="handleMouseDown"
     @mouseup="handleMouseUp"
   >
     <v-layer>
-      <KonvaRecursiveComponent :components="konvaComponents" />
+      <!-- <v-rect :config="{x: 100, y: 100, width: 100, height: 100, fill: 'red'}" /> -->
+      <KonvaRecursiveComponent :components="drawStage.drawObject" />
     </v-layer>
   </v-stage>
 </template>

@@ -15,7 +15,6 @@ onMounted(async () => {
     mapRefWidth.value = mapRef.value.offsetWidth
   }
 })
-
 </script>
 
 <template>
@@ -25,7 +24,7 @@ onMounted(async () => {
   <BookingFiliter />
   <!-- TODO: the seat status map -->
   <div class="map" ref="mapRef">
-    <SeatMap :width="mapRefWidth"/>
+    <SeatMap :width="mapRefWidth" />
     <!-- <p>座位即時圖</p> -->
   </div>
 </template>
