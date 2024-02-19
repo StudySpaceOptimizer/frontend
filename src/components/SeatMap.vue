@@ -11,38 +11,34 @@ const props = defineProps({
   }
 })
 
-const width = computed(() => props.width)
-
 const stageRef = ref()
+
+const width = computed(() => props.width)
+const height = ref(1200)
+
 const isDragging = ref(false)
 let lastPos = { x: 0, y: 0 }
 
-const drawStage = new DrawStage(width, ref(1200))
+const drawStage = new DrawStage(width, height)
 
 const handleWheel = (e: any) => {
   e.evt.preventDefault()
   const scaleBy = 1.1
   const stage = stageRef.value.getStage()
   const oldScale = stage.scaleX()
+  const pointer = stage.getPointerPosition()
 
-  const mousePointTo = {
-    x: stage.getPointerPosition().x / oldScale - stage.x() / oldScale,
-    y: stage.getPointerPosition().y / oldScale - stage.y() / oldScale
+  var mousePointTo = {
+    x: (pointer.x - stage.x()) / oldScale,
+    y: (pointer.y - stage.y()) / oldScale,
   }
-
   let newScale = e.evt.deltaY <= 0 ? oldScale * scaleBy : oldScale / scaleBy
-
   newScale = Math.max(0.5, newScale)
   newScale = Math.min(4, newScale)
 
   stage.scale({ x: newScale, y: newScale })
-
-  const newPos = {
-    x: -(mousePointTo.x - stage.getPointerPosition().x / newScale) * newScale,
-    y: -(mousePointTo.y - stage.getPointerPosition().y / newScale) * newScale
-  }
-
-  stage.position(newPos)
+  drawStage.x = pointer.x - mousePointTo.x * newScale,
+  drawStage.y = pointer.y - mousePointTo.y * newScale,
   stage.batchDraw()
 }
 
@@ -57,8 +53,8 @@ function handleMouseUp() {
 
 function handleMouseMove(e: any) {
   if (isDragging.value) {
-    const deltaX = e.evt.clientX - lastPos.x
-    const deltaY = e.evt.clientY - lastPos.y
+    const deltaX = (e.evt.clientX - lastPos.x)
+    const deltaY = (e.evt.clientY - lastPos.y)
     drawStage.x += deltaX
     drawStage.y += deltaY
     lastPos = { x: e.evt.clientX, y: e.evt.clientY }
