@@ -9,7 +9,7 @@ export default class Text extends DrawObject {
     text: string,
     id: string = 'text'
   ) {
-    super(x, y, id, text, width, height, '#fff', 12, 'v-text')
+    super(x, y, id, text, width, height, '#fff', 8, 'v-text')
   }
 
   override draw(rotation: number) {
@@ -18,14 +18,14 @@ export default class Text extends DrawObject {
     ret.config = {
       ...ret.config,
       x: this.x + this.width / 2,
-      y: this.y + this.height / 2,
+      y: this.y + this._height / 2,
       fontSize: this.fontSize,
       text: this.text,
       align: 'center',
       verticalAlign: 'middle',
       rotation: -(rotation % 360),
       offsetX: this.width / 2,
-      offsetY: this.height / 2
+      offsetY: this._height / 2
     }
 
     return ret

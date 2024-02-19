@@ -3,7 +3,6 @@ import { ref, computed } from 'vue'
 import DrawStage from './seats/stage'
 
 import KonvaRecursiveComponent from './KonvaRecursiveComponent.vue'
-import seats_data from './seats_data.json'
 
 const props = defineProps({
   width: {
@@ -14,18 +13,11 @@ const props = defineProps({
 
 const width = computed(() => props.width)
 
-const stageConfig = ref({
-  width: width.value,
-  height: 1200,
-  x: 0,
-  y: 0
-})
-
 const stageRef = ref()
 const isDragging = ref(false)
 let lastPos = { x: 0, y: 0 }
 
-const drawStage = new DrawStage(width, ref(1200), seats_data)
+const drawStage = new DrawStage(width, ref(1200))
 
 const handleWheel = (e: any) => {
   e.evt.preventDefault()

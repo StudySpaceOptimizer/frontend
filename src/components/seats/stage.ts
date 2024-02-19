@@ -1,8 +1,9 @@
-import type { ComputedRef, Ref } from 'vue'
+import type { Ref } from 'vue'
 import { ref } from 'vue'
 import type { DrawObjectData } from './basic'
 import { Seat } from './seat'
 import Group from './group'
+import type DrawObject from './draw-object'
 
 export default class DrawStage {
   private drawObjectDatas: DrawObjectData[] = []
@@ -12,7 +13,7 @@ export default class DrawStage {
   constructor(
     private _width: Ref<number>,
     private _height: Ref<number>,
-    datas: any[] = [],
+    datas: any[] = []
   ) {
     this.draw(datas)
   }
@@ -70,20 +71,115 @@ export default class DrawStage {
 
   /**
    * This function will draw all the objects in the stage. It is a usecase of the Composite pattern.
-   * 
-   * @param datas 
+   *
+   * @param datas
    */
   private draw(datas: any[]) {
-    const group = new Group(this.width / 2, this.height / 2, 13477, [], 'main-seat')
-    for (let i = 0; i < datas.length; ++i) {
-      const data = datas[i]
-      group.add(new Seat(data.x, data.y, data.rotation))
+    if (datas.length !== 0) {
+      this.drawObjectDatas = datas
+      return
+    }
+    const non_notebook_seats = new Group(0, 0, 0, [], 'non-notebook-seats')
+   
+    const horizontal_seat_datas = [
+      [-1, -1, -1, 0, 0, 0, 0],
+      [-1, -1, -1, 1, 5, 1, 1],
+      [-1, 0, 0, 0, 0, 0, 0],
+      [-1, 1, 1, 1, 1, 1, 1],
+      [-1, 0, 0, 0, 0, 0, 0],
+      [-1, 1, 1, 1, 1, 1, 1],
+      [-1, 0, 0, 0, 0, 0, 0],
+      [-1, 1, 1, 1, 1, 1, 1],
+      [-1, 0, 0, 0, -1, 0, 0],
+      [-1, 1, 1, 1, -1, 1, 1],
+      [-1, 0, 0, 0, 0, 0, 0],
+      [-1, 1, 1, 1, 1, 1, 1]
+    ]
 
-      if (data.type === 'seat') {
-        group.add(new Seat(data.x, data.y, data.rotation))
+    const horizontal_seat_datas2 = [
+      [-1, 0, 0, 0, 0, 0, 0],
+      [-1, 1, 1, 1, 1, 1, 1],
+      [-1, 0, 0, 0, 0, 0, 0],
+      [-1, 1, 1, 1, 1, 1, 1],
+      [-1, 0, 0, 0, 0, 0, 0],
+      [-1, 1, 1, 1, 1, 1, 1],
+      [-1, -1, -1, 0, 0, -1, -1],
+      [-1, -1, -1, 1, 1, -1, -1]
+    ]
+
+    const others_seat_datas = [
+      [-1, -1, -1, 0, 0, 0, -1],
+      [-1, -1, -1, 1, 1, 1, -1]
+    ]
+
+    function genSeat(
+      data: number[][],
+      offsetX: number,
+      offsetY: number,
+      width: number = 28,
+      height: number = 31,
+      margin: number = 14
+    ) {
+      const ret = new Set<DrawObject>()
+      const rotation = [0, 180, 270, 90]
+      for (let i = 0; i < data.length; i++) {
+        for (let j = 0; j < data[i].length; j++) {
+          const type = data[i][j]
+          if (type === -1) {
+            continue
+          }
+          const margin_x = (type % 4) >= 2 ? margin * (j - (j % 2)) : 0
+          const margin_y = (type % 4) < 2 ? margin * (i - (i % 2)) : 0
+          const act_width = (type % 4) >= 2 ? width : height
+          const act_height = (type % 4) < 2 ? width : height
+
+          const seat = new Seat(
+            j * act_height + offsetX + margin_x,
+            i * act_width + offsetY + margin_y,
+            rotation[type % 4],
+            type > 4
+          )
+          ret.add(seat)
+        }
       }
+
+      return ret
     }
 
-    this.drawObjectDatas.push(group.draw())
+    non_notebook_seats.add(...genSeat(horizontal_seat_datas, 0, 0))
+    non_notebook_seats.add(...genSeat(horizontal_seat_datas2, 226, 234))
+    non_notebook_seats.add(...genSeat(others_seat_datas, 10, 390))
+
+    const vertical_seat_datas = [
+      [2, 3],
+      [2, 3],
+      [2, 3],
+    ]
+
+    non_notebook_seats.add(...genSeat(vertical_seat_datas, 255, 100))
+
+    const vertical_seat_datas2 = [
+      [2, 3],
+      [2, 3],
+    ]
+
+    non_notebook_seats.add(...genSeat(vertical_seat_datas2, 348, 128))
+
+    const vertical_seat_datas3 = [
+      [2, 3],
+      [2, 3],
+      [2, 3],
+      [2, 3],
+      [2, 3],
+      [2, 3],
+    ]
+
+    non_notebook_seats.add(...genSeat(vertical_seat_datas3, -120, 500))
+
+    const all_groups = new Group(this.width / 2, this.height / 2, 0, [], 'all-seats')
+    all_groups.add(non_notebook_seats)
+
+    this.drawObjectDatas.push(all_groups.draw())
+    console.log(this.drawObjectDatas)
   }
 }

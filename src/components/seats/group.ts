@@ -13,10 +13,19 @@ export default class Group extends DrawObject {
     public x: number,
     public y: number,
     public rotation: number = 0,
-    private objects: DrawObject[] = [],
+    protected objects: DrawObject[] = [],
     public id: string = 'group',
+    protected offset: boolean = true
   ) {
     super(x, y, id)
+  }
+
+  override get width() {
+    return this.boxBounds.width
+  }
+
+  override get height() {
+    return this.boxBounds.height
   }
 
   add(...o: DrawObject[]) {
@@ -47,8 +56,8 @@ export default class Group extends DrawObject {
         x: this.x,
         y: this.y,
         rotation: this.rotation,
-        offsetX: this.boxBounds.width / 2,
-        offsetY: this.boxBounds.height / 2
+        offsetX: this.offset ? this.boxBounds.width / 2 : 0,
+        offsetY: this.offset ? this.boxBounds.height / 2 : 0
       },
       children
     }

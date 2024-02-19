@@ -16,13 +16,27 @@ export class Seat extends Group {
     x: number,
     y: number,
     rotation: number,
+    // TODO: text content should be the seat number
+    onlyTable: boolean = false,
+    text: string = ''
   ) {
+    // Chair, Text 14x12
+    // Table 28x19
     const children = [
-      new Chair(12.5, 0, 25, 25),
-      new Table(0, 30, 50, 25, '#fab469'),
-      // TODO: text content should be the seat number
-      new Text(12.5, 0, 25, 25, DrawUntil.seat_id_gen())
+      new Table(0, 12, 28, 19, '#fab469'),
     ]
+
+    if (!onlyTable) {
+      text = DrawUntil.seat_id_gen()
+      children.push(
+        new Chair(7, 0, 14, 12),
+        new Text(0, 12, 28, 19, text)
+      )
+    }
+    else {
+      console.log('Seat', text)
+      console.log(children)
+    }
 
     super(x, y, rotation, children, 'seat')
   }

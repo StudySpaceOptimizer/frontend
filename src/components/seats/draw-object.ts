@@ -2,13 +2,30 @@ import type { DrawObjectData, DrawObjectDataType } from './basic'
 import { DrawUntil } from './basic'
 
 export default abstract class DrawObject {
+  
+  get width(): number {
+    return this._width
+  }
+
+  set width(value: number) {
+    this._width = value
+  }
+
+  get height(): number {
+    return this._height
+  }
+
+  set height(value: number) {
+    this._height = value
+  }
+
   constructor(
     public x: number,
     public y: number,
     public id: string,
     public text: string = '',
-    public width: number = 0,
-    public height: number = 0,
+    private _width: number = 0,
+    public _height: number = 0,
     public fill: string = '#fff',
     public fontSize: number = 14,
     public type: DrawObjectDataType = 'v-rect',
@@ -26,8 +43,9 @@ export default abstract class DrawObject {
         x: this.x,
         y: this.y,
         width: this.width,
-        height: this.height,
-        fill: this.fill
+        height: this._height,
+        fill: this.fill,
+        cornerRadius: 2,
       }
     }
     return ret
