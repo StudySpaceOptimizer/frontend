@@ -81,6 +81,10 @@ export default class DrawStage {
     }
     const non_notebook_seats = new Group(0, 0, 0, [], 'non-notebook-seats')
 
+    non_notebook_seats.add(
+      new Seat(0, 0, 0, 'seat-1'),
+    )
+
     const all_groups = new Group(this.width / 2, this.height / 2, 0, [], 'all-seats')
     all_groups.add(non_notebook_seats)
 
