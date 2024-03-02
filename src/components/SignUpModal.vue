@@ -1,18 +1,42 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, reactive } from 'vue'
 import { useAccountStore } from '@/stores/account'
 
 const accountStore = useAccountStore()
 const identity = ref('student')
+const student_form = reactive({
+  student_id: '',
+  password: '',
+  password_confirm: ''
+})
+const others_form = reactive({
+  name: '',
+  telphone: '',
+  id: '',
+  email: ''
+})
 
 const vFocus = {
   mounted: (el: any) => el.focus()
+}
+
+const signUp = () => {
+  if (identity.value == 'student') {
+    if (student_form.password != student_form.password_confirm) {
+      alert('密碼不一致')
+      return
+    }
+    
+    accountStore.studentSignUp(student_form.student_id, student_form.password)
+  } else {
+    accountStore.outsiderSignUp(others_form.name, others_form.telphone, others_form.id, others_form.email)
+  }
 }
 </script>
 
 <template>
   <div class="container" v-if="accountStore.dialogStatus.signUp" @click="accountStore.toggleDialog">
-    <form @submit.prevent="" @click.stop="">
+    <form @submit.prevent="signUp" @click.stop="">
       <p>Sign Up</p>
       <div class="button-group">
         <button
@@ -33,13 +57,13 @@ const vFocus = {
 
       <template v-if="identity == 'student'">
         <label for="student_id">學號</label>
-        <input type="text" name="student_id" v-focus />
+        <input v-model="student_form.student_id" type="text" name="student_id" v-focus />
 
         <label for="password">密碼</label>
-        <input type="password" name="password" />
+        <input v-model="student_form.password" type="password" name="password" />
 
         <label for="password_confirm">確認密碼</label>
-        <input type="password" name="password_confirm" />
+        <input v-model="student_form.password_confirm" type="password" name="password_confirm" />
       </template>
       <template v-else>
         <label for="name">姓名</label>

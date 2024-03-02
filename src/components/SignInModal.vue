@@ -8,8 +8,6 @@ const password = ref('')
 
 const signIn = () => {
   accountStore.signIn(username.value, password.value)
-  username.value = ''
-  password.value = ''
 }
 
 const vFocus = {

@@ -1,5 +1,6 @@
 import { reactive, ref } from 'vue'
 import { defineStore } from 'pinia'
+import * as api from '@/api'
 
 export const useAccountStore = defineStore(
   'account',
@@ -13,15 +14,31 @@ export const useAccountStore = defineStore(
     })
 
     function signIn(_username: string, _password: string) {
-      isSignIn.value = true
-      username.value = _username
-      toggleDialog()
+      api.signIn(_username, _password)
+        .then(() => {
+          isSignIn.value = true
+          username.value = _username
+          toggleDialog()
+        })
+        .catch(() => {
+          isSignIn.value = false
+        })
     }
 
-    function signUp(_username: string, _password: string) {
-      isSignIn.value = true
-      username.value = _username
-      toggleDialog()
+    function studentSignUp(_username: string, _password: string) {
+      api.studentSignUp(_username, _password)
+        .then(() => {
+          api.sendVerificationEmail(_username)
+          toggleDialog()
+        })
+    }
+
+    function outsiderSignUp(name: string, phone: string, idcard: string, email: string) {
+      api.outsiderSignUp(name, phone, idcard, email)
+        .then(() => {
+          api.sendVerificationEmail(email)
+          toggleDialog()
+        })
     }
 
     function signOut() {
@@ -40,7 +57,8 @@ export const useAccountStore = defineStore(
       username,
       signIn,
       signOut,
-      signUp,
+      studentSignUp,
+      outsiderSignUp,
       toggleDialog,
       dialogStatus
     }
