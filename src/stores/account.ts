@@ -6,37 +6,40 @@ export const useAccountStore = defineStore(
   'account',
   () => {
     const isSignIn = ref(false)
-    const username = ref('')
+    const name = ref('')
 
     const dialogStatus = reactive({
       signIn: false,
       signUp: false
     })
 
-    function signIn(_username: string, _password: string) {
-      api.signIn(_username, _password)
+    function signIn(_email: string, _password: string) {
+      isSignIn.value = true
+      name.value = _email
+      toggleDialog()
+      // api.signIn(_email, _password)
+      //   .then(() => {
+      //     isSignIn.value = true
+      //     email.value = _email
+      //     toggleDialog()
+      //   })
+      //   .catch(() => {
+      //     isSignIn.value = false
+      //   })
+    }
+
+    function studentSignUp(_name: string, _email: string, _password: string) {
+      api.studentSignUp(_name, _email, _password)
         .then(() => {
-          isSignIn.value = true
-          username.value = _username
+          api.sendVerificationEmail(_email)
           toggleDialog()
-        })
-        .catch(() => {
-          isSignIn.value = false
         })
     }
 
-    function studentSignUp(_username: string, _password: string) {
-      api.studentSignUp(_username, _password)
+    function outsiderSignUp(_name: string, _phone: string, _idcard: string, _email: string) {
+      api.outsiderSignUp(_name, _phone, _idcard, _email)
         .then(() => {
-          api.sendVerificationEmail(_username)
-          toggleDialog()
-        })
-    }
-
-    function outsiderSignUp(name: string, phone: string, idcard: string, email: string) {
-      api.outsiderSignUp(name, phone, idcard, email)
-        .then(() => {
-          api.sendVerificationEmail(email)
+          api.sendVerificationEmail(_email)
           toggleDialog()
         })
     }
@@ -54,7 +57,7 @@ export const useAccountStore = defineStore(
 
     return {
       isSignIn,
-      username,
+      email: name,
       signIn,
       signOut,
       studentSignUp,

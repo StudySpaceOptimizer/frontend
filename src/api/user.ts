@@ -20,12 +20,13 @@ export const signIn = (username: string, password: string): Promise<Response<Sig
  * Sign up student user with username and password, returns a token stored in cookie
  *
  * @url  POST /api/signup
+ * @param name
  * @param username
  * @param password
  * @returns usertoken
  * @error username already exists
  */
-export const studentSignUp = (username: string, password: string): Promise<Response<Sign>> => {
+export const studentSignUp = (name: string, username: string, password: string): Promise<Response<Sign>> => {
   throw new Error('Not implemented')
 }
 
@@ -62,7 +63,7 @@ export interface User {
   id: string
   email: string
   role: 'student' | 'outsider' | 'admin' | 'assistant'
-  name?: string
+  name: string
   phone?: string
   idCard?: string
   point: number

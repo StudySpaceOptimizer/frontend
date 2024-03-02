@@ -3,11 +3,11 @@ import { ref } from 'vue'
 import { useAccountStore } from '@/stores/account'
 
 const accountStore = useAccountStore()
-const username = ref('')
+const email = ref('')
 const password = ref('')
 
 const signIn = () => {
-  accountStore.signIn(username.value, password.value)
+  accountStore.signIn(email.value, password.value)
 }
 
 const vFocus = {
@@ -24,8 +24,8 @@ const vFocus = {
     <form @submit.prevent="signIn()" @click.stop="">
       <p>Sign In</p>
 
-      <label for="username">Username</label>
-      <input type="text" name="username" v-model="username" v-focus />
+      <label for="email">Email</label>
+      <input type="text" name="email" v-model="email" v-focus />
 
       <label for="password">Password</label>
       <input type="password" name="password" v-model="password" />
