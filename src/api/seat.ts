@@ -1,10 +1,11 @@
-import type { User } from './user'
+import type { UserData } from './user'
 import type { Response } from './common'
+import type { Seat } from './index'
 
 /**
  * This file contains all the api calls to the backend
  */
-interface Seat {
+interface SeatData {
   id: string
 
   /**
@@ -22,34 +23,7 @@ interface SeatRequest {
   end?: Date
 }
 
-/**
- * Get all the seats, returns a list of seats
- * if begin time and end time is provided, returns the status of the seats in the range
- * 
- * @url GET /api/seats?begin=begin&end=end
- * @returns list of {@link Seat}
- */
-export const getSeatsStatus = (config: SeatRequest): Promise<Response<Seat[]>> => {
-  const { begin, end } = config
-  if (Boolean(begin) !== Boolean(end)) {
-    throw new Error('begin and end need to provide same time, or both not provide')
-  }
-
-  throw new Error('Not implemented')
-}
-
-/**
- * Get the seats configurations, returns a Konva Object
- * TODO: 回傳的東西還沒想好，但這個基本上後端不會動，所以先假設一個任意 Object 回傳 (座位圖還沒做完)
- * 
- * @url GET /api/seats/configurations
- * @returns 
- */
-export const getSeatsConfigurations = (): Promise<Response<any>> => {
-  throw new Error('Not implemented')
-}
-
-interface SeatDetail extends Seat {
+interface SeatDetail extends SeatData {
   /**
    * The booked range of the seat
    */
@@ -62,16 +36,41 @@ interface SeatDetail extends Seat {
   /**
    * Need admin permission to get this field
    */
-  user?: User
+  user?: UserData
 }
 
-/**
- * Get the seat status, returns a seat
- * 
- * @url GET /api/seats/:id
- * @param id
- * @returns {@link Seat}
- */
-export const getSeatStatus = (id: string): Promise<Response<SeatDetail>> => {
-  throw new Error('Not implemented')
+export class PouchDbSeat implements Seat {
+  /**
+   * Get all the seats, returns a list of seats
+   * if begin time and end time is provided, returns the status of the seats in the range
+   * @url GET /api/seats?begin=begin&end=end
+   * @returns Promise<Response<SeatData[]>>
+   */
+  getSeatsStatus(config: SeatRequest): Promise<Response<SeatData[]>> {
+    const { begin, end } = config
+    if (Boolean(begin) !== Boolean(end)) {
+      throw new Error('begin and end need to provide same time, or both not provide')
+    }
+    throw new Error('Method not implemented.')
+  }
+
+  /**
+   * Get the seats configurations, returns a Konva Object
+   * TODO: 回傳的東西還沒想好，但這個基本上後端不會動，所以先假設一個任意 Object 回傳 (座位圖還沒做完)
+   * @url GET /api/seats/configurations
+   * @returns Promise<Response<any>>
+   */
+  getSeatsConfigurations(): Promise<Response<any>> {
+    throw new Error('Method not implemented.')
+  }
+
+  /**
+   * Get the seat status, returns a seat
+   * @url GET /api/seats/:id
+   * @param id
+   * @returns Promise<Response<SeatDetail>>
+   */
+  getSeatStatus(id: string): Promise<Response<SeatDetail>> {
+    throw new Error('Method not implemented.')
+  }
 }

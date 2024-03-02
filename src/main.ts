@@ -1,6 +1,6 @@
 import './assets/main.css'
 
-import { createApp } from 'vue'
+import { createApp, provide } from 'vue'
 import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 
@@ -19,3 +19,10 @@ app.use(router)
 app.use(VueKonva)
 
 app.mount('#app')
+
+// Provide the api services
+import * as api from './api'
+
+provide(api.API_SERVICE.USER, api.PouchDbUser)
+provide(api.API_SERVICE.SEAT, api.PouchDbSeat)
+provide(api.API_SERVICE.RESERVE, api.PouchDbReserve)
