@@ -6,6 +6,7 @@ const accountStore = useAccountStore()
 const identity = ref('student')
 const student_form = reactive({
   email: '',
+  name: '',
   password: '',
   password_confirm: ''
 })
@@ -27,7 +28,7 @@ const signUp = () => {
       return
     }
     
-    accountStore.studentSignUp(student_form.email, student_form.password)
+    accountStore.studentSignUp(student_form.name, student_form.email + '@mail.ntou.edu.tw', student_form.password)
   } else {
     accountStore.outsiderSignUp(others_form.name, others_form.telphone, others_form.id, others_form.email)
   }
@@ -57,10 +58,10 @@ const signUp = () => {
 
       <template v-if="identity == 'student'">
         <label for="name">姓名</label>
-        <input type="text" name="name" v-focus />
+        <input v-model="student_form.name" type="text" name="name" v-focus />
 
         <label for="email">信箱</label>
-        <input v-model="student_form.email" type="text" name="email" v-focus />
+        <input v-model="student_form.email" type="text" name="email" />
         <label for="email">@mail.ntou.edu.tw</label>
 
         <label for="password">密碼</label>
