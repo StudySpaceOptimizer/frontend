@@ -3,13 +3,14 @@ export * from './common'
 export { PouchDbSeat } from './seat'
 export { PouchDbUser } from './user'
 export { PouchDbReserve } from './reserve'
+export * from './mock'
 
 export interface User {
   signIn(username: string, password: string): Promise<any>
   studentSignUp(name: string, username: string, password: string): Promise<any>
   outsiderSignUp(name: string, phone: string, idcard: string, email: string): Promise<any>
-  sendVerificationEmail(email: string): Promise<any>
-  getAllUsers(): Promise<any>
+  sendVerificationEmail(id: string): Promise<any>
+  getUsers(token: string, all: boolean): Promise<any>
   banUser(id: string, reason: string, end: Date): Promise<any>
   unbanUser(id: string): Promise<any>
   addPointUser(id: string, point: number): Promise<any>

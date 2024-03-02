@@ -71,7 +71,7 @@ export class PouchDbUser implements User {
    * @url GET /api/users?all=[Boolean]
    * @returns Promise<Response<UserData[]>>
    */
-  getAllUsers(): Promise<Response<UserData[]>> {
+  getUsers(): Promise<Response<UserData[]>> {
     throw new Error('Method not implemented.')
   }
 
