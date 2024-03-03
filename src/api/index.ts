@@ -10,7 +10,7 @@ export interface User {
   studentSignUp(name: string, username: string, password: string): Promise<any>
   outsiderSignUp(name: string, phone: string, idcard: string, email: string): Promise<any>
   sendVerificationEmail(id: string): Promise<any>
-  getUsers(token: string, all: boolean): Promise<any>
+  getUsers(all: boolean): Promise<any>
   banUser(id: string, reason: string, end: Date): Promise<any>
   unbanUser(id: string): Promise<any>
   addPointUser(id: string, point: number): Promise<any>
@@ -23,7 +23,7 @@ export interface Seat {
 }
 
 export interface Reserve {
-  bookSeat(id: string, begin: Date, end: Date): Promise<any>
+  bookSeat(seatId: string, begin: Date, end: Date): Promise<any>
   personalBookedSeats(begin: Date, end: Date): Promise<any>
   deleteBookedSeat(id: string): Promise<any>
   earlyTerminateBookedSeat(id: string): Promise<any>

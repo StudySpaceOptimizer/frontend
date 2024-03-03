@@ -60,7 +60,8 @@ export class MockUser implements User {
     })
     return await res.json()
   }
-  async getUsers(token: string, all: boolean): Promise<any> {
+  async getUsers(all: boolean): Promise<any> {
+    const token = "c794"
     if (all) {
       const res = await fetch(`${ENDPOINT}/users`, {
         method: 'GET',
