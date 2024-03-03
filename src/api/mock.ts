@@ -1,4 +1,4 @@
-import type { User } from './index'
+import type { Reserve, User } from './index'
 
 const ENDPOINT = 'http://localhost:3030'
 
@@ -12,8 +12,7 @@ export class MockUser implements User {
     })
     const data = await res.json()
     const user = data[0]
-    console.log(user)
-    if (user === null) {
+    if (user === undefined || user === null) {
       throw new Error('User not found')
     }
     else if (user.verify === false) {
@@ -51,31 +50,34 @@ export class MockUser implements User {
   outsiderSignUp(name: string, phone: string, idcard: string, email: string): Promise<any> {
     throw new Error('Method not implemented.');
   }
-  sendVerificationEmail(id: string): Promise<any> {
-    return fetch(`${ENDPOINT}/user/${id}`, {
+  async sendVerificationEmail(id: string): Promise<any> {
+    const res = await fetch(`${ENDPOINT}/user/${id}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ verify: true })
     })
+    return await res.json()
   }
-  getUsers(token: string, all: boolean): Promise<any> {
+  async getUsers(token: string, all: boolean): Promise<any> {
     if (all) {
-      return fetch(`${ENDPOINT}/users`, {
+      const res = await fetch(`${ENDPOINT}/users`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
         }
       })
+      return await res.json()
     }
 
-    return fetch(`${ENDPOINT}/user?id=${token}`, {
+    const res = await fetch(`${ENDPOINT}/user?id=${token}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'
       }
     })
+    return await res.json()
   }
   banUser(id: string, reason: string, end: Date): Promise<any> {
     throw new Error('Method not implemented.');

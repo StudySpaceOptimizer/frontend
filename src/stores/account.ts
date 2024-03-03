@@ -18,8 +18,7 @@ export const useAccountStore = defineStore(
     async function signIn(_email: string, _password: string) {
       try {
         const token = await api.signIn(_email, _password);
-        const response = await api.getUsers(token, false);
-        const data = await response.json();
+        const data = await api.getUsers(token, false);
         toggleDialog();
         isSignIn.value = true;
         userToken.value = token;
