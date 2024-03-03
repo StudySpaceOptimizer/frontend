@@ -20,8 +20,8 @@ export class Seat extends Group {
     text: string = ''
   ) {
     const children = [
-      new Chair(0, 0, 38, 38),
-      new Table(0, 25, 38, 38, text),
+      new Chair(0, 0, { width: 1400, height: 1150, concerRadius: 5}),
+      new Text(0, 0, { width: 50, height: 50, text, fontSize: 14 }),
     ]
 
     super(x, y, rotation, children, 'seat')

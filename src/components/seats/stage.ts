@@ -3,7 +3,6 @@ import { ref } from 'vue'
 import type { DrawObjectData } from './basic'
 import { Seat } from './seat'
 import Group from './group'
-import type DrawObject from './draw-object'
 
 export default class DrawStage {
   private drawObjectDatas: DrawObjectData[] = []
@@ -79,16 +78,15 @@ export default class DrawStage {
       this.drawObjectDatas = datas
       return
     }
-    const non_notebook_seats = new Group(0, 0, 0, [], 'non-notebook-seats')
+    // const non_notebook_seats = new Group(0, 0, 0, [], 'non-notebook-seats')
 
-    non_notebook_seats.add(
-      new Seat(0, 0, 0, 'seat-1'),
-    )
+    // non_notebook_seats.add(
+    //   new Seat(0, 0, 0, 'seat-1'),
+    // )
 
-    const all_groups = new Group(this.width / 2, this.height / 2, 0, [], 'all-seats')
-    all_groups.add(non_notebook_seats)
+    // const all_groups = new Group(this.width / 2, this.height / 2, 0, [], 'all-seats')
+    // all_groups.add(non_notebook_seats)
 
-    this.drawObjectDatas.push(all_groups.draw())
-    console.log(this.drawObjectDatas)
+    // this.drawObjectDatas.push(all_groups.draw())
   }
 }
