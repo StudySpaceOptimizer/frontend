@@ -24,7 +24,7 @@ export interface Seat {
 
 export interface Reserve {
   bookSeat(seatId: string, begin: Date, end: Date): Promise<any>
-  personalBookedSeats(begin: Date, end: Date): Promise<any>
+  getPersonalBookedSeats(config: any): Promise<any>
   deleteBookedSeat(id: string): Promise<any>
   earlyTerminateBookedSeat(id: string): Promise<any>
   getReserveConfiguration(): Promise<any>
