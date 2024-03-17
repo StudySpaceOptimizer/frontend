@@ -23,10 +23,10 @@ export interface Seat {
 }
 
 export interface Reserve {
-  bookSeat(seatId: string, begin: Date, end: Date): Promise<any>
-  getPersonalBookedSeats(config: any): Promise<any>
-  deleteBookedSeat(id: string): Promise<any>
-  earlyTerminateBookedSeat(id: string): Promise<any>
+  reserve(seatId: string, begin: Date, end: Date): Promise<any>
+  getPersonalReservations(config: any): Promise<any>
+  deleteReservation(id: string): Promise<any>
+  terminateReservation(id: string): Promise<any>
   getReserveConfiguration(): Promise<any>
   updateReserveConfiguration(config: any): Promise<any>
 }

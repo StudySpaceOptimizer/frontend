@@ -27,6 +27,7 @@ export class PouchDbUser implements User {
    * @returns Promise<Response<Sign>>
    */
   signIn(username: string, password: string): Promise<Response<Sign>> {
+    
     throw new Error('Method not implemented.')
   }
 
