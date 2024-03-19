@@ -15,6 +15,18 @@ interface FilterRequest {
 }
 
 export class PouchDbReserve implements Reserve {
+  reserve(seatId: string, begin: Date, end: Date): Promise<any> {
+    throw new Error('Method not implemented.')
+  }
+  getPersonalReservations(config: any): Promise<any> {
+    throw new Error('Method not implemented.')
+  }
+  deleteReservation(id: string): Promise<any> {
+    throw new Error('Method not implemented.')
+  }
+  terminateReservation(id: string): Promise<any> {
+    throw new Error('Method not implemented.')
+  }
   /**
    * Book a seat, return success or fail (true or false)
    * @url POST /api/seats/:id
