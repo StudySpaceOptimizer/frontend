@@ -130,172 +130,124 @@ export class MockUser implements User {
   }
 
   async addPointUser(id: string, point: number): Promise<any> {
-    try {
-      const response = await fetch(`${ENDPOINT}/user?id=${id}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch user data')
+    const response = await fetch(`${ENDPOINT}/user?id=${id}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
       }
+    })
 
-      const userData = await response.json()
-
-      const updatedPoints = userData.point + point
-
-      const updateResponse = await fetch(`${ENDPOINT}/user/${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ point: updatedPoints })
-      })
-
-      if (!updateResponse.ok) {
-        throw new Error('Failed to update user points')
-      }
-
-      return await updateResponse.json()
-    } catch (e) {
-      throw e
+    if (!response.ok) {
+      throw new Error('Failed to fetch user data')
     }
+
+    const userData = await response.json()
+
+    const updatedPoints = userData.point + point
+
+    const updateResponse = await fetch(`${ENDPOINT}/user/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ point: updatedPoints })
+    })
+
+    if (!updateResponse.ok) {
+      throw new Error('Failed to update user points')
+    }
+
+    return await updateResponse.json()
   }
 }
 
 export class MockReserve implements Reserve {
   async reserve(seatID: string, begin: Date, end: Date): Promise<any> {
-    try {
-      // 判斷身分? -> 判斷是否在可以預約的期限內
+    // 判斷身分? -> 判斷是否在可以預約的期限內
 
-      // check if time is in opening hours
-      const settingRes = await fetch(`${ENDPOINT}/settings`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-      const settingsData: SettingsData = await settingRes.json()
-
-      const closedPeriodsRes = await fetch(`${ENDPOINT}/closed-periods`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-      const closedPeriods: ClosedPeriods = await closedPeriodsRes.json()
-
-      if (
-        !isBusinessOpen(
-          begin,
-          end,
-          settingsData.weekdayOpeningHours,
-          settingsData.weekendOpeningHours,
-          closedPeriods
-        )
-      ) {
-        throw new Error('Time is not open')
+    // check if time is in opening hours
+    const settingRes = await fetch(`${ENDPOINT}/settings`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
       }
+    })
+    const settingsData: SettingsData = await settingRes.json()
 
-      // check if the duration is valid
-      const duration = moment.duration(end.getTime() - begin.getTime())
-      const minimumReservationDuration = moment.duration(
-        settingsData.minimumReservationDuration,
-        'hour'
+    const closedPeriodsRes = await fetch(`${ENDPOINT}/closed-periods`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    const closedPeriods: ClosedPeriods = await closedPeriodsRes.json()
+
+    if (
+      !isBusinessOpen(
+        begin,
+        end,
+        settingsData.weekdayOpeningHours,
+        settingsData.weekendOpeningHours,
+        closedPeriods
       )
-      const maximumReservationDuration = moment.duration(
-        settingsData.maximumReservationDuration,
-        'hour'
-      )
-      if (duration < minimumReservationDuration || duration > maximumReservationDuration) {
-        throw new Error('Duration is not valid')
-      }
-
-      // check if the seat is available
-      const seatRes = await fetch(`${ENDPOINT}/seat?id=${seatID}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-      const seatData: any = await seatRes.json()
-      if (seatData.status === 'occupied') {
-        throw new Error('Seat is occupied')
-      }
-
-      // check if the user has enough points
-      const userRes = await fetch(`${ENDPOINT}/user?id=${userId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-      const userData: UserData = await userRes.json()
-
-      // check if time is booked
-      const res1 = await fetch(`${ENDPOINT}/reserve?seatID=${seatID}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-      const data1 = await res1.json()
-
-      for (const r of data1) {
-        if (r.begin <= begin && begin <= r.end) {
-          throw new Error('Time already booked')
-        }
-      }
-
-      // check if user is able to reserve
-      const now = new Date()
-      const userPendingReservationsRes = await fetch(
-        `${ENDPOINT}/reserve?user=${userId}&end>${now}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
-      )
-      const userPendingReservationsData = await userPendingReservationsRes.json()
-
-      for (const reservation of userPendingReservationsData) {
-        // 如果身處預約當中
-        // 如果當天有預約
-        // 跟尚未完成的預約重疊
-        if (
-          (begin < reservation.end && end > reservation.begin) ||
-          (end > reservation.begin && begin < reservation.end)
-        ) {
-          const reservationAvailableAfter = moment(reservation.end).subtract(
-            settingsData.minimumReservationDuration
-          )
-          if (now >= reservationAvailableAfter.toDate())
-            throw new Error('You have already reserved this time')
-        }
-      }
-
-      const res = await fetch(`${ENDPOINT}/reserve`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ seatID, begin, end, user: userId, exit: false })
-      })
-      const data = await res.json()
-      return data.id
-    } catch (e) {
-      throw e
+    ) {
+      throw new Error('Time is not open')
     }
-  }
 
-  async getPersonalReservations(config: any): Promise<any> {
-    const [begin = '0', end = '10000000000000'] = config
-    const res = await fetch(
-      `${ENDPOINT}/reserve?user=${userId}&begin_lte=${begin}&end_lte=${end}`,
+    // check if the duration is valid
+    const duration = moment.duration(end.getTime() - begin.getTime())
+    const minimumReservationDuration = moment.duration(
+      settingsData.minimumReservationDuration,
+      'hour'
+    )
+    const maximumReservationDuration = moment.duration(
+      settingsData.maximumReservationDuration,
+      'hour'
+    )
+    if (duration < minimumReservationDuration || duration > maximumReservationDuration) {
+      throw new Error('Duration is not valid')
+    }
+
+    // check if the seat is available
+    const seatRes = await fetch(`${ENDPOINT}/seat?id=${seatID}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    const seatData: any = await seatRes.json()
+    if (seatData.status === 'occupied') {
+      throw new Error('Seat is occupied')
+    }
+
+    // check if the user has enough points
+    const userRes = await fetch(`${ENDPOINT}/user?id=${userId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    const userData: UserData = await userRes.json()
+
+    // check if time is booked
+    const res1 = await fetch(`${ENDPOINT}/reserve?seatID=${seatID}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    const data1 = await res1.json()
+
+    for (const r of data1) {
+      if (r.begin <= begin && begin <= r.end) {
+        throw new Error('Time already booked')
+      }
+    }
+
+    // check if user is able to reserve
+    const now = new Date()
+    const userPendingReservationsRes = await fetch(
+      `${ENDPOINT}/reserve?user=${userId}&end>${now}`,
       {
         method: 'GET',
         headers: {
@@ -303,7 +255,58 @@ export class MockReserve implements Reserve {
         }
       }
     )
-    return await res.json()
+    const userPendingReservationsData = await userPendingReservationsRes.json()
+
+    for (const reservation of userPendingReservationsData) {
+      // 如果身處預約當中
+      // 如果當天有預約
+      // 跟尚未完成的預約重疊
+      if (
+        (begin < reservation.end && end > reservation.begin) ||
+        (end > reservation.begin && begin < reservation.end)
+      ) {
+        const reservationAvailableAfter = moment(reservation.end).subtract(
+          settingsData.minimumReservationDuration
+        )
+        if (now >= reservationAvailableAfter.toDate())
+          throw new Error('You have already reserved this time')
+      }
+    }
+
+    const res = await fetch(`${ENDPOINT}/reserve`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ seatID, begin, end, user: userId, exit: false })
+    })
+    const data = await res.json()
+    return data.id
+  }
+
+  async getPersonalReservations(config: any): Promise<any> {
+    const {begin = '0', end = '10000000000000'} = config
+    let ret;
+    try {
+      const res = await fetch(
+        `${ENDPOINT}/reserve?user=${userId}&begin_lte=${begin}&end_lte=${end}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+      ret = {
+        data: await res.json()
+      }
+    } catch (e) {
+      ret = {
+        data: [],
+        error: e
+      }
+    }
+    return ret
   }
   async deleteReservation(id: string): Promise<any> {
     try {
