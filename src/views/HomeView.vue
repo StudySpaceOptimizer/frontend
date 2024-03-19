@@ -19,7 +19,6 @@ onMounted(async () => {
 
 <template>
   <!-- TODO: the status tips -->
-  <button @click="User.banUser()">test</button>
   <SeatIllustration />
   <!-- TODO: the filter -->
   <BookingFiliter />
