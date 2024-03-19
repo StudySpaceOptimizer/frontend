@@ -9,6 +9,11 @@ interface BookedSeat {
   user: UserData
 }
 
+interface FilterRequest {
+  begin: Date
+  end: Date
+}
+
 export class PouchDbReserve implements Reserve {
   /**
    * Book a seat, return success or fail (true or false)
@@ -30,7 +35,7 @@ export class PouchDbReserve implements Reserve {
    * @param end 
    * @returns Promise<Response<BookedSeat[]>>
    */
-  personalBookedSeats(begin: Date, end: Date): Promise<Response<BookedSeat[]>> {
+  getPersonalBookedSeats(config?: FilterRequest): Promise<Response<BookedSeat[]>> {
     throw new Error('Method not implemented.')
   }
 
