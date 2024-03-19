@@ -1,47 +1,43 @@
 <script setup lang="ts">
+import { ref, watchEffect } from 'vue'
+import * as API from '@/api'
+import type { Filter } from '@/types'
+import { useFilterStore } from '@/stores/filter'
 import BookingFiliter from '@/components/BookingFilter.vue'
 import ListView from '@/components/ListView.vue'
+import DependencyContainer from '@/DependencyContainer'
 
-import type { Data } from '@/components/ListViewType'
+const api = DependencyContainer.inject<API.Reserve>(API.API_SERVICE.RESERVE)
+const filterStore = useFilterStore()
 
-const data: Data[] = [
-  {
-    id: 1,
-    seat: 'A1',
-    range: {
-      date: '2024-01-01',
-      start: '09:00',
-      end: '12:00'
-    },
-    actions: ['刪除預約']
-  },
-  {
-    id: 2,
-    seat: 'A1',
-    range: {
-      date: '2024-01-02',
-      start: '09:00',
-      end: '12:00'
-    },
-    actions: ['提前離開']
-  },
-  {
-    id: 3,
-    seat: 'A1',
-    range: {
-      date: '2024-01-03',
-      start: '09:00',
-      end: '12:00'
-    },
-    actions: ['延長預約']
-  }
-]
+const listViewData = ref<any[]>([])
+
+const getData = (config: Filter) => {
+  api.getPersonalReservations(config).then((res) => {
+    listViewData.value = listViewDataConstructor(res)
+  })
+}
+
+// Construct data for ListView
+const listViewDataConstructor = (res: any) => {
+  return res.map((item: any) => {
+    // personal reservation unnecessary to show user's data
+    item.user = null
+
+    // TODO: add actions
+    return item
+  })
+}
+
+watchEffect(() => {
+  getData(filterStore.getFilter('profile'))
+})
 </script>
 
 <template>
   <h1>Profile</h1>
   <BookingFiliter />
-  <ListView :data="data" />
+  <ListView :data="listViewData" />
 </template>
 
 <style scoped></style>
