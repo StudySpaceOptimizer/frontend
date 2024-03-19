@@ -285,11 +285,10 @@ export class MockReserve implements Reserve {
   }
 
   async getPersonalReservations(config: any): Promise<any> {
-    const {begin = '0', end = '10000000000000'} = config
-    let ret;
+    const {begin = new Date(0), end = new Date('9999/12/31 23:59:59')} = config
     try {
       const res = await fetch(
-        `${ENDPOINT}/reserve?user=${userId}&begin_lte=${begin}&end_lte=${end}`,
+        `${ENDPOINT}/reserve?user=${userId}`,
         {
           method: 'GET',
           headers: {
@@ -297,16 +296,19 @@ export class MockReserve implements Reserve {
           }
         }
       )
-      ret = {
-        data: await res.json()
-      }
+      const datas: any[] = await res.json()
+      return datas.map((r: any) => {
+        return {
+          ...r,
+          begin: new Date(parseInt(r.begin)),
+          end: new Date(parseInt(r.end))
+        }
+        }).filter((r: any) => {
+        return begin <= r.begin && r.end <= end
+      })
     } catch (e) {
-      ret = {
-        data: [],
-        error: e
-      }
+      throw new Error('Failed to fetch reservations')
     }
-    return ret
   }
   async deleteReservation(id: string): Promise<any> {
     try {
