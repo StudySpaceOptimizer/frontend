@@ -305,7 +305,7 @@ export class MockReserve implements Reserve {
         }
         }).filter((r: any) => {
         return begin <= r.begin && r.end <= end
-      })
+      }).sort((a, b) => b.begin - a.begin)
     } catch (e) {
       throw new Error('Failed to fetch reservations')
     }

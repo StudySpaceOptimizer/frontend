@@ -25,7 +25,40 @@ const listViewDataConstructor = (res: any) => {
     item.user = null
 
     // TODO: add actions
+    const nowTime = new Date().getTime()
+    const beginTime = new Date(item.begin).getTime()
+    if (beginTime > nowTime) {
+      item.actions = [
+        {
+          text: '取消預約',
+          handler: () => cancelBooking(item.id)
+        }
+      ]
+    } else if (beginTime < nowTime && item.end > nowTime && item.exit !== true) {
+      item.actions = [
+        {
+          text: '提前離開',
+          handler: () => terminateBooking(item.id)
+        }
+      ]
+    }
     return item
+  })
+}
+
+const cancelBooking = (id: string) => {
+  const confirm = window.confirm('確定要取消預約嗎？')
+  if (!confirm) return
+  api.deleteReservation(id).then(() => {
+    getData(filterStore.getFilter('profile'))
+  })
+}
+
+const terminateBooking = (id: string) => {
+  const confirm = window.confirm('確定要提前離開嗎？')
+  if (!confirm) return
+  api.terminateReservation(id).then(() => {
+    getData(filterStore.getFilter('profile'))
   })
 }
 
