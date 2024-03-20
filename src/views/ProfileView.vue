@@ -3,7 +3,7 @@ import { ref, watchEffect } from 'vue'
 import * as API from '@/api'
 import type { Filter } from '@/types'
 import { useFilterStore } from '@/stores/filter'
-import BookingFiliter from '@/components/BookingFilter.vue'
+import TheFiliter from '@/components/TheFilter.vue'
 import ListView from '@/components/ListView.vue'
 import DependencyContainer from '@/DependencyContainer'
 
@@ -69,7 +69,7 @@ watchEffect(() => {
 
 <template>
   <h1>Profile</h1>
-  <BookingFiliter />
+  <TheFiliter />
   <ListView :data="listViewData" />
 </template>
 
