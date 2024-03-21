@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { reactive, computed } from 'vue'
+
 import type { Filter } from '@/types'
-import { filterToUrlQuery } from '@/utils'
+import { timeToString } from '@/utils'
 import { useFilterStore } from '@/stores/filter'
 import { useRoute } from 'vue-router'
 
@@ -26,15 +27,47 @@ const show = defineProps({
   }
 })
 
+const adjustTimeToDateStep = (time?: Date, stepInSeconds: number = 1800): Date => {
+  if (!time) return new Date()
+  const secondsSinceMidnight = time.getHours() * 3600 + time.getMinutes() * 60 + time.getSeconds()
+  const adjustedSeconds = Math.floor(secondsSinceMidnight / stepInSeconds) * stepInSeconds
+  const adjustedDate = new Date(time)
+  adjustedDate.setHours(
+    Math.floor(adjustedSeconds / 3600),
+    Math.floor((adjustedSeconds % 3600) / 60),
+    0,
+    0
+  )
+  return adjustedDate
+}
+
 const filter = reactive<Filter>({
-  start: new Date(),
-  end: new Date(),
+  begin: adjustTimeToDateStep(new Date()),
+  end: adjustTimeToDateStep(new Date()),
+})
+
+const inputFilterBegin = computed<string>({
+  get: () => timeToString(filter.begin),
+  set: (value: string) => (filter.begin = adjustTimeToDateStep(new Date(value)))
+})
+
+const inputFilterEnd = computed<string>({
+  get: () => timeToString(filter.end),
+  set: (value: string) => (filter.end = adjustTimeToDateStep(new Date(value)))
 })
 
 const doFilter = () => {
-  filterStore.setFilter(route.name?.toString() || 'default', filter)
-  const query = filterToUrlQuery(filter)
-  console.log(query)
+  if (!filter.begin || !filter.end) return
+  if (filter.begin > filter.end) {
+    alert('開始時間不得晚於結束時間')
+    return
+  } else if (filter.begin.getTime() === filter.end.getTime()) {
+    return
+  }
+  filterStore.setFilter(route.name?.toString() || 'default', {
+    begin: filter.begin,
+    end: filter.end
+  })
 }
 </script>
 
@@ -42,10 +75,10 @@ const doFilter = () => {
   <form @submit.prevent="doFilter">
     <template v-if="show.time">
       <label for="start">開始時間</label>
-      <input v-model="filter.start" type="datetime-local" name="start" step="1800" />
+      <input v-model="inputFilterBegin" type="datetime-local" name="start" />
 
       <label for="end">結束時間</label>
-      <input v-model="filter.end" type="datetime-local" name="end" />
+      <input v-model="inputFilterEnd" type="datetime-local" name="end" />
     </template>
 
     <template v-if="show.identity">

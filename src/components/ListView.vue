@@ -10,8 +10,8 @@ const bookingRecord = computed(() =>
     if (item.begin && item.end) {
       newItem.range = {
         date: new Date(item.begin).toLocaleDateString(),
-        start: new Date(item.begin).toLocaleTimeString(),
-        end: new Date(item.end).toLocaleTimeString()
+        start: new Date(item.begin).toLocaleTimeString().split(':').splice(0, 2).join(':'),
+        end: new Date(item.end).toLocaleTimeString().split(':').splice(0, 2).join(':'),
       }
     }
     return newItem
