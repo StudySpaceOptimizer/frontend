@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import ListView from '@/components/ListView.vue'
 import TheFilter from '@/components/TheFilter.vue'
-import type { Data } from '@/components/ListViewType'
 
-const data: Data[] = [
+const data: any[] = [
   {
     id: 1,
     range: {
