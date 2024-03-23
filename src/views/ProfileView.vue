@@ -24,7 +24,6 @@ const listViewDataConstructor = (res: any) => {
     // personal reservation unnecessary to show user's data
     item.user = null
 
-    // TODO: add actions
     const nowTime = new Date().getTime()
     const beginTime = new Date(item.begin).getTime()
     if (beginTime > nowTime) {
@@ -72,5 +71,3 @@ watchEffect(() => {
   <TheFiliter />
   <ListView :data="listViewData" />
 </template>
-
-<style scoped></style>

@@ -18,14 +18,10 @@ onMounted(async () => {
 </script>
 
 <template>
-  <!-- TODO: the status tips -->
   <SeatIllustration />
-  <!-- TODO: the filter -->
   <TheFilter />
-  <!-- TODO: the seat status map -->
   <div class="map" ref="mapRef">
     <SeatMap :width="mapRefWidth" />
-    <!-- <p>座位即時圖</p> -->
   </div>
 </template>
 

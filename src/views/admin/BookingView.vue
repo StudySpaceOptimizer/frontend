@@ -32,5 +32,3 @@ const data: Data[] = [
   <TheFilter />
   <ListView :data="data" />
 </template>
-
-<style scoped></style>

@@ -24,7 +24,6 @@ const accountStore = useAccountStore()
         </div>
       </template>
       <template v-else>
-        <!-- TODO: Sign In modal -->
         <button @click="accountStore.toggleDialog('signIn')">Sign In</button>
       </template>
     </div>
