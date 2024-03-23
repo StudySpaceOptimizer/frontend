@@ -33,7 +33,7 @@ const accountStore = useAccountStore()
 <style scoped lang="scss">
 header {
   display: flex;
-  height: 100px;
+  height: 30px;
   padding: 32px 48px;
   align-items: center;
 }

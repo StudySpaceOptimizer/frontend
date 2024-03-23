@@ -8,13 +8,17 @@ const props = defineProps({
   width: {
     type: Number,
     default: 1200
+  }, 
+  height: {
+    type: Number,
+    default: 400
   }
 })
 
 const stageRef = ref()
 
 const width = computed(() => props.width)
-const height = ref(1200)
+const height = computed(() => props.height)
 
 const isDragging = ref(false)
 let lastPos = { x: 0, y: 0 }
@@ -65,7 +69,6 @@ function handleMouseMove(e: any) {
 <template>
   <v-stage
     ref="stageRef"
-    class="map"
     :config="drawStage.config"
     @wheel="handleWheel"
     @mousemove="handleMouseMove"

@@ -21,7 +21,7 @@ onMounted(async () => {
   <SeatIllustration />
   <TheFilter />
   <div class="map" ref="mapRef">
-    <SeatMap :width="mapRefWidth" />
+    <SeatMap :width="mapRefWidth" :height="600" />
   </div>
 </template>
 
@@ -29,7 +29,7 @@ onMounted(async () => {
 .map {
   position: relative;
   margin-top: 16px;
-  height: 1200px;
+  height: 600px;
   width: 80%;
   border-radius: 6px;
   background-color: #e8e8e8;
