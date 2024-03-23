@@ -27,10 +27,18 @@ const show = defineProps({
   }
 })
 
-const adjustTimeToDateStep = (time?: Date, stepInSeconds: number = 1800): Date => {
+type AdjustTimeToDateStepOptions = {
+  stepInSeconds?: number,
+  func?: 'round' | 'floor' | 'ceil'
+}
+
+const adjustTimeToDateStep = (time?: Date, options?: AdjustTimeToDateStepOptions): Date => {
   if (!time) return new Date()
+  const { stepInSeconds = 1800, func = 'round' } = options || {}
+  const _func = Math[func as 'round' | 'floor' | 'ceil']
+  
   const secondsSinceMidnight = time.getHours() * 3600 + time.getMinutes() * 60 + time.getSeconds()
-  const adjustedSeconds = Math.floor(secondsSinceMidnight / stepInSeconds) * stepInSeconds
+  const adjustedSeconds = _func(secondsSinceMidnight / stepInSeconds) * stepInSeconds
   const adjustedDate = new Date(time)
   adjustedDate.setHours(
     Math.floor(adjustedSeconds / 3600),
@@ -42,8 +50,12 @@ const adjustTimeToDateStep = (time?: Date, stepInSeconds: number = 1800): Date =
 }
 
 const filter = reactive<Filter>({
-  begin: adjustTimeToDateStep(new Date()),
-  end: adjustTimeToDateStep(new Date()),
+  begin: adjustTimeToDateStep(new Date(), {
+    func: 'floor'
+  }),
+  end: adjustTimeToDateStep(new Date(), {
+    func: 'round'
+  }),
 })
 
 const inputFilterBegin = computed<string>({
