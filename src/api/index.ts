@@ -32,7 +32,7 @@ export interface Reserve {
 }
 
 export const API_SERVICE = {
-  USER: Symbol('user'),
-  SEAT: Symbol('seat'),
-  RESERVE: Symbol('reserve')
+  USER: 'user',
+  SEAT: 'seat',
+  RESERVE: 'reserve'
 }

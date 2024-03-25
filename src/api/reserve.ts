@@ -9,7 +9,24 @@ interface BookedSeat {
   user: UserData
 }
 
+interface FilterRequest {
+  begin: Date
+  end: Date
+}
+
 export class PouchDbReserve implements Reserve {
+  reserve(seatId: string, begin: Date, end: Date): Promise<any> {
+    throw new Error('Method not implemented.')
+  }
+  getPersonalReservations(config: any): Promise<any> {
+    throw new Error('Method not implemented.')
+  }
+  deleteReservation(id: string): Promise<any> {
+    throw new Error('Method not implemented.')
+  }
+  terminateReservation(id: string): Promise<any> {
+    throw new Error('Method not implemented.')
+  }
   /**
    * Book a seat, return success or fail (true or false)
    * @url POST /api/seats/:id
@@ -30,7 +47,7 @@ export class PouchDbReserve implements Reserve {
    * @param end 
    * @returns Promise<Response<BookedSeat[]>>
    */
-  personalBookedSeats(begin: Date, end: Date): Promise<Response<BookedSeat[]>> {
+  getPersonalBookedSeats(config?: FilterRequest): Promise<Response<BookedSeat[]>> {
     throw new Error('Method not implemented.')
   }
 

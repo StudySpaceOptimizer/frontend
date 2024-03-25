@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import ListView from '@/components/ListView.vue'
-import BookingFilter from '@/components/BookingFilter.vue'
+import TheFilter from '@/components/TheFilter.vue'
 import type { Data } from '@/components/ListViewType'
 
 const data: Data[] = [
@@ -50,8 +50,6 @@ const data: Data[] = [
 </script>
 
 <template>
-  <BookingFilter />
+  <TheFilter />
   <ListView :data="data" />
 </template>
-
-<style scoped></style>

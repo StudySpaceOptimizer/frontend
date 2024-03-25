@@ -21,5 +21,3 @@ const data: Data[] = [
 <template>
   <ListView :data="data" />
 </template>
-
-<style scoped></style>

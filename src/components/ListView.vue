@@ -1,16 +1,27 @@
 <script setup lang="ts">
-import type { Data } from './ListViewType'
+import { computed } from 'vue'
+const props = defineProps<{
+  data: Array<any>
+}>()
 
-const data = defineProps({
-  data: Array<Data>
-})
-
-const bookingRecord = data.data
+const bookingRecord = computed(() =>
+  props.data.map((item: any) => {
+    const newItem = { ...item }
+    if (item.begin && item.end) {
+      newItem.range = {
+        date: new Date(item.begin).toLocaleDateString(),
+        start: new Date(item.begin).toLocaleTimeString().split(':').splice(0, 2).join(':'),
+        end: new Date(item.end).toLocaleTimeString().split(':').splice(0, 2).join(':'),
+      }
+    }
+    return newItem
+  })
+)
 </script>
 
 <template>
   <div class="container">
-    <ul>
+    <ul v-if="bookingRecord">
       <li v-for="item in bookingRecord" :key="item.id">
         <p v-if="item.range">{{ item.range.date }} {{ item.range.start }} ~ {{ item.range.end }}</p>
         <p v-if="item.seat">座位：{{ item.seat }}</p>
@@ -19,7 +30,7 @@ const bookingRecord = data.data
         <p v-if="item.user?.idCard">身分證字號：{{ item.user.idCard }}</p>
         <p v-if="item.user?.ban">{{ item.user.ban.points }} 點</p>
         <p v-if="item.user?.ban?.banned">{{ item.user.ban.banned }} ~ {{ item.user.ban.until }}</p>
-        <button v-for="action in item.actions" :key="action">{{ action }}</button>
+        <button v-for="action in item.actions" :key="action" @click="action.handler">{{ action.text }}</button>
       </li>
     </ul>
   </div>

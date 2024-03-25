@@ -4,14 +4,6 @@ import TheFooter from '@/components/TheFooter.vue'
 import TheNavbar from '@/components/TheNavbar.vue'
 import SignInModal from './components/SignInModal.vue'
 import SignUpModal from './components/SignUpModal.vue'
-
-// Provide the api services
-import * as api from './api'
-import { provide } from 'vue'
-
-provide(api.API_SERVICE.USER, api.MockUser)
-provide(api.API_SERVICE.SEAT, api.PouchDbSeat)
-provide(api.API_SERVICE.RESERVE, api.PouchDbReserve)
 </script>
 
 <template>

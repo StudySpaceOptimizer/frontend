@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import SeatIllustration from '@/components/SeatIllustration.vue'
-import BookingFiliter from '@/components/BookingFilter.vue'
+import TheFilter from '@/components/TheFilter.vue'
 import SeatMap from '@/components/SeatMap.vue'
 
 import { ref, onMounted, nextTick } from 'vue'
@@ -18,15 +18,10 @@ onMounted(async () => {
 </script>
 
 <template>
-  <!-- TODO: the status tips -->
-  <button @click="User.banUser()">test</button>
   <SeatIllustration />
-  <!-- TODO: the filter -->
-  <BookingFiliter />
-  <!-- TODO: the seat status map -->
+  <TheFilter />
   <div class="map" ref="mapRef">
     <SeatMap :width="mapRefWidth" />
-    <!-- <p>座位即時圖</p> -->
   </div>
 </template>
 

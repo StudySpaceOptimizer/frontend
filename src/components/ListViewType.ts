@@ -1,15 +1,24 @@
+/**
+ * @deprecated
+ */
 export interface Range {
   date: string
   start: string
   end: string
 }
 
+/**
+ * @deprecated
+ */
 export interface UserBan {
   points: number
   banned?: string
   until?: string
 }
 
+/**
+ * @deprecated
+ */
 export interface User {
   id: number
   name: string
@@ -20,6 +29,9 @@ export interface User {
   applyDate?: string
 }
 
+/**
+ * @deprecated
+ */
 export interface Data {
   id: number
   range?: Range

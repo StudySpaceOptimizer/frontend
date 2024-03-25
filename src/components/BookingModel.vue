@@ -1,12 +1,12 @@
 <template>
   <div class="date"></div>
 
-  <li class="seat-list">
-    <ul>
+  <ul class="seat-list">
+    <li>
       <span class="time"></span>
       <div class="seat-available"></div>
-    </ul>
-  </li>
+    </li>
+  </ul>
 
   <div class="button">預約</div>
 </template>

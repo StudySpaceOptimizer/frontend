@@ -1,5 +1,5 @@
 export interface Filter {
-  start?: Date
+  begin?: Date
   end?: Date
   identity?: 'student' | 'others'
   seat?: string

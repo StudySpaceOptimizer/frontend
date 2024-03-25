@@ -73,10 +73,7 @@ function handleMouseMove(e: any) {
     @mouseup="handleMouseUp"
   >
     <v-layer>
-      <!-- <v-rect :config="{x: 100, y: 100, width: 100, height: 100, fill: 'red'}" /> -->
       <KonvaRecursiveComponent :components="drawStage.drawObject" />
     </v-layer>
   </v-stage>
 </template>
-
-<style scoped lang="scss"></style>

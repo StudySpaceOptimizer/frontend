@@ -22,5 +22,3 @@ const components = ref<any[]>(props.components)
     </template>
   </template>
 </template>
-
-<style scoped></style>
