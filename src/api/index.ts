@@ -1,19 +1,19 @@
 // The api rule is restful api, and the response is json
 export * from './common'
-export { PouchDbSeat } from './seat'
-export { PouchDbUser } from './user'
-export { PouchDbReserve } from './reserve'
+export { SupabaseSeat } from './seat'
+export { SupabaseUser } from './user'
+export { SupabaseReserve } from './reserve'
 export * from './mock'
 
 export interface User {
   signIn(username: string, password: string): Promise<any>
   studentSignUp(name: string, username: string, password: string): Promise<any>
   outsiderSignUp(name: string, phone: string, idcard: string, email: string): Promise<any>
-  sendVerificationEmail(id: string): Promise<any>
   getUsers(all: boolean): Promise<any>
   banUser(id: string, reason: string, end: Date): Promise<any>
   unbanUser(id: string): Promise<any>
   addPointUser(id: string, point: number): Promise<any>
+  updateSettings(newSettings: any): Promise<any>
 }
 
 export interface Seat {

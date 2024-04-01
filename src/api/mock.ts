@@ -159,6 +159,10 @@ export class MockUser implements User {
 
     return await updateResponse.json()
   }
+
+  updateSettings(newSettings: any): Promise<any> {
+    throw new Error('Method not implemented.')
+  }
 }
 
 export class MockReserve implements Reserve {
@@ -285,27 +289,27 @@ export class MockReserve implements Reserve {
   }
 
   async getPersonalReservations(config: any): Promise<any> {
-    const {begin = new Date(0), end = new Date('9999/12/31 23:59:59')} = config
+    const { begin = new Date(0), end = new Date('9999/12/31 23:59:59') } = config
     try {
-      const res = await fetch(
-        `${ENDPOINT}/reserve?user=${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json'
-          }
+      const res = await fetch(`${ENDPOINT}/reserve?user=${userId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
         }
-      )
+      })
       const datas: any[] = await res.json()
-      return datas.map((r: any) => {
-        return {
-          ...r,
-          begin: new Date(parseInt(r.begin)),
-          end: new Date(parseInt(r.end))
-        }
-        }).filter((r: any) => {
-        return begin <= r.begin && r.end <= end
-      }).sort((a, b) => b.begin - a.begin)
+      return datas
+        .map((r: any) => {
+          return {
+            ...r,
+            begin: new Date(parseInt(r.begin)),
+            end: new Date(parseInt(r.end))
+          }
+        })
+        .filter((r: any) => {
+          return begin <= r.begin && r.end <= end
+        })
+        .sort((a, b) => b.begin - a.begin)
     } catch (e) {
       throw new Error('Failed to fetch reservations')
     }

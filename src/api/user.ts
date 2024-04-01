@@ -1,34 +1,37 @@
 import type { Response } from './common'
 import type { User } from './index'
+import { supabase } from '../service/supabase/supabase'
+import type * as model from './model'
 
-type Sign = string;
-type Success = Boolean;
+type Sign = string
+type Success = Boolean
 
-export interface UserData {
-  id: string
-  email: string
-  role: 'student' | 'outsider' | 'admin' | 'assistant'
-  name: string
-  phone?: string
-  idCard?: string
-  point: number
-  ban?: {
-    reason: string
-    end: Date
-  }
-}
-
-export class PouchDbUser implements User {
+export class SupabaseUser implements User {
   /**
    * Sign in user with username and password, returns a token stored in cookie
    * @url POST /api/signin
-   * @param username
+   * @param email
    * @param password
    * @returns Promise<Response<Sign>>
    */
-  signIn(username: string, password: string): Promise<Response<Sign>> {
-    
-    throw new Error('Method not implemented.')
+  async signIn(email: string, password: string): Promise<Success> {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email,
+      password: password
+    })
+
+    if (error) {
+      switch (error.status) {
+        case 400:
+          throw new Error('登入失敗，郵件信箱或密碼不正確')
+        default:
+          console.log(error.message)
+          throw new Error('遇到未知錯誤，請稍後再試')
+      }
+    }
+
+    return true
+    // throw new Error('Method not implemented.')
   }
 
   /**
@@ -40,7 +43,23 @@ export class PouchDbUser implements User {
    * @returns Promise<Response<Sign>>
    * @error username already exists
    */
-  studentSignUp(name: string, username: string, password: string): Promise<Response<Sign>> {
+  async studentSignUp(name: string, email: string, password: string): Promise<Success> {
+    let { data, error } = await supabase.auth.signUp({
+      email: email,
+      password: password
+    })
+
+    if (error) {
+      switch (error.status) {
+        case 422:
+          throw new Error('密碼應至少包含 6 個字元')
+        default:
+          console.log(error.message)
+          throw new Error('遇到未知錯誤，請稍後再試')
+      }
+    }
+
+    //update user profile
     throw new Error('Method not implemented.')
   }
 
@@ -53,17 +72,12 @@ export class PouchDbUser implements User {
    * @param email
    * @returns Promise<Response<Sign>>
    */
-  outsiderSignUp(name: string, phone: string, idcard: string, email: string): Promise<Response<Sign>> {
-    throw new Error('Method not implemented.')
-  }
-
-  /**
-   * Send verification email to the user
-   * @url POST /api/sendVerificationEmail
-   * @param email 
-   * @returns Promise<Response<sucess>>
-   */
-  sendVerificationEmail(email: string): Promise<Response<Success>> {
+  outsiderSignUp(
+    name: string,
+    phone: string,
+    idcard: string,
+    email: string
+  ): Promise<Response<Sign>> {
     throw new Error('Method not implemented.')
   }
 
@@ -72,7 +86,8 @@ export class PouchDbUser implements User {
    * @url GET /api/users?all=[Boolean]
    * @returns Promise<Response<UserData[]>>
    */
-  getUsers(): Promise<Response<UserData[]>> {
+  getUsers(): Promise<Response<model.UserData[]>> {
+    // call supabase api
     throw new Error('Method not implemented.')
   }
 
@@ -105,6 +120,10 @@ export class PouchDbUser implements User {
    * @returns Promise<Response<sucess>>
    */
   addPointUser(id: string, point: number): Promise<Response<Success>> {
+    throw new Error('Method not implemented.')
+  }
+
+  updateSettings(newSettings: model.SettingsData): Promise<Response<Success>> {
     throw new Error('Method not implemented.')
   }
 }

@@ -1,52 +1,20 @@
-import type { UserData } from './user'
+import type * as model from './model'
 import type { Response } from './common'
 import type { Seat } from './index'
-
-/**
- * This file contains all the api calls to the backend
- */
-interface SeatData {
-  id: string
-
-  /**
-   * The status of the seat \
-   * available: the seat is available \
-   * booked: the seat is booked by someone \
-   * partiallyBooked: the seat is partially range time booked \
-   * unavailable: the seat is unavailable
-   */
-  status: 'available' | 'booked' | 'partiallyBooked' | 'unavailable'
-}
 
 interface SeatRequest {
   begin?: Date
   end?: Date
 }
 
-interface SeatDetail extends SeatData {
-  /**
-   * The booked range of the seat
-   */
-  bookedRange: {
-    start: Date
-    end: Date
-    status: 'available' | 'booked' | 'unavailable'
-  }[]
-
-  /**
-   * Need admin permission to get this field
-   */
-  user?: UserData
-}
-
-export class PouchDbSeat implements Seat {
+export class SupabaseSeat implements Seat {
   /**
    * Get all the seats, returns a list of seats
    * if begin time and end time is provided, returns the status of the seats in the range
    * @url GET /api/seats?begin=begin&end=end
    * @returns Promise<Response<SeatData[]>>
    */
-  getSeatsStatus(config: SeatRequest): Promise<Response<SeatData[]>> {
+  getSeatsStatus(config: SeatRequest): Promise<Response<model.SeatData[]>> {
     const { begin, end } = config
     if (Boolean(begin) !== Boolean(end)) {
       throw new Error('begin and end need to provide same time, or both not provide')
@@ -70,7 +38,11 @@ export class PouchDbSeat implements Seat {
    * @param id
    * @returns Promise<Response<SeatDetail>>
    */
-  getSeatStatus(id: string): Promise<Response<SeatDetail>> {
+  getSeatStatus(id: string): Promise<Response<model.SeatDetail>> {
     throw new Error('Method not implemented.')
   }
+}
+
+function dateCheck(begin: Date, end: Date): boolean {
+  return true
 }

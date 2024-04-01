@@ -2,10 +2,8 @@ export interface UserData {
   id: string
   email: string
   role: 'student' | 'outsider' | 'admin' | 'assistant'
-  password: string
-  verified: boolean
   isIn: boolean
-  name: string
+  name?: string
   phone?: string
   idCard?: string
   point: number
@@ -87,6 +85,7 @@ export interface SettingsData {
   minimumReservationDuration: number // 單位為小時，最小預約時間單位
   maximumReservationDuration: number // 單位為小時，表示單次預約時間上限
   studentReservationLimit: number // 單位為天，表示學生提前預約期限
+  pointsTOBanUser: number // 達到一定的點數就自動封禁使用者
 }
 
 export interface ClosedPeriods {
@@ -95,8 +94,3 @@ export interface ClosedPeriods {
     end: Date
   }[]
 }
-
-/**
- * 使用 moment or Date
- * begin or start
- */
