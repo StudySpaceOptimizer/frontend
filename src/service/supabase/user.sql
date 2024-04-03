@@ -24,6 +24,49 @@ CREATE TABLE IF NOT EXISTS user_profiles (
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 
 -- 設置RLS
+CREATE POLICY admin_all_access ON user_profiles
+FOR ALL
+USING (is_claims_admin())
+WITH CHECK (is_claims_admin());
+
+CREATE POLICY user_select_own ON user_profiles
+FOR SELECT
+USING (auth.uid() = id);
+
+CREATE POLICY user_update_own ON user_profiles
+FOR UPDATE
+USING (auth.uid() = id)
+WITH CHECK (auth.uid() = id);
+
+CREATE OR REPLACE FUNCTION cls_user_profiles_update()
+RETURNS TRIGGER AS
+$$
+BEGIN
+    -- 如果是管理员，允许任何更新
+    IF is_claims_admin() THEN
+        RETURN NEW;
+    END IF;
+
+    -- 对于非管理员用户，确保只更新 name、phone、id_card
+    -- 检查是否尝试更新其他字段
+    IF NEW.email != OLD.email OR NEW.is_in != OLD.is_in OR NEW.point != OLD.point THEN
+        RAISE EXCEPTION '只有管理员可以更新 email、is_in 和 point 字段。';
+    END IF;
+
+    -- 检查更新操作是否由用户本人发起
+    IF auth.uid() != OLD.id THEN
+        RAISE EXCEPTION '用户只能更新自己的记录。';
+    END IF;
+
+    RETURN NEW;
+END;
+$$
+LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER before_update
+BEFORE UPDATE ON user_profiles
+FOR EACH ROW EXECUTE FUNCTION cls_user_profiles_update();
+
 
 -- Create a table for blacklist, referencing the users table
 CREATE TABLE IF NOT EXISTS blacklist (
