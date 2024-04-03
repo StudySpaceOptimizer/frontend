@@ -20,19 +20,21 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     phone TEXT,
     id_card TEXT
 );
-
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 
 -- 設置RLS
+ALTER TABLE user_profiles DROP POLICY IF EXISTS admin_all_access;
 CREATE POLICY admin_all_access ON user_profiles
 FOR ALL
 USING (is_claims_admin())
 WITH CHECK (is_claims_admin());
 
+ALTER TABLE user_profiles DROP POLICY IF EXISTS user_select_own;
 CREATE POLICY user_select_own ON user_profiles
 FOR SELECT
 USING (auth.uid() = id);
 
+ALTER TABLE user_profiles DROP POLICY IF EXISTS user_update_own;
 CREATE POLICY user_update_own ON user_profiles
 FOR UPDATE
 USING (auth.uid() = id)
@@ -63,6 +65,7 @@ END;
 $$
 LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP TRIGGER IF EXISTS before_update ON public.user_profiles;
 CREATE TRIGGER before_update
 BEFORE UPDATE ON user_profiles
 FOR EACH ROW EXECUTE FUNCTION cls_user_profiles_update();
@@ -75,8 +78,19 @@ CREATE TABLE IF NOT EXISTS blacklist (
     reason TEXT NOT NULL,
     end_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
-
 ALTER TABLE blacklist ENABLE ROW LEVEL SECURITY;
+
+-- 設置RLS
+ALTER TABLE blacklist DROP POLICY IF EXISTS admin_all_access;
+CREATE POLICY admin_all_access ON blacklist
+FOR ALL
+USING (is_claims_admin())
+WITH CHECK (is_claims_admin());
+
+ALTER TABLE blacklist DROP POLICY IF EXISTS user_select_own;
+CREATE POLICY user_select_own ON blacklist
+FOR SELECT
+USING (auth.uid() = user_id);
 
 
 -- 在使用者註冊時自動新增user_profile
