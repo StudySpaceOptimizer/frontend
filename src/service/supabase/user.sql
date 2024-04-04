@@ -1,3 +1,11 @@
+/**
+- 自訂枚舉類型 userrole
+- 管理員:
+    - admin
+    - assistant
+- 學生: student
+- 校外人士: outsider
+*/
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'userrole') THEN
@@ -20,15 +28,19 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     phone TEXT,
     id_card TEXT
 );
+-- 啟用RLS
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 
 -- 設置RLS
+
+-- 允許管理員所有權限
 ALTER TABLE user_profiles DROP POLICY IF EXISTS admin_all_access;
 CREATE POLICY admin_all_access ON user_profiles
 FOR ALL
 USING (is_claims_admin())
 WITH CHECK (is_claims_admin());
 
+-- 允許使用者本身的存取與更新
 ALTER TABLE user_profiles DROP POLICY IF EXISTS user_select_own;
 CREATE POLICY user_select_own ON user_profiles
 FOR SELECT
@@ -40,6 +52,7 @@ FOR UPDATE
 USING (auth.uid() = id)
 WITH CHECK (auth.uid() = id);
 
+-- 允許使用者更新本身的特定屬性
 CREATE OR REPLACE FUNCTION cls_user_profiles_update()
 RETURNS TRIGGER AS
 $$
@@ -71,29 +84,33 @@ BEFORE UPDATE ON user_profiles
 FOR EACH ROW EXECUTE FUNCTION cls_user_profiles_update();
 
 
--- Create a table for blacklist, referencing the users table
+-- Create a table for blacklist
 CREATE TABLE IF NOT EXISTS blacklist (
     id SERIAL PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     reason TEXT NOT NULL,
     end_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
+-- 啟用RLS
 ALTER TABLE blacklist ENABLE ROW LEVEL SECURITY;
 
 -- 設置RLS
+
+-- 允許管理員所有權限
 ALTER TABLE blacklist DROP POLICY IF EXISTS admin_all_access;
 CREATE POLICY admin_all_access ON blacklist
 FOR ALL
 USING (is_claims_admin())
 WITH CHECK (is_claims_admin());
 
+-- 允許使用者本身的存取
 ALTER TABLE blacklist DROP POLICY IF EXISTS user_select_own;
 CREATE POLICY user_select_own ON blacklist
 FOR SELECT
 USING (auth.uid() = user_id);
 
 
--- 在使用者註冊時自動新增user_profile
+-- 在 auth.users 表上创建新用户时自动设置 raw_app_meta_data
 CREATE OR REPLACE FUNCTION auth.handle_new_user_metadata()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -103,17 +120,19 @@ AS $$
 DECLARE
     user_role public.userrole;
 BEGIN
-  -- 检查email后缀决定role
-  IF NEW.email LIKE '%@mail.ntou.edu.tw' THEN
-    -- 學生
-    user_role := 'student';
-  ELSE
-    user_role := 'outsider';
-  END IF;
+    -- 检查email后缀决定role
+    IF NEW.email LIKE '%@mail.ntou.edu.tw' THEN
+        -- 學生
+        user_role := 'student';
+    ELSE
+        -- 校外人士
+        user_role := 'outsider';
+    END IF;
 
-  NEW.raw_app_meta_data := NEW.raw_app_meta_data || jsonb_build_object('userrole', user_role);
+    -- 更新 raw_app_meta_data
+    NEW.raw_app_meta_data := NEW.raw_app_meta_data || jsonb_build_object('userrole', user_role);
 
-  RETURN NEW;
+    RETURN NEW;
 END;
 $$;
 
@@ -122,6 +141,8 @@ CREATE TRIGGER before_insert_user
 BEFORE INSERT ON auth.users
 FOR EACH ROW EXECUTE FUNCTION auth.handle_new_user_metadata();
   
+
+-- 在使用者註冊時自動新增user_profile
 CREATE OR REPLACE FUNCTION public.handle_new_user_profile()
 RETURNS TRIGGER
 LANGUAGE plpgsql
