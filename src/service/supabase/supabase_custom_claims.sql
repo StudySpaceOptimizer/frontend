@@ -22,12 +22,23 @@ CREATE OR REPLACE FUNCTION is_claims_admin() RETURNS "bool"
       -- block of code and replace it with:
       -- RETURN FALSE;
       --------------------------------------------
+
+      -- 判断 JWT 是否过期
       IF extract(epoch from now()) > coalesce((current_setting('request.jwt.claims', true)::jsonb)->>'exp', '0')::numeric THEN
         return false; -- jwt expired
       END IF;
+
+      -- 判断 service_role
       If current_setting('request.jwt.claims', true)::jsonb->>'role' = 'service_role' THEN
         RETURN true; -- service role users have admin rights
       END IF;
+
+       -- 判断 userrole 是否为 admin 或 assistant
+      IF (current_setting('request.jwt.claims', true)::jsonb)->'app_metadata'->>'userrole' IN ('admin', 'assistant') THEN
+        RETURN true; -- User has admin or assistant role
+      END IF;
+
+      -- 判断 claims_admin 是否设置为 true
       IF coalesce((current_setting('request.jwt.claims', true)::jsonb)->'app_metadata'->'claims_admin', 'false')::bool THEN
         return true; -- user has claims_admin set to true
       ELSE
@@ -128,6 +139,8 @@ $$;
 - example:
     select set_claim('72e699aa-d50c-4ee3-9eb6-e29c169b5eff', 'userrole', '"webadmin"');
     // 注意單引號裡面的雙引號
+    
+    select set_claim('72e699aa-d50c-4ee3-9eb6-e29c169b5eff', 'claims_admin', 'true');
 */
 CREATE OR REPLACE FUNCTION set_claim(uid uuid, claim text, value jsonb) RETURNS "text"
     LANGUAGE "plpgsql" SECURITY DEFINER SET search_path = public
