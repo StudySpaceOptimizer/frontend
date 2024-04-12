@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.8",
+    "@vueuse/core": "^10.9.0",
     "konva": "^9.3.0",
     "lodash": "^4.17.21",
     "moment": "^2.30.1",
