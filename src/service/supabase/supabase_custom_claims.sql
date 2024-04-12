@@ -4,9 +4,11 @@
 
 
 /**
+- 檢查使用者是是管理員
 - 如果會話使用者是 authenticator，則進一步檢查 JWT 中的 claims
-- 首先檢查 JWT 是否已過期。 如果 JWT 中的角色是 service_role，則認為使用者有管理員權限
-- 如果使用者的 app_metadata 中有 claims_admin 屬性且設定為 true，則認為使用者有管理員權限
+- 首先檢查 JWT 是否已過期
+- 如果 JWT 中的角色是 service_role，則認為使用者有管理員權限
+- 如果使用者的 app_metadata 中的 claims_admin 屬性為 true，則認為使用者有管理員權限
 - 其他情況下，使用者沒有管理員權限
 - example:
     select is_claims_admin();
@@ -34,9 +36,9 @@ CREATE OR REPLACE FUNCTION is_claims_admin() RETURNS "bool"
       END IF;
 
        -- 判断 userrole 是否为 admin 或 assistant
-      IF (current_setting('request.jwt.claims', true)::jsonb)->'app_metadata'->>'userrole' IN ('admin', 'assistant') THEN
-        RETURN true; -- User has admin or assistant role
-      END IF;
+      -- IF (current_setting('request.jwt.claims', true)::jsonb)->'app_metadata'->>'userrole' IN ('admin', 'assistant') THEN
+      --   RETURN true; -- User has admin or assistant role
+      -- END IF;
 
       -- 判断 claims_admin 是否设置为 true
       IF coalesce((current_setting('request.jwt.claims', true)::jsonb)->'app_metadata'->'claims_admin', 'false')::bool THEN
@@ -52,6 +54,48 @@ CREATE OR REPLACE FUNCTION is_claims_admin() RETURNS "bool"
     END IF;
   END;
 $$;
+
+
+/**
+- 檢查使用者是否被ban
+- 如果會話使用者是 authenticator，則進一步檢查 JWT 中的 claims
+- 首先檢查 JWT 是否已過期
+- 如果 JWT 中的角色是 service_role，則回傳 false
+- 如果使用者的 app_metadata 中的 banned 屬性為 true，則回傳 true
+- 其他情況下，回傳 true
+- example:
+    select is_not_banned();
+*/
+CREATE OR REPLACE FUNCTION is_not_banned() RETURNS "bool"
+  LANGUAGE "plpgsql" 
+  AS $$
+  BEGIN
+    IF session_user = 'authenticator' THEN
+      -- 判断 JWT 是否过期
+      IF extract(epoch from now()) > coalesce((current_setting('request.jwt.claims', true)::jsonb)->>'exp', '0')::numeric THEN
+        return false; -- jwt expired
+      END IF;
+
+      -- 判断 service_role
+      If current_setting('request.jwt.claims', true)::jsonb->>'role' = 'service_role' THEN
+        RETURN true;
+      END IF;
+
+      -- 判断 banned 是否设置为 true
+      IF coalesce((current_setting('request.jwt.claims', true)::jsonb)->'app_metadata'->'banned', 'false')::bool THEN
+        return true; -- user is banned
+      ELSE
+        return false;
+      END IF;
+      --------------------------------------------
+      -- End of block 
+      --------------------------------------------
+    ELSE -- not a user session, probably being called from a trigger or something
+      return true;
+    END IF;
+  END;
+$$;
+
 
 
 /*
