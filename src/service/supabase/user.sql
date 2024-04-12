@@ -11,6 +11,13 @@ BEGIN
 END
 $$;
 
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'adminrole') THEN
+        CREATE TYPE adminrole AS ENUM('admin', 'assistant', 'non-admin');
+    END IF;
+END
+$$;
 
 /**TODO:
 - 管理員可以set_claims -> claims_admin = true (已實作)
@@ -97,6 +104,7 @@ SET search_path = auth
 AS $$
 DECLARE
     user_role public.userrole;
+    admin_role public.adminrole;
 BEGIN
     -- 根據email後綴確定用戶角色(userrole)
     IF NEW.email LIKE '%@mail.ntou.edu.tw' THEN
@@ -107,12 +115,14 @@ BEGIN
         user_role := 'outsider';
     END IF;
 
+    admin_role := 'non-admin';
+
     -- 更新 raw_app_meta_data
     
     -- 設置 userrole
     NEW.raw_app_meta_data := NEW.raw_app_meta_data || jsonb_build_object('userrole', user_role);
     -- 設置 claims_admin
-    NEW.raw_app_meta_data := NEW.raw_app_meta_data || jsonb_build_object('claims_admin', false);
+    NEW.raw_app_meta_data := NEW.raw_app_meta_data || jsonb_build_object('adminrole', admin_role);
     -- 設置 banned
     NEW.raw_app_meta_data := NEW.raw_app_meta_data || jsonb_build_object('banned', false);
 
@@ -155,7 +165,7 @@ FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_profile();
 -- 創建黑名單表
 CREATE TABLE IF NOT EXISTS blacklist (
     id SERIAL PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
     reason TEXT NOT NULL,
     end_at TIMESTAMP WITH TIME ZONE NOT NULL
 );

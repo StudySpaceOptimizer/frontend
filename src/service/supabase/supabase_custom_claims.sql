@@ -36,16 +36,17 @@ CREATE OR REPLACE FUNCTION is_claims_admin() RETURNS "bool"
       END IF;
 
        -- 判断 userrole 是否为 admin 或 assistant
-      -- IF (current_setting('request.jwt.claims', true)::jsonb)->'app_metadata'->>'userrole' IN ('admin', 'assistant') THEN
-      --   RETURN true; -- User has admin or assistant role
-      -- END IF;
-
-      -- 判断 claims_admin 是否设置为 true
-      IF coalesce((current_setting('request.jwt.claims', true)::jsonb)->'app_metadata'->'claims_admin', 'false')::bool THEN
-        return true; -- user has claims_admin set to true
-      ELSE
-        return false; -- user does NOT have claims_admin set to true
+      IF (current_setting('request.jwt.claims', true)::jsonb)->'app_metadata'->>'adminrole' IN ('admin', 'assistant') THEN
+        RETURN true; -- User has admin or assistant role
       END IF;
+
+      RETURN false;
+      -- 判断 claims_admin 是否设置为 true
+      -- IF coalesce((current_setting('request.jwt.claims', true)::jsonb)->'app_metadata'->'claims_admin', 'false')::bool THEN
+      --   return true; -- user has claims_admin set to true
+      -- ELSE
+      --   return false; -- user does NOT have claims_admin set to true
+      -- END IF;
       --------------------------------------------
       -- End of block 
       --------------------------------------------

@@ -1,7 +1,8 @@
 export interface UserData {
   id: string
   email: string
-  role: 'student' | 'outsider' | 'admin' | 'assistant'
+  userRole: 'student' | 'outsider'
+  adminRole?: 'admin' | 'assistant'
   isIn: boolean
   name?: string
   phone?: string

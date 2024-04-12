@@ -86,9 +86,32 @@ export class SupabaseUser implements User {
    * @url GET /api/users?all=[Boolean]
    * @returns Promise<Response<UserData[]>>
    */
-  getUsers(): Promise<Response<model.UserData[]>> {
-    // call supabase api
-    throw new Error('Method not implemented.')
+  async getUsers(): Promise<model.UserData[]> {
+    let { data: user_profiles, error } = await supabase.rpc('get_user_profiles')
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    return (
+      user_profiles?.map((profile: any) => ({
+        id: profile.id,
+        email: profile.email,
+        userRole: profile.user_role,
+        adminRole: profile.admin_role,
+        isIn: profile.is_in,
+        name: profile.name,
+        phone: profile.phone,
+        idCard: profile.id_card,
+        point: profile.point,
+        ban: profile.blacklist
+          ? {
+              reason: profile.blacklist[0].reason,
+              end: new Date(profile.blacklist[0].end_at)
+            }
+          : undefined
+      })) || []
+    )
   }
 
   /**
@@ -96,11 +119,22 @@ export class SupabaseUser implements User {
    * @url POST /api/user/:id/ban
    * @param id
    * @param reason
-   * @param end
+   * @param end_at
    * @returns Promise<Response<sucess>>
    */
-  banUser(id: string, reason: string, end: Date): Promise<Response<Success>> {
-    throw new Error('Method not implemented.')
+  async banUser(id: string, reason: string, end_at: Date): Promise<Success> {
+    const { data, error } = await supabase.from('blacklist').insert([
+      {
+        user_id: id,
+        reason: reason,
+        end_at: end_at
+      }
+    ])
+
+    if (error) {
+      throw new Error(error.message)
+    }
+    return true
   }
 
   /**
@@ -109,8 +143,13 @@ export class SupabaseUser implements User {
    * @param id
    * @returns Promise<Response<sucess>>
    */
-  unbanUser(id: string): Promise<Response<Success>> {
-    throw new Error('Method not implemented.')
+  async unbanUser(id: string): Promise<Success> {
+    const { error } = await supabase.from('active_blacklist').delete().eq('user_id', id)
+
+    if (error) {
+      throw new Error(error.message)
+    }
+    return true
   }
 
   /**
@@ -119,8 +158,16 @@ export class SupabaseUser implements User {
    * @param point
    * @returns Promise<Response<sucess>>
    */
-  addPointUser(id: string, point: number): Promise<Response<Success>> {
-    throw new Error('Method not implemented.')
+  async addPointUser(id: string, point: number): Promise<Success> {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .update({ point: point })
+      .eq('id', id)
+
+    if (error) {
+      throw new Error(error.message)
+    }
+    return true
   }
 
   updateSettings(newSettings: model.SettingsData): Promise<Response<Success>> {

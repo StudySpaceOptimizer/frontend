@@ -10,7 +10,7 @@ export interface User {
   studentSignUp(name: string, username: string, password: string): Promise<any>
   outsiderSignUp(name: string, phone: string, idcard: string, email: string): Promise<any>
   getUsers(all: boolean): Promise<any>
-  banUser(id: string, reason: string, end: Date): Promise<any>
+  banUser(id: string, reason: string, end_at: Date): Promise<any>
   unbanUser(id: string): Promise<any>
   addPointUser(id: string, point: number): Promise<any>
   updateSettings(newSettings: any): Promise<any>
