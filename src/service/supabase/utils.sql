@@ -39,7 +39,7 @@ $$ LANGUAGE plpgsql STABLE;
 
 
 
-CREATE OR REPLACE FUNCTION get_my_profiles()
+CREATE OR REPLACE FUNCTION get_my_profile()
 RETURNS TABLE(
     id UUID,
     email TEXT,

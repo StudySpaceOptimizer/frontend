@@ -197,3 +197,11 @@ CREATE POLICY user_select_own ON blacklist
 AS PERMISSIVE
 FOR SELECT
 USING (auth.uid() = user_id);
+
+
+
+/* todo: 
+    - trigger判斷是否進入blacklist
+    - timmer判斷解禁時間
+*/
+ 

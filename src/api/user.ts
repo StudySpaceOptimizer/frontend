@@ -159,6 +159,7 @@ export class SupabaseUser implements User {
    * @returns Promise<Response<sucess>>
    */
   async addPointUser(id: string, point: number): Promise<Success> {
+    // TODO:get point
     const { data, error } = await supabase
       .from('user_profiles')
       .update({ point: point })
@@ -170,7 +171,19 @@ export class SupabaseUser implements User {
     return true
   }
 
-  updateSettings(newSettings: model.SettingsData): Promise<Response<Success>> {
-    throw new Error('Method not implemented.')
+  async updateSettings(newSettings: model.SettingsData): Promise<Success> {
+    for (const key in newSettings) {
+      const value = JSON.stringify(newSettings[key as keyof model.SettingsData])
+      const { data, error } = await supabase
+        .from('settings')
+        .update({ value: value })
+        .eq('key_name', key)
+
+      if (error) {
+        throw new Error(error.message)
+      }
+    }
+
+    return true
   }
 }

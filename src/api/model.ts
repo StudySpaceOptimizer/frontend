@@ -76,17 +76,18 @@ export interface SeatDetail extends SeatData {
 
 export interface SettingsData {
   weekdayOpeningHours: {
-    begin: Date
-    end: Date
+    begin: string
+    end: string
   }
   weekendOpeningHours: {
-    begin: Date
-    end: Date
+    begin: string
+    end: string
   }
   minimumReservationDuration: number // 單位為小時，最小預約時間單位
   maximumReservationDuration: number // 單位為小時，表示單次預約時間上限
   studentReservationLimit: number // 單位為天，表示學生提前預約期限
-  pointsTOBanUser: number // 達到一定的點數就自動封禁使用者
+  outsiderReservationLimit: number // 單位為天，表示校外人士提前預約期限
+  pointsToBanUser: number // 達到一定的點數就自動封禁使用者
 }
 
 export interface ClosedPeriods {

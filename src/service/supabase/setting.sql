@@ -31,41 +31,18 @@ AS PERMISSIVE
 FOR SELECT
 USING (true);
 
-
 -- 插入默認設定
 INSERT INTO settings (key_name, value, description)
-SELECT 'weekdayOpeningHours', '{"begin": "09:00", "end": "17:00"}', '工作日開放時間'
-WHERE NOT EXISTS (
-    SELECT 1 FROM settings WHERE key_name = 'weekdayOpeningHours'
-);
-
-INSERT INTO settings (key_name, value, description)
-SELECT 'weekendOpeningHours', '{"begin": "10:00", "end": "16:00"}', '週末開放時間'
-WHERE NOT EXISTS (
-    SELECT 1 FROM settings WHERE key_name = 'weekendOpeningHours'
-);
-
-INSERT INTO settings (key_name, value, description)
-SELECT 'minimumReservationDuration', '1', '最小預約時間單位(小時)'
-WHERE NOT EXISTS (
-    SELECT 1 FROM settings WHERE key_name = 'minimumReservationDuration'
-);
-
-INSERT INTO settings (key_name, value, description)
-SELECT 'maximumReservationDuration', '4', '單次預約時間上限(小時)'
-WHERE NOT EXISTS (
-    SELECT 1 FROM settings WHERE key_name = 'maximumReservationDuration'
-);
-
-INSERT INTO settings (key_name, value, description)
-SELECT 'studentReservationLimit', '7', '學生提前預約期限(天)'
-WHERE NOT EXISTS (
-    SELECT 1 FROM settings WHERE key_name = 'studentReservationLimit'
-);
-
-
-
-
+VALUES
+    ('weekdayOpeningHours', '{"begin": "09:00", "end": "17:00"}', '工作日開放時間'),
+    ('weekendOpeningHours', '{"begin": "10:00", "end": "16:00"}', '週末開放時間'),
+    ('minimumReservationDuration', '1', '最小預約時間單位為小時'),
+    ('maximumReservationDuration', '4', '單次預約時間上限為小時'),
+    ('studentReservationLimit', '7', '學生提前預約期限為天'),
+    ('outsiderReservationLimit', '0', '校外人士提前預約期限為天'),
+    ('pointsToBanUser', '7', '達到一定的點數就自動封禁使用者')
+ON CONFLICT (key_name) DO UPDATE 
+SET value = EXCLUDED.value, description = EXCLUDED.description;
 
 -- 創建額外關閉時段表
 CREATE TABLE IF NOT EXISTS closed_periods (
