@@ -11,6 +11,9 @@ import DependencyContainer from '@/DependencyContainer'
 
 import VueKonva from 'vue-konva'
 
+import ElementPlus from 'element-plus'
+import 'element-plus/dist/index.css'
+
 const app = createApp(App)
 
 const pinia = createPinia()
@@ -18,12 +21,13 @@ pinia.use(piniaPluginPersistedstate)
 
 // Dependency Injection
 const container = DependencyContainer.getInstance()
-container.register(api.API_SERVICE.USER, api.MockUser)
-container.register(api.API_SERVICE.SEAT, api.PouchDbSeat)
+container.register(api.API_SERVICE.USER, api.SupabaseUser)
+container.register(api.API_SERVICE.SEAT, api.SupabaseSeat)
 container.register(api.API_SERVICE.RESERVE, api.MockReserve)
 
 app.use(pinia)
 app.use(router)
 app.use(VueKonva)
+app.use(ElementPlus)
 
 app.mount('#app')
