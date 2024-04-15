@@ -2,13 +2,16 @@ import { reactive, ref } from 'vue'
 import { defineStore } from 'pinia'
 import * as API from '@/api'
 
+import DependencyContainer from '@/DependencyContainer'
+
 export const useAccountStore = defineStore(
   'account',
   () => {
     const isSignIn = ref(false)
     const name = ref('')
     const userToken = ref('')
-    const api = new API.MockUser()
+    const container = DependencyContainer.getInstance()
+    const api = container.resolve<API.User>(API.API_SERVICE.USER)
 
     const dialogStatus = reactive({
       signIn: false,
@@ -22,6 +25,7 @@ export const useAccountStore = defineStore(
         toggleDialog();
         isSignIn.value = true;
         userToken.value = token;
+        console.log(data)
         name.value = data[0].name;
       } catch (error) {
         isSignIn.value = false;
@@ -32,7 +36,7 @@ export const useAccountStore = defineStore(
     function studentSignUp(_name: string, _email: string, _password: string) {
       api.studentSignUp(_name, _email, _password)
         .then((token) => {
-          api.sendVerificationEmail(token)
+          // api.sendVerificationEmail(token)
           toggleDialog()
         })
     }
@@ -40,7 +44,7 @@ export const useAccountStore = defineStore(
     function outsiderSignUp(_name: string, _phone: string, _idcard: string, _email: string) {
       api.outsiderSignUp(_name, _phone, _idcard, _email)
         .then((token) => {
-          api.sendVerificationEmail(token)
+          // api.sendVerificationEmail(token)
           toggleDialog()
         })
     }
