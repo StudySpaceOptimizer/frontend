@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, watchEffect } from 'vue'
+import { useSeatStore } from '@/stores/seat'
+
+const seatStore = useSeatStore()
 
 const props = defineProps({
   components: {
@@ -7,7 +10,23 @@ const props = defineProps({
     required: true
   }
 })
-const components = ref<any[]>(props.components)
+const components = computed<any[]>(() => props.components)
+
+let isSeat = false
+watchEffect(() => {
+  if (components.value.length == 2) {
+    isSeat = true
+  }
+})
+
+const seatHandler = () => {
+  if (!isSeat) {
+    return
+  }
+
+  let seat = components.value[1].config.text
+  seatStore.selectSeat(seat)
+}
 </script>
 
 <template>
@@ -18,7 +37,7 @@ const components = ref<any[]>(props.components)
       </v-group>
     </template>
     <template v-else>
-      <component :is="component.type" :config="component.config" />
+      <component :is="component.type" :config="component.config" @click="seatHandler"/>
     </template>
   </template>
 </template>

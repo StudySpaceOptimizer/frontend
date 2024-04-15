@@ -1,29 +1,32 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { reactive, ref, watchEffect } from 'vue'
 import DrawStage from './seats/stage'
 
 import KonvaRecursiveComponent from './KonvaRecursiveComponent.vue'
+import BookingModel from './BookingModel.vue'
 
 const props = defineProps({
   width: {
     type: Number,
     default: 1200
-  }, 
+   },
   height: {
     type: Number,
-    default: 400
+    default: 600
   }
 })
 
 const stageRef = ref()
-
-const width = computed(() => props.width)
-const height = computed(() => props.height)
-
-const isDragging = ref(false)
+const drawStageConfig = reactive({
+  width: props.width,
+  height: props.height,
+  x: 0,
+  y: 0,
+})
+let isDragging = false
 let lastPos = { x: 0, y: 0 }
 
-const drawStage = new DrawStage(width, height)
+const drawStage = new DrawStage()
 
 const handleWheel = (e: any) => {
   e.evt.preventDefault()
@@ -41,42 +44,51 @@ const handleWheel = (e: any) => {
   newScale = Math.min(4, newScale)
 
   stage.scale({ x: newScale, y: newScale })
-  drawStage.x = pointer.x - mousePointTo.x * newScale,
-  drawStage.y = pointer.y - mousePointTo.y * newScale,
+  drawStageConfig.x = pointer.x - mousePointTo.x * newScale,
+  drawStageConfig.y = pointer.y - mousePointTo.y * newScale,
   stage.batchDraw()
 }
 
 function handleMouseDown(e: any) {
-  isDragging.value = true
+  isDragging = true
   lastPos = { x: e.evt.clientX, y: e.evt.clientY }
 }
 
 function handleMouseUp() {
-  isDragging.value = false
+  isDragging = false
 }
 
 function handleMouseMove(e: any) {
-  if (isDragging.value) {
+  if (isDragging) {
     const deltaX = (e.evt.clientX - lastPos.x)
     const deltaY = (e.evt.clientY - lastPos.y)
-    drawStage.x += deltaX
-    drawStage.y += deltaY
+    drawStageConfig.x += deltaX
+    drawStageConfig.y += deltaY
     lastPos = { x: e.evt.clientX, y: e.evt.clientY }
   }
 }
+
+watchEffect(() => {
+  // Mount the stage needs to wait parent element computed width and height
+  if (props.width === 0 && props.height === 0) return
+  drawStageConfig.width = props.width
+  drawStageConfig.height = props.height
+  drawStage.draw(props.width, props.height)
+})
 </script>
 
 <template>
+  <BookingModel />
   <v-stage
     ref="stageRef"
-    :config="drawStage.config"
+    :config="drawStageConfig"
     @wheel="handleWheel"
     @mousemove="handleMouseMove"
     @mousedown="handleMouseDown"
     @mouseup="handleMouseUp"
   >
     <v-layer>
-      <KonvaRecursiveComponent :components="drawStage.drawObject" />
+      <KonvaRecursiveComponent :components="drawStage.drawObject.value" />
     </v-layer>
   </v-stage>
 </template>

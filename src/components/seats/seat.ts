@@ -1,8 +1,6 @@
-import Table from './table'
 import Group from './group'
 import Chair from './chair'
 import Text from './text'
-import { DrawUntil } from './basic'
 
 /**
  * Specialized Group class for Seat that containes a Chair, a Table and a Text
@@ -20,7 +18,7 @@ export class Seat extends Group {
     text: string = ''
   ) {
     const children = [
-      new Chair(0, 0, { width: 1400, height: 1150, concerRadius: 5}),
+      new Chair(0, 0, { width: 50, height: 50, concerRadius: 5}),
       new Text(0, 0, { width: 50, height: 50, text, fontSize: 14 }),
     ]
 

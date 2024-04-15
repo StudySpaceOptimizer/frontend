@@ -3,17 +3,17 @@ import SeatIllustration from '@/components/SeatIllustration.vue'
 import TheFilter from '@/components/TheFilter.vue'
 import SeatMap from '@/components/SeatMap.vue'
 
-import { ref, onMounted, nextTick } from 'vue'
+import { ref } from 'vue'
+import { useResizeObserver } from '@vueuse/core'
 
-const mapRef = ref()
-const mapRefWidth = ref(mapRef.value?.offsetWidth)
+const mapRef = ref(null)
+const mapRefWidth = ref(0)
+const mapRefHeight = ref(0)
 
-onMounted(async () => {
-  await nextTick()
-
-  if (mapRef.value) {
-    mapRefWidth.value = mapRef.value.offsetWidth
-  }
+useResizeObserver(mapRef, (entries) => {
+  const entry = entries[0]
+  mapRefWidth.value = entry.contentRect.width
+  mapRefHeight.value = entry.contentRect.height
 })
 </script>
 
@@ -21,7 +21,7 @@ onMounted(async () => {
   <SeatIllustration />
   <TheFilter />
   <div class="map" ref="mapRef">
-    <SeatMap :width="mapRefWidth" :height="600" />
+    <SeatMap :width="mapRefWidth" :height="mapRefHeight" />
   </div>
 </template>
 
