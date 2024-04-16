@@ -1,59 +1,138 @@
 <script setup lang="ts">
-import { ref, watchEffect } from 'vue'
+import { computed, reactive, ref, watchEffect } from 'vue'
 import { useSeatStore } from '@/stores/seat'
+import * as api from '@/api'
+import DependencyContainer from '@/DependencyContainer'
+import { ElMessage } from 'element-plus'
 
+const reserveApi = DependencyContainer.inject<api.Reserve>(api.API_SERVICE.RESERVE)
 const seatStore = useSeatStore()
 const dialogVisible = ref(false)
-
-const handleClose = (done: () => void) => {
-  dialogVisible.value = false
-  seatStore.unselectSeat()
-  done()
-}
-
 const seatName = ref('')
+const checkboxGroup1 = ref<string[]>([])
+const timeRange = reactive([
+  { value: '09:00', disabled: false },
+  { value: '10:00', disabled: false },
+  { value: '11:00', disabled: false },
+  { value: '12:00', disabled: false },
+  { value: '13:00', disabled: false },
+  { value: '14:00', disabled: false },
+  { value: '15:00', disabled: false },
+  { value: '16:00', disabled: false },
+  { value: '17:00', disabled: false },
+  { value: '18:00', disabled: false },
+  { value: '19:00', disabled: false },
+  { value: '20:00', disabled: false },
+])
+
 watchEffect(() => {
   if (seatStore.nowSelectedSeat != null) {
     dialogVisible.value = true
     seatName.value = seatStore.nowSelectedSeat
   }
 })
+
+const clearTimeSetting = () => {
+  beginTime.value = undefined
+  endTime.value = undefined
+  oldCheckboxGroup1 = []
+  checkboxGroup1.value = []
+  timeRange.forEach(time => time.disabled = false)
+}
+
+const handleClose = () => {
+  dialogVisible.value = false
+  seatStore.unselectSeat()
+  clearTimeSetting()
+}
+
+const beginTime = ref<string | undefined>(undefined)
+const endTime = ref<string | undefined>(undefined)
+let oldCheckboxGroup1: string[] = []
+const handleBooking = () => {
+  reserveApi.reserve(seatName.value, new Date(beginTime.value!), new Date(endTime.value!))
+    .then(() => {
+      ElMessage.success('預約成功')
+      dialogVisible.value = false
+      seatStore.unselectSeat()
+      clearTimeSetting()
+    })
+    .catch((e) => {
+      ElMessage.error('預約失敗:' + e.message)
+    })
+}
+
+const findSelectedTime = (oldValue: string[], newValue: string[])=> {
+  if (oldValue.length < newValue.length) {
+    return newValue.find(value => !oldValue.includes(value))
+  } else if (oldValue.length > newValue.length) {
+    return oldValue.find(value => !newValue.includes(value))
+  }
+  return undefined
+}
+
+const handleCheckboxChange = (value: string[]) => {
+  const nowSelectedTime = findSelectedTime(oldCheckboxGroup1, value)
+
+  if (beginTime.value === nowSelectedTime) {
+    beginTime.value = undefined
+  } else if (endTime.value === nowSelectedTime) {
+    endTime.value = undefined
+  } else if (beginTime.value === undefined) {
+    beginTime.value = nowSelectedTime
+  } else if (endTime.value === undefined) {
+    endTime.value = nowSelectedTime
+  } else {
+    ElMessage.warning('你ㄧ次只能選擇一個時間區間')
+  }
+
+  const beginIndex = timeRange.findIndex((time) => time.value === beginTime.value)
+  const endIndex = timeRange.findIndex((time) => time.value === endTime.value)
+  timeRange.forEach((time, index) => {
+    if (endIndex === -1) {
+      time.disabled = index < beginIndex
+    } else {
+      time.disabled = index < beginIndex || index > endIndex
+    }
+  })
+
+  if (beginTime.value != undefined && endTime.value != undefined) {
+    checkboxGroup1.value = timeRange.slice(beginIndex, endIndex + 1).map(time => time.value)
+  } else {
+    checkboxGroup1.value = [beginTime.value, endTime.value].filter(time => time != undefined) as string[]
+  }
+  oldCheckboxGroup1 = checkboxGroup1.value
+}
+
+const isCompleteSelectTime = computed(() => {
+  return beginTime.value !== undefined && endTime.value !== undefined
+})
 </script>
 <template>
   <el-dialog
     v-model="dialogVisible"
-    title="預約座位"
+    :title="`預約座位 ${seatName}`"
     width="500"
     :before-close="handleClose"
   >
-    <span>{{ seatName }}</span>
-    <div class="date"></div>
+    <!-- TODO -->
+    <div class="date">
+      預約日期：{{ new Date().toLocaleDateString() }}
+    </div>
     
-    <ul class="seat-list">
-      <li>
-        <span class="time"></span>
-        <div class="seat-available"></div>
-      </li>
-    </ul>
+    <el-checkbox-group v-model="checkboxGroup1" size="large" @change="handleCheckboxChange">
+      <el-checkbox-button v-for="time in timeRange" :key="time.value" :value="time.value" :disabled="time.disabled">
+        {{ time.value }}
+      </el-checkbox-button>
+    </el-checkbox-group>
     
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="handleClose">取消</el-button>
-        <el-button type="primary" @click="dialogVisible = false">
+        <el-button type="primary" @click="handleBooking" :disabled="!isCompleteSelectTime">
           預約
         </el-button>
       </div>
     </template>
   </el-dialog>
 </template>
-
-<style scoped>
-:root {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-
-  width: 300px;
-}
-</style>
