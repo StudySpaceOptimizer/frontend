@@ -10,8 +10,7 @@ export const useAccountStore = defineStore(
     const isSignIn = ref(false)
     const name = ref('')
     const userToken = ref('')
-    const container = DependencyContainer.getInstance()
-    const api = container.resolve<API.User>(API.API_SERVICE.USER)
+    const api = DependencyContainer.inject<API.User>(API.API_SERVICE.USER)
 
     const dialogStatus = reactive({
       signIn: false,
