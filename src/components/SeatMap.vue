@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { reactive, ref, watchEffect } from 'vue'
-import DrawStage from './seats/stage'
+import DrawStage from '@/components/seats/stage'
+import { useSeatStore } from '@/stores/seat'
 
-import KonvaRecursiveComponent from './KonvaRecursiveComponent.vue'
-import BookingModel from './BookingModel.vue'
+import KonvaRecursiveComponent from '@/components/KonvaRecursiveComponent.vue'
+import BookingModel from '@/components/BookingModel.vue'
 
+const seatStore = useSeatStore()
 const props = defineProps({
   width: {
     type: Number,
@@ -55,11 +57,17 @@ function handleMouseDown(e: any) {
 }
 
 function handleMouseUp() {
+  // TODO: This is a workaround to prevent selecting seat when dragging, need to find a better way
+  setTimeout(() => {
+    seatStore.toggleCanSelect(true)
+  }, 0)
+  console.log('mouse up', new Date().getTime())
   isDragging = false
 }
 
 function handleMouseMove(e: any) {
   if (isDragging) {
+    seatStore.toggleCanSelect(false)
     const deltaX = (e.evt.clientX - lastPos.x)
     const deltaY = (e.evt.clientY - lastPos.y)
     drawStageConfig.x += deltaX

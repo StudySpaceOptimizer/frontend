@@ -3,8 +3,10 @@ import { ref } from 'vue'
 
 export const useSeatStore = defineStore('seat', () => {
   const nowSelectedSeat = ref<string | null>(null)
+  let canSelect = true
 
   const selectSeat = (seatId: string) => {
+    if (!canSelect) return
     nowSelectedSeat.value = seatId
   }
 
@@ -12,9 +14,14 @@ export const useSeatStore = defineStore('seat', () => {
     nowSelectedSeat.value = null
   }
 
+  const toggleCanSelect = (state: boolean) => {
+    canSelect = state
+  }
+
   return {
     nowSelectedSeat,
     selectSeat,
-    unselectSeat
+    unselectSeat,
+    toggleCanSelect,
   }
 })
