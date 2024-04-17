@@ -1,8 +1,16 @@
+export type Success = Boolean
+
+/**
+ *
+ */
+export type userRole = 'student' | 'outsider'
+export type adminRole = 'admin' | 'assistant'
+
 export interface UserData {
   id: string
   email: string
-  userRole: 'student' | 'outsider'
-  adminRole?: 'admin' | 'assistant'
+  userRole: userRole
+  adminRole?: adminRole
   isIn: boolean
   name?: string
   phone?: string
@@ -10,14 +18,14 @@ export interface UserData {
   point: number
   ban?: {
     reason: string
-    end: Date
+    endAt: Date
   }
 }
 
 export interface Reservation {
   id: string
-  begin: Date
-  end: Date
+  beginTime: Date
+  endTime: Date
   user: UserData
   seatID: string
 
@@ -30,7 +38,7 @@ export interface Reservation {
    * 在預約結束之前刷卡離開 -> 設置 'temporaryLeaveTime'
    * 中離回來 -> 更新 'temporaryLeaveTime' 為 null
    * 如果時間 >= 'temporaryLeaveTime' + 1小時 -> 提早離開
-   * 提早離開: 'end' = 'temporaryLeaveTime' + 1小時
+   * 提早離開: 'end' = 'temporaryLeaveTime' + 1小時 (trigger)
    */
   temporaryLeaveTime?: Date
 }
@@ -54,11 +62,6 @@ export interface SeatData {
   status: 'available' | 'booked' | 'partiallyBooked' | 'unavailable'
 }
 
-export interface SeatRequest {
-  begin?: Date
-  end?: Date
-}
-
 export interface SeatDetail extends SeatData {
   /**
    * The booked range of the seat
@@ -76,12 +79,12 @@ export interface SeatDetail extends SeatData {
 
 export interface SettingsData {
   weekdayOpeningHours: {
-    begin: string
-    end: string
+    beginTime: string
+    endTime: string
   }
   weekendOpeningHours: {
-    begin: string
-    end: string
+    beginTime: string
+    endTime: string
   }
   minimumReservationDuration: number // 單位為小時，最小預約時間單位
   maximumReservationDuration: number // 單位為小時，表示單次預約時間上限
@@ -92,7 +95,7 @@ export interface SettingsData {
 
 export interface ClosedPeriods {
   closedPeriods: {
-    begin: Date
-    end: Date
+    beginTime: Date
+    endTime: Date
   }[]
 }

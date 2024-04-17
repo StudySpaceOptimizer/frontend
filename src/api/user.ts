@@ -3,9 +3,6 @@ import type { User } from './index'
 import { supabase } from '../service/supabase/supabase'
 import type * as model from './model'
 
-type Sign = string
-type Success = Boolean
-
 export class SupabaseUser implements User {
   /**
    * Sign in user with username and password, returns a token stored in cookie
@@ -14,7 +11,7 @@ export class SupabaseUser implements User {
    * @param password
    * @returns Promise<Response<Sign>>
    */
-  async signIn(email: string, password: string): Promise<Success> {
+  async signIn(email: string, password: string): Promise<model.Success> {
     const { data, error } = await supabase.auth.signInWithPassword({
       email: email,
       password: password
@@ -43,7 +40,7 @@ export class SupabaseUser implements User {
    * @returns Promise<Response<Sign>>
    * @error username already exists
    */
-  async studentSignUp(name: string, email: string, password: string): Promise<Success> {
+  async studentSignUp(name: string, email: string, password: string): Promise<model.Success> {
     let { data, error } = await supabase.auth.signUp({
       email: email,
       password: password
@@ -77,7 +74,7 @@ export class SupabaseUser implements User {
     phone: string,
     idcard: string,
     email: string
-  ): Promise<Response<Sign>> {
+  ): Promise<model.Success> {
     throw new Error('Method not implemented.')
   }
 
@@ -87,30 +84,32 @@ export class SupabaseUser implements User {
    * @returns Promise<Response<UserData[]>>
    */
   async getUsers(): Promise<model.UserData[]> {
-    let { data: user_profiles, error } = await supabase.rpc('get_user_profiles')
+    let { data: userProfiles, error } = await supabase.rpc('get_user_datas')
 
     if (error) {
       throw new Error(error.message)
     }
 
     return (
-      user_profiles?.map((profile: any) => ({
-        id: profile.id,
-        email: profile.email,
-        userRole: profile.user_role,
-        adminRole: profile.admin_role,
-        isIn: profile.is_in,
-        name: profile.name,
-        phone: profile.phone,
-        idCard: profile.id_card,
-        point: profile.point,
-        ban: profile.blacklist
-          ? {
-              reason: profile.blacklist[0].reason,
-              end: new Date(profile.blacklist[0].end_at)
-            }
-          : undefined
-      })) || []
+      userProfiles?.map(
+        (profile: any): model.UserData => ({
+          id: profile.id,
+          email: profile.email,
+          userRole: profile.user_role,
+          adminRole: profile.admin_role,
+          isIn: profile.is_in,
+          name: profile.name,
+          phone: profile.phone,
+          idCard: profile.id_card,
+          point: profile.point,
+          ban: profile.blacklist
+            ? {
+                reason: profile.blacklist[0].reason,
+                endAt: new Date(profile.blacklist[0].end_at)
+              }
+            : undefined
+        })
+      ) || []
     )
   }
 
@@ -122,12 +121,12 @@ export class SupabaseUser implements User {
    * @param end_at
    * @returns Promise<Response<sucess>>
    */
-  async banUser(id: string, reason: string, end_at: Date): Promise<Success> {
+  async banUser(id: string, reason: string, endAt: Date): Promise<model.Success> {
     const { data, error } = await supabase.from('blacklist').insert([
       {
         user_id: id,
         reason: reason,
-        end_at: end_at
+        end_at: endAt
       }
     ])
 
@@ -143,7 +142,7 @@ export class SupabaseUser implements User {
    * @param id
    * @returns Promise<Response<sucess>>
    */
-  async unbanUser(id: string): Promise<Success> {
+  async unbanUser(id: string): Promise<model.Success> {
     const { error } = await supabase.from('active_blacklist').delete().eq('user_id', id)
 
     if (error) {
@@ -158,7 +157,7 @@ export class SupabaseUser implements User {
    * @param point
    * @returns Promise<Response<sucess>>
    */
-  async addPointUser(id: string, point: number): Promise<Success> {
+  async addPointUser(id: string, point: number): Promise<model.Success> {
     // TODO:get point
     const { data, error } = await supabase
       .from('user_profiles')
@@ -171,13 +170,13 @@ export class SupabaseUser implements User {
     return true
   }
 
-  async updateSettings(newSettings: model.SettingsData): Promise<Success> {
+  async updateSettings(newSettings: model.SettingsData): Promise<model.Success> {
     for (const key in newSettings) {
       const value = JSON.stringify(newSettings[key as keyof model.SettingsData])
       const { data, error } = await supabase
         .from('settings')
-        .update({ value: value })
-        .eq('key_name', key)
+        .update({ value: camelToSnakeCase(value) })
+        .eq('key_name', camelToSnakeCase(key))
 
       if (error) {
         throw new Error(error.message)
@@ -186,4 +185,24 @@ export class SupabaseUser implements User {
 
     return true
   }
+
+  async grantAdminRole(userID: String, adminRole: model.adminRole): Promise<model.Success> {
+    let { data, error } = await supabase.rpc('set_claim', {
+      claim: 'admin_role',
+      uid: userID,
+      value: adminRole
+    })
+
+    if (error) throw new Error(error.message)
+
+    return true
+  }
+}
+
+function camelToSnakeCase(str: string): string {
+  return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
+}
+
+function snakeToCamelCase(str: string): string {
+  return str.replace(/(_\w)/g, (match) => match[1].toUpperCase())
 }

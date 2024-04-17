@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION get_user_profiles()
+CREATE OR REPLACE FUNCTION get_user_datas()
 RETURNS TABLE(
     id UUID,
     email TEXT,
@@ -11,7 +11,8 @@ RETURNS TABLE(
     point INT,
     reason TEXT,
     end_at TIMESTAMP WITH TIME ZONE
-) AS $$
+)
+AS $$
 BEGIN
     RETURN QUERY
     SELECT
@@ -35,11 +36,13 @@ BEGIN
     WHERE
         is_claims_admin();
 END;
-$$ LANGUAGE plpgsql STABLE;
+$$
+LANGUAGE plpgsql STABLE
+SECURITY INVOKER;
 
 
 
-CREATE OR REPLACE FUNCTION get_my_profile()
+CREATE OR REPLACE FUNCTION get_my_user_data()
 RETURNS TABLE(
     id UUID,
     email TEXT,
@@ -76,4 +79,61 @@ BEGIN
     WHERE
         auth.uid() = up.id;
 END;
-$$ LANGUAGE plpgsql STABLE;
+$$
+LANGUAGE plpgsql STABLE
+SECURITY INVOKER;
+
+
+CREATE OR REPLACE FUNCTION get_my_reservations()
+RETURNS TABLE(
+    -- reservation
+    id UUID,
+    begin_time TIMESTAMP WITH TIME ZONE,
+    end_time TIMESTAMP WITH TIME ZONE,
+    seat_id int8,
+    check_in_time timestamp with time zone,
+    temporary_leave_time timestamp with time zone,
+
+    -- user_data
+    user_id UUID,
+    email TEXT,
+    user_role TEXT,
+    admin_role TEXT,
+    is_in BOOLEAN,
+    name TEXT,
+    phone TEXT,
+    id_card TEXT,
+    point INT,
+    reason TEXT,
+    end_at TIMESTAMP WITH TIME ZONE
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        res.id,
+        res.begin_time,
+        res.end_time,
+        res.seat_id,
+        res.check_in_time,
+        res.temporary_leave_time,
+        user_data.id,
+        user_data.email,
+        user_data.user_role,
+        user_data.admin_role,
+        user_data.is_in,
+        user_data.name,
+        user_data.phone,
+        user_data.id_card,
+        user_data.point,
+        user_data.reason,
+        user_data.end_at
+    FROM
+        Reservations res
+    CROSS JOIN LATERAL
+        get_my_user_data() as user_data
+    WHERE
+        auth.uid() = res.user_id;
+END;
+$$
+LANGUAGE plpgsql STABLE
+SECURITY INVOKER;

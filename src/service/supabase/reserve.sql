@@ -1,3 +1,9 @@
+/* TODO:
+- delete RLS for user
+- delete trigger 如果是使用者要刪除，要先判斷...
+
+*/
+
 -- 創建預約表
 CREATE TABLE IF NOT EXISTS reservations(
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -10,6 +16,16 @@ CREATE TABLE IF NOT EXISTS reservations(
     CONSTRAINT fk_user FOREIGN KEY(user_id) REFERENCES auth.users(id) ON DELETE CASCADE,
     CONSTRAINT fk_seat FOREIGN KEY(seat_id) REFERENCES seats(id) ON DELETE CASCADE 
 );
+
+-- 為預約紀錄結束時間創建索引
+CREATE INDEX IF NOT EXISTS idx_reservations_end_time ON reservations (end_time);
+
+-- 創建視圖以篩選當前有效的黑名單記錄
+CREATE OR REPLACE VIEW active_reservations
+WITH (security_invoker = on) AS
+SELECT *
+FROM public.reservations
+WHERE end_time > NOW();
 
 -- 啟用 RLS
 ALTER TABLE reservations ENABLE ROW LEVEL SECURITY;
@@ -27,13 +43,15 @@ DROP POLICY IF EXISTS user_select_own ON reservations;
 CREATE POLICY user_select_own ON reservations
 AS PERMISSIVE
 FOR SELECT
-USING (auth.uid() = id);
+USING (auth.uid() = user_id);
 
 -- 允許使用者新增自己的預約
+DROP POLICY IF EXISTS user_insert_own ON reservations;
 CREATE POLICY user_insert_own ON reservations
 AS PERMISSIVE
 FOR INSERT
 WITH CHECK (auth.uid() = user_id AND is_not_banned());
+
 
 
 -- 檢查合法預約：begin 跟 end 在同一天且end在begin之後
@@ -44,7 +62,7 @@ SECURITY DEFINER
 AS $$
 BEGIN
   -- 檢查begin_time和end_time是否在同一天
-  IF DATE(TRUNC('day', NEW.begin_time)) != DATE(TRUNC('day', NEW.end_time)) THEN
+  IF DATE(NEW.begin_time) != DATE(NEW.end_time) THEN
     RAISE EXCEPTION '開始和結束時間必須在同一天';
   END IF;
   -- 檢查end_time是否在begin_time之後
@@ -99,57 +117,73 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-    weekdayOpening TIME;
-    weekdayClosing TIME;
-    weekendOpening TIME;
-    weekendClosing TIME;
-    minimumDuration int;
-    maximumDuration int;
-    studentLimit int;
+    weekday_opening TIME;
+    weekday_closing TIME;
+    weekend_opening TIME;
+    weekend_closing TIME;
+    minimum_duration INT;
+    maximum_duration INT;
+    student_limit INT;
+    outsider_limit INT;
 
-    reservationDuration INT;
+    reservation_duration INT;
+
+    user_role user_role;
 BEGIN
 
     -- 從設定中提取時間和限制
-    SELECT (Value::jsonb)->>'begin', (Value::jsonb)->>'end' INTO weekdayOpening, weekdayClosing FROM settings WHERE KeyName = 'weekdayOpeningHours';
-    SELECT (Value::jsonb)->>'begin', (Value::jsonb)->>'end' INTO weekendOpening, weekendClosing FROM settings WHERE KeyName = 'weekendOpeningHours';
-    SELECT Value::int INTO minimumDuration FROM settings WHERE KeyName = 'minimumReservationDuration';
-    SELECT Value::int INTO maximumDuration FROM settings WHERE KeyName = 'maximumReservationDuration';
-    SELECT Value::int INTO studentLimit FROM settings WHERE KeyName = 'studentReservationLimit';
+    SELECT (value::jsonb)->>'begin_time', (value::jsonb)->>'end_time' INTO weekday_opening, weekday_closing FROM settings WHERE key_name = 'weekday_opening_hours';
+    SELECT (value::jsonb)->>'begin_time', (value::jsonb)->>'end_time' INTO weekend_opening, weekend_closing FROM settings WHERE key_name = 'weekend_opening_hours';
+    SELECT value::int INTO minimum_duration FROM settings WHERE key_name = 'minimum_reservatio_duration';
+    SELECT value::int INTO maximum_duration FROM settings WHERE key_name = 'maximum_reservation_duration';
+    SELECT value::int INTO student_limit FROM settings WHERE key_name = 'student_reservation_limit';
+    SELECT value::int INTO outsider_limit FROM settings WHERE key_name = 'outsider_reservation_limit';
 
     -- 計算預約時長
-    reservationDuration := EXTRACT(EPOCH FROM (NEW.end_time - NEW.begin_time))/3600;
+    reservation_duration := EXTRACT(EPOCH FROM (NEW.end_time - NEW.begin_time)) / 3600;
 
     -- 判斷是否為工作日或周末，並檢查開放時間
     IF EXTRACT(ISODOW FROM NEW.begin_time) BETWEEN 1 AND 5 THEN
         -- 工作日
-        IF NEW.begin_time::time < weekdayOpening OR NEW.end_time::time > weekdayClosing THEN
+        IF NEW.begin_time::time < weekday_opening OR NEW.end_time::time > weekday_closing THEN
             RAISE EXCEPTION '預約時間必須在工作日的開放時間內';
         END IF;
     ELSE
         -- 周末
-        IF NEW.begin_time::time < weekendOpening OR NEW.end_time::time > weekendClosing THEN
+        IF NEW.begin_time::time < weekend_opening OR NEW.end_time::time > weekend_closing THEN
             RAISE EXCEPTION '預約時間必須在周末的開放時間內';
         END IF;
     END IF;
 
     -- 檢查預約時長是否合法
-    IF reservationDuration < minimumDuration OR reservationDuration > maximumDuration THEN
-        RAISE EXCEPTION '預約時長必須介於 % 和 % 小時之間', minimumDuration, maximumDuration;
+    IF reservation_duration < minimum_duration OR reservation_duration > maximum_duration THEN
+        RAISE EXCEPTION '預約時長必須介於 % 和 % 小時之間', minimum_duration, maximum_duration;
     END IF;
 
-    -- 檢查學生預約是否在可提前預約的日期內
-    IF (NEW.begin_time::date - CURRENT_DATE) > advanceReservationDays THEN
-        RAISE EXCEPTION '學生只能提前 % 天進行預約', advanceReservationDays;
+    user_role := get_my_claim('user_role')->> '';
+    -- user_role := 'student';
+
+    -- 若不是管理員
+    IF NOT is_claims_admin() THEN
+        -- 檢查學生預約是否在可提前預約的日期內
+        IF user_role = 'student' AND ((NEW.begin_time::date - CURRENT_DATE) > student_limit) THEN
+            RAISE EXCEPTION '學生只能提前 % 天進行預約', student_limit;
+        END IF;
+
+        -- 檢查校外人士預約是否在可提前預約的日期內
+        IF user_role = 'outsider' AND ((NEW.begin_time::date - CURRENT_DATE) > outsider_limit) THEN
+            RAISE EXCEPTION '校外人士只能提前 % 天進行預約', outsider_limit;
+        END IF;
     END IF;
 
     RETURN NEW;
 END;
 $$;
 
+
 DROP TRIGGER IF EXISTS trigger_verify_reservation ON reservations;
 CREATE TRIGGER trigger_verify_reservation
-BEFORE INSERT OR UPDATE ON reservations
+BEFORE INSERT ON reservations
 FOR EACH ROW EXECUTE FUNCTION verify_reservation_limits();
 
 
@@ -202,7 +236,7 @@ BEGIN
     -- 檢查是否用戶今天有未完成的預約
     IF EXISTS (
         SELECT 1
-        FROM reservations
+        FROM active_closed_periods
         WHERE user_id = NEW.user_id
         -- 預約的開始日期為當天
         AND CAST(begin_time AS DATE) = CURRENT_DATE
@@ -220,11 +254,42 @@ $$;
 
 DROP TRIGGER IF EXISTS trigger_check_for_unfinished_reservations ON reservations;
 CREATE TRIGGER trigger_check_for_unfinished_reservations
-BEFORE INSERT OR UPDATE ON reservations
+BEFORE INSERT ON reservations
 FOR EACH ROW EXECUTE FUNCTION check_for_unfinished_reservations();
 
+CREATE OR REPLACE FUNCTION insert_seat_timeslot()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY INVOKER
+AS $$
+BEGIN
+    -- 插入新的 user_profile 記錄
+    INSERT INTO seat_timeslots (seat_id, begin_time, end_time, reservation_id) VALUES (NEW.id, NEW.email, false, 0);
 
+    RETURN NULL;
+END;
+$$;
 
+CREATE OR REPLACE FUNCTION update_seat_timeslots()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    INSERT INTO seat_timeslots (seat_id, begin_time, end_time, reservation_id)
+    SELECT NEW.seat_id, NEW.begin_time, NEW.end_time, NEW.id
+    FROM reservations
+    WHERE id = NEW.id
+    ON CONFLICT (seat_id, begin_time, end_time) DO UPDATE
+    SET reservation_id = EXCLUDED.reservation_id;
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trigger_update_seat_timeslots
+AFTER INSERT OR UPDATE ON reservations
+FOR EACH ROW
+EXECUTE FUNCTION update_seat_timeslots();
 
 
 

@@ -1,6 +1,7 @@
 import type { Response } from './common'
 import type * as model from './model'
 import type { Reserve } from './index'
+import { supabase } from '../service/supabase/supabase'
 
 interface FilterRequest {
   begin: Date
@@ -16,17 +17,75 @@ export class SupabaseReserve implements Reserve {
    * @param end
    * @returns Promise<Response<null>>
    */
-  reserve(seatId: string, begin: Date, end: Date): Promise<Response<null>> {
-    
+  async reserve(seatID: string, beginTime: Date, endTime: Date): Promise<model.Success> {
+    let { data: authData, error: getUserError } = await supabase.auth.getUser()
 
-    throw new Error('Method not implemented.')
+    // 檢查是否成功獲取用戶資訊，或用戶是否存在
+    if (getUserError || !authData.user) {
+      throw new Error('Failed to get user data:' + getUserError?.message)
+    }
+
+    // 提取用戶ID
+    const userID = authData.user.id
+
+    const { data, error } = await supabase.from('reservations').insert([
+      {
+        begin_time: beginTime,
+        end_time: endTime,
+        user_id: userID,
+        seat_id: seatID
+      }
+    ])
+
+    if (error) {
+      throw new Error(error.message)
+    }
+    return true
   }
-  getPersonalReservations(config: any): Promise<any> {
-    throw new Error('Method not implemented.')
+
+  async getPersonalReservations(config: any): Promise<model.Reservation[]> {
+    let { data: reservations, error } = await supabase.rpc('get_my_reservations')
+    return (
+      reservations?.map(
+        (reservation: any): model.Reservation => ({
+          id: reservation.id,
+          beginTime: reservation.begin_time,
+          endTime: reservation.end_time,
+          user: {
+            id: reservation.user_id,
+            email: reservation.email,
+            userRole: reservation.user_role,
+            adminRole: reservation.admin_role,
+            isIn: reservation.is_in,
+            name: reservation.name,
+            phone: reservation.phone,
+            idCard: reservation.id_card,
+            point: reservation.point,
+            ban: reservation.blacklist
+              ? {
+                  reason: reservation.blacklist[0].reason,
+                  endAt: new Date(reservation.blacklist[0].end_at)
+                }
+              : undefined
+          },
+          seatID: reservation.seat_id,
+          checkInTime: reservation.check_in_time,
+          temporaryLeaveTime: reservation.temporary_leave_time
+        })
+      ) || []
+    )
   }
-  deleteReservation(id: string): Promise<any> {
-    throw new Error('Method not implemented.')
+
+  async deleteReservation(id: string): Promise<any> {
+    const { error } = await supabase.from('reservations').delete().eq('id', id)
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    // 是否要確認成功刪除
   }
+
   terminateReservation(id: string): Promise<any> {
     throw new Error('Method not implemented.')
   }

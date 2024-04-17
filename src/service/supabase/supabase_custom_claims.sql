@@ -36,7 +36,7 @@ CREATE OR REPLACE FUNCTION is_claims_admin() RETURNS "bool"
       END IF;
 
        -- 判断 userrole 是否为 admin 或 assistant
-      IF (current_setting('request.jwt.claims', true)::jsonb)->'app_metadata'->>'adminrole' IN ('admin', 'assistant') THEN
+      IF (current_setting('request.jwt.claims', true)::jsonb)->'app_metadata'->>'admin_role' IN ('admin', 'assistant') THEN
         RETURN true; -- User has admin or assistant role
       END IF;
 
@@ -83,11 +83,13 @@ CREATE OR REPLACE FUNCTION is_not_banned() RETURNS "bool"
       END IF;
 
       -- 判断 banned 是否设置为 true
-      IF coalesce((current_setting('request.jwt.claims', true)::jsonb)->'app_metadata'->'banned', 'false')::bool THEN
+      --- issue
+      IF coalesce((current_setting('request.jwt.claims', true)::jsonb)->'app_metadata'->>'banned', 'false')::bool = 'false' THEN
         return true; -- user is banned
       ELSE
         return false;
       END IF;
+      
       --------------------------------------------
       -- End of block 
       --------------------------------------------

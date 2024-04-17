@@ -5,23 +5,20 @@
 */
 DO $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'userrole') THEN
-        CREATE TYPE userrole AS ENUM('student', 'outsider');
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+        CREATE TYPE user_role AS ENUM('student', 'outsider');
     END IF;
 END
 $$;
 
 DO $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'adminrole') THEN
-        CREATE TYPE adminrole AS ENUM('admin', 'assistant', 'non-admin');
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'admin_role') THEN
+        CREATE TYPE admin_role AS ENUM('admin', 'assistant', 'non-admin');
     END IF;
 END
 $$;
 
-/**TODO:
-- 管理員可以set_claims -> claims_admin = true (已實作)
-*/
 
 -- 創建用戶個人資料表
 CREATE TABLE IF NOT EXISTS user_profiles (
@@ -103,8 +100,8 @@ SECURITY DEFINER
 SET search_path = auth 
 AS $$
 DECLARE
-    user_role public.userrole;
-    admin_role public.adminrole;
+    user_role public.user_role;
+    admin_role public.admin_role;
 BEGIN
     -- 根據email後綴確定用戶角色(userrole)
     IF NEW.email LIKE '%@mail.ntou.edu.tw' THEN
@@ -120,9 +117,9 @@ BEGIN
     -- 更新 raw_app_meta_data
     
     -- 設置 userrole
-    NEW.raw_app_meta_data := NEW.raw_app_meta_data || jsonb_build_object('userrole', user_role);
+    NEW.raw_app_meta_data := NEW.raw_app_meta_data || jsonb_build_object('user_role', user_role);
     -- 設置 claims_admin
-    NEW.raw_app_meta_data := NEW.raw_app_meta_data || jsonb_build_object('adminrole', admin_role);
+    NEW.raw_app_meta_data := NEW.raw_app_meta_data || jsonb_build_object('admin_role', admin_role);
     -- 設置 banned
     NEW.raw_app_meta_data := NEW.raw_app_meta_data || jsonb_build_object('banned', false);
 
