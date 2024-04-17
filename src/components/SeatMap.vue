@@ -42,7 +42,7 @@ const handleWheel = (e: any) => {
     y: (pointer.y - stage.y()) / oldScale,
   }
   let newScale = e.evt.deltaY <= 0 ? oldScale * scaleBy : oldScale / scaleBy
-  newScale = Math.max(0.5, newScale)
+  newScale = Math.max(0.25, newScale)
   newScale = Math.min(4, newScale)
 
   stage.scale({ x: newScale, y: newScale })
