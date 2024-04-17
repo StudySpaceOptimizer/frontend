@@ -14,9 +14,14 @@ const components = computed<any[]>(() => props.components)
 
 let isSeat = false
 watchEffect(() => {
-  if (components.value.length == 2) {
-    isSeat = true
+  if (components.value.length !== 2) {
+    return
   }
+  const seat = components.value[1].config.text
+  if (seat && seat[0] !== 'A' && seat[0] !== 'B') {
+    return
+  }
+  isSeat = true
 })
 
 const seatHandler = () => {
