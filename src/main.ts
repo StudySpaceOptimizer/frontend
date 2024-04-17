@@ -23,7 +23,7 @@ pinia.use(piniaPluginPersistedstate)
 const container = DependencyContainer.getInstance()
 container.register(api.API_SERVICE.USER, api.SupabaseUser)
 container.register(api.API_SERVICE.SEAT, api.SupabaseSeat)
-container.register(api.API_SERVICE.RESERVE, api.MockReserve)
+container.register(api.API_SERVICE.RESERVE, api.SupabaseReserve)
 
 app.use(pinia)
 app.use(router)

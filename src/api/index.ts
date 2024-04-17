@@ -3,7 +3,6 @@ export * from './common'
 export { SupabaseSeat } from './seat'
 export { SupabaseUser } from './user'
 export { SupabaseReserve } from './reserve'
-export * from './mock'
 
 export interface User {
   signIn(username: string, password: string): Promise<any>
