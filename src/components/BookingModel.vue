@@ -83,7 +83,7 @@ const handleCheckboxChange = (value: string[]) => {
   } else if (endTime.value === undefined) {
     endTime.value = nowSelectedTime
   } else {
-    ElMessage.warning('你ㄧ次只能選擇一個時間區間')
+    ElMessage.warning('你ㄧ次只能選擇一個連續區間')
   }
 
   const beginIndex = timeRange.findIndex((time) => time.value === beginTime.value)
