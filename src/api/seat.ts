@@ -41,7 +41,7 @@ export class SupabaseSeat implements Seat {
    * @returns Promise<Response<SeatDetail>>
    */
   async getSeatStatus(seatID: number): Promise<model.SeatDetail> {
-    let { data: active_seat_reservations, error } = await supabase.rpc(
+    const { data: active_seat_reservations, error } = await supabase.rpc(
       'get_seat_active_reservations',
       {
         seatID
@@ -52,7 +52,7 @@ export class SupabaseSeat implements Seat {
       throw new Error(error.message)
     }
 
-    let seatDetail: model.SeatDetail = {
+    const seatDetail: model.SeatDetail = {
       id: seatID,
       reservations:
         active_seat_reservations?.map((reservation: any) => ({

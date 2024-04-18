@@ -18,7 +18,7 @@ export class SupabaseReserve implements Reserve {
    * @returns Promise<Response<null>>
    */
   async reserve(seatID: string, beginTime: Date, endTime: Date): Promise<model.Success> {
-    let { data: authData, error: getUserError } = await supabase.auth.getUser()
+    const { data: authData, error: getUserError } = await supabase.auth.getUser()
 
     // 檢查是否成功獲取用戶資訊，或用戶是否存在
     if (getUserError || !authData.user) {
@@ -28,7 +28,7 @@ export class SupabaseReserve implements Reserve {
     // 提取用戶ID
     const userID = authData.user.id
 
-    const { data, error } = await supabase.from('reservations').insert([
+    const { error } = await supabase.from('reservations').insert([
       {
         begin_time: beginTime,
         end_time: endTime,
@@ -44,7 +44,7 @@ export class SupabaseReserve implements Reserve {
   }
 
   async getPersonalReservations(config: any): Promise<model.Reservation[]> {
-    let { data: reservations, error } = await supabase.rpc('get_my_reservations')
+    const { data: reservations } = await supabase.rpc('get_my_reservations')
     return (
       reservations?.map(
         (reservation: any): model.Reservation => ({
@@ -87,7 +87,7 @@ export class SupabaseReserve implements Reserve {
   }
 
   async terminateReservation(id: string): Promise<any> {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('reservations')
       .update({ end_time: new Date() })
       .eq('id', id)
