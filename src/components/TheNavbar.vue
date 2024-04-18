@@ -15,7 +15,7 @@ const accountStore = useAccountStore()
     <div class="user">
       <template v-if="accountStore.isSignIn">
         <span class="toggle"
-          >Hi, {{ accountStore.email == '' ? 'guest' : accountStore.email }}</span
+          >Hi, {{ accountStore.userDisplayName }}</span
         >
         <div class="dropdown">
           <button @click="accountStore.signOut()">Sign Out</button>
@@ -24,7 +24,7 @@ const accountStore = useAccountStore()
         </div>
       </template>
       <template v-else>
-        <button @click="accountStore.toggleDialog('signIn')">Sign In</button>
+        <el-button @click="accountStore.toggleDialog('signIn')">Sign In</el-button>
       </template>
     </div>
   </header>
