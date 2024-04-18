@@ -42,7 +42,3 @@ export class SupabaseSeat implements Seat {
     throw new Error('Method not implemented.')
   }
 }
-
-function dateCheck(begin: Date, end: Date): boolean {
-  return true
-}

@@ -62,13 +62,14 @@ export interface SeatData {
   status: 'available' | 'booked' | 'partiallyBooked' | 'unavailable'
 }
 
-export interface SeatDetail extends SeatData {
+export interface SeatDetail {
+  id: string
   /**
    * The booked range of the seat
    */
-  bookedRange: {
-    begin: Date
-    end: Date
+  reservations: {
+    beginTime: Date
+    endTime: Date
 
     /**
      * Need admin permission to get this field

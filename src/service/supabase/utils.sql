@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION get_user_datas()
+CREATE OR REPLACE FUNCTION get_user_data()
 RETURNS TABLE(
     id UUID,
     email TEXT,

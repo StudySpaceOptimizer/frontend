@@ -84,7 +84,7 @@ export class SupabaseUser implements User {
    * @returns Promise<Response<UserData[]>>
    */
   async getUsers(): Promise<model.UserData[]> {
-    let { data: userProfiles, error } = await supabase.rpc('get_user_datas')
+    let { data: userProfiles, error } = await supabase.rpc('get_user_data')
 
     if (error) {
       throw new Error(error.message)

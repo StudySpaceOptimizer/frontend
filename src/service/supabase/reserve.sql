@@ -93,7 +93,7 @@ BEGIN
 
     -- 檢查預約時間是否與同一座位的其他預約重疊
     IF EXISTS (
-        SELECT 1 FROM active_seat_timeslots
+        SELECT 1 FROM active_seat_reservations
         WHERE seat_id = NEW.seat_id
         AND   (NEW.begin_time, NEW.end_time) OVERLAPS (begin_time, end_time)
     ) THEN
@@ -236,7 +236,7 @@ BEGIN
     -- 檢查是否用戶今天有未完成的預約
     IF EXISTS (
         SELECT 1
-        FROM active_closed_periods
+        FROM active_reservations
         WHERE user_id = NEW.user_id
         -- 預約的開始日期為當天
         AND CAST(begin_time AS DATE) = CURRENT_DATE
@@ -264,19 +264,19 @@ SECURITY INVOKER
 AS $$
 BEGIN
     -- 插入新的 user_profile 記錄
-    INSERT INTO seat_timeslots (seat_id, begin_time, end_time, reservation_id) VALUES (NEW.id, NEW.email, false, 0);
+    INSERT INTO seat_reservations (seat_id, begin_time, end_time, reservation_id) VALUES (NEW.id, NEW.email, false, 0);
 
     RETURN NULL;
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION update_seat_timeslots()
+CREATE OR REPLACE FUNCTION update_seat_reservations()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
-    INSERT INTO seat_timeslots (seat_id, begin_time, end_time, reservation_id)
+    INSERT INTO seat_reservations (seat_id, begin_time, end_time, reservation_id)
     SELECT NEW.seat_id, NEW.begin_time, NEW.end_time, NEW.id
     FROM reservations
     WHERE id = NEW.id
@@ -286,47 +286,48 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER trigger_update_seat_timeslots
+CREATE TRIGGER trigger_update_seat_reservations
 AFTER INSERT OR UPDATE ON reservations
 FOR EACH ROW
-EXECUTE FUNCTION update_seat_timeslots();
+EXECUTE FUNCTION update_seat_reservations();
 
 
 
 -- 創建座位預約表
-CREATE TABLE IF NOT EXISTS seat_timeslots (
+CREATE TABLE IF NOT EXISTS seat_reservations (
     seat_id int8 NOT NULL,
     begin_time timestamp with time zone NOT NULL,
     end_time timestamp with time zone NOT NULL,
     reservation_id UUID NOT NULL,
     CONSTRAINT fk_reservation FOREIGN KEY(reservation_id) REFERENCES reservations(id) ON DELETE CASCADE,
+    CONSTRAINT fk_seat_id FOREIGN KEY(seat_id) REFERENCES seats(id) ON DELETE CASCADE,
     PRIMARY KEY (seat_id, begin_time, end_time)
 );
 
 -- 創建索引
-CREATE INDEX IF NOT EXISTS idx_seat_timeslots_end_time ON seat_timeslots (end_time);
+CREATE INDEX IF NOT EXISTS idx_seat_reservations_end_time ON seat_reservations (end_time);
 
 -- 創建視圖以篩選活躍的座位預約時段
-CREATE OR REPLACE VIEW active_seat_timeslots
+CREATE OR REPLACE VIEW active_seat_reservations
 WITH (security_invoker = on) AS
 SELECT *
-FROM public.seat_timeslots
+FROM public.seat_reservations
 WHERE end_time > NOW();
 
 -- 啟用RLS
-ALTER TABLE seat_timeslots ENABLE ROW LEVEL SECURITY;
+ALTER TABLE seat_reservations ENABLE ROW LEVEL SECURITY;
 
 -- 允許管理員所有權限
-DROP POLICY IF EXISTS admin_all_access ON seat_timeslots;
-CREATE POLICY admin_all_access ON seat_timeslots
+DROP POLICY IF EXISTS admin_all_access ON seat_reservations;
+CREATE POLICY admin_all_access ON seat_reservations
 AS PERMISSIVE
 FOR ALL
 USING (is_claims_admin())
 WITH CHECK (is_claims_admin());
 
 -- 允許所有用戶查詢座位預約時段
-DROP POLICY IF EXISTS select_policy ON seat_timeslots;
-CREATE POLICY select_policy ON seat_timeslots 
+DROP POLICY IF EXISTS select_policy ON seat_reservations;
+CREATE POLICY select_policy ON seat_reservations 
 AS PERMISSIVE
 FOR SELECT 
 USING (true);

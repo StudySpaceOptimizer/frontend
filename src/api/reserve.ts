@@ -86,39 +86,16 @@ export class SupabaseReserve implements Reserve {
     // 是否要確認成功刪除
   }
 
-  terminateReservation(id: string): Promise<any> {
-    throw new Error('Method not implemented.')
-  }
+  async terminateReservation(id: string): Promise<any> {
+    const { data, error } = await supabase
+      .from('reservations')
+      .update({ end_time: new Date() })
+      .eq('id', id)
+      .select()
 
-  /**
-   * Get the booked seats of the user, returns a list of {@link BookedSeat}.
-   * Admin can get all the booked seats.
-   * @url GET /api/user/seats?begin=begin&end=end
-   * @param begin
-   * @param end
-   * @returns Promise<Response<BookedSeat[]>>
-   */
-  getPersonalBookedSeats(config?: FilterRequest): Promise<Response<model.Reservation[]>> {
-    throw new Error('Method not implemented.')
-  }
-
-  /**
-   * Delete the booked seat of the user, return success or fail (true or false)
-   * @url DELETE /api/user/seats/:id
-   * @param id
-   * @returns Promise<Response<null>>
-   */
-  deleteBookedSeat(id: string): Promise<Response<null>> {
-    throw new Error('Method not implemented.')
-  }
-
-  /**
-   * User early terminate the seat, return success or fail (true or false)
-   * @param id
-   * @returns Promise<Response<null>>
-   */
-  earlyTerminateBookedSeat(id: string): Promise<Response<null>> {
-    throw new Error('Method not implemented.')
+    if (error) {
+      throw new Error(error.message)
+    }
   }
 
   /**
