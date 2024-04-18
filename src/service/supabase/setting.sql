@@ -36,7 +36,7 @@ VALUES
     ('weekday_opening_hours', '{"begin_time": "08:00", "end_time": "22:00"}', '工作日開放時間'),
     ('weekend_opening_hours', '{"begin_time": "09:00", "end_time": "17:00"}', '週末開放時間'),
     ('minimum_reservatio_duration', '1', '最小預約時間單位為小時'),
-    ('maximum_reservation_duration', '4', '單次預約時間上限為小時'),
+    ('maximum_reservation_duration', '6', '單次預約時間上限為小時'),
     ('student_reservation_limit', '7', '學生提前預約期限為天'),
     ('outsider_reservation_limit', '0', '校外人士提前預約期限為天'),
     ('points_to_ban_user', '7', '達到一定的點數就自動封禁使用者')

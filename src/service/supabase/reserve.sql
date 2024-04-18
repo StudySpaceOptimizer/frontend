@@ -286,6 +286,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trigger_update_seat_reservations ON reservations;
 CREATE TRIGGER trigger_update_seat_reservations
 AFTER INSERT OR UPDATE ON reservations
 FOR EACH ROW

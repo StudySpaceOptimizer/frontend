@@ -1,6 +1,7 @@
 import type * as model from './model'
-import type { Response } from './common'
+import { toLocalDateTime } from './common'
 import type { Seat } from './index'
+import { supabase } from '../service/supabase/supabase'
 
 interface SeatRequest {
   begin?: Date
@@ -14,11 +15,12 @@ export class SupabaseSeat implements Seat {
    * @url GET /api/seats?begin=begin&end=end
    * @returns Promise<Response<SeatData[]>>
    */
-  getSeatsStatus(config: SeatRequest): Promise<Response<model.SeatData[]>> {
+  getSeatsStatus(config: SeatRequest): Promise<model.SeatData[]> {
     const { begin, end } = config
     if (Boolean(begin) !== Boolean(end)) {
       throw new Error('begin and end need to provide same time, or both not provide')
     }
+
     throw new Error('Method not implemented.')
   }
 
@@ -28,7 +30,7 @@ export class SupabaseSeat implements Seat {
    * @url GET /api/seats/configurations
    * @returns Promise<Response<any>>
    */
-  getSeatsConfigurations(): Promise<Response<any>> {
+  getSeatsConfigurations(): Promise<any> {
     throw new Error('Method not implemented.')
   }
 
@@ -38,7 +40,44 @@ export class SupabaseSeat implements Seat {
    * @param id
    * @returns Promise<Response<SeatDetail>>
    */
-  getSeatStatus(id: string): Promise<Response<model.SeatDetail>> {
-    throw new Error('Method not implemented.')
+  async getSeatStatus(seatID: number): Promise<model.SeatDetail> {
+    let { data: active_seat_reservations, error } = await supabase.rpc(
+      'get_seat_active_reservations',
+      {
+        seatID
+      }
+    )
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    let seatDetail: model.SeatDetail = {
+      id: seatID,
+      reservations:
+        active_seat_reservations?.map((reservation: any) => ({
+          beginTime: toLocalDateTime(reservation.begin_time),
+          endTime: toLocalDateTime(reservation.end_time),
+          user: {
+            id: reservation.user_id,
+            email: reservation.email,
+            userRole: reservation.user_role,
+            adminRole: reservation.admin_role,
+            isIn: reservation.is_in,
+            name: reservation.name,
+            phone: reservation.phone,
+            idCard: reservation.id_card,
+            point: reservation.point,
+            ban: reservation.blacklist
+              ? {
+                  reason: reservation.blacklist[0].reason,
+                  endAt: new Date(reservation.blacklist[0].end_at)
+                }
+              : undefined
+          }
+        })) || []
+    }
+
+    return seatDetail
   }
 }

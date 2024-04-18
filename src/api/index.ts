@@ -18,7 +18,7 @@ export interface User {
 export interface Seat {
   getSeatsStatus(config: any): Promise<any>
   getSeatsConfigurations(): Promise<any>
-  getSeatStatus(id: string): Promise<any>
+  getSeatStatus(id: number): Promise<any>
 }
 
 export interface Reserve {
