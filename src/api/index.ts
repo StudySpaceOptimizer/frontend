@@ -6,6 +6,8 @@ export { SupabaseReserve } from './reserve'
 
 export interface User {
   signIn(username: string, password: string): Promise<any>
+  signOut(): Promise<any>
+  checkIsSignIn(): Promise<any>
   studentSignUp(name: string, username: string, password: string): Promise<any>
   outsiderSignUp(name: string, phone: string, idcard: string, email: string): Promise<any>
   getUsers(all: boolean): Promise<any>
