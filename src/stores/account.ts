@@ -76,7 +76,7 @@ export const useAccountStore = defineStore(
     async function getUserProfile() {
       try {
         const userData = await api.getUsers(false)
-        userDisplayName.value = userData.name
+        userDisplayName.value = userData[0].name
       } catch (error) {
         ElMessage.error('取得使用者資料失敗')
       }
@@ -86,7 +86,7 @@ export const useAccountStore = defineStore(
       if (oldValue === false && newValue === true) {
         getUserProfile()
       }
-    }, { flush: 'post' })
+    })
 
     return {
       isSignIn,
@@ -97,6 +97,7 @@ export const useAccountStore = defineStore(
       studentSignUp,
       outsiderSignUp,
       toggleDialog,
+      getUserProfile,
       dialogStatus
     }
   },
