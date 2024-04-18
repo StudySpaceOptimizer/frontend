@@ -102,7 +102,25 @@ export class SupabaseUser implements User {
         throw new Error(error.message)
       }
 
-      return userProfiles[0]
+      return userProfiles?.map(
+        (profile: any): model.UserData => ({
+          id: profile.id,
+          email: profile.email,
+          userRole: profile.user_role,
+          adminRole: profile.admin_role,
+          isIn: profile.is_in,
+          name: profile.name,
+          phone: profile.phone,
+          idCard: profile.id_card,
+          point: profile.point,
+          ban: profile.blacklist
+            ? {
+                reason: profile.blacklist[0].reason,
+                endAt: new Date(profile.blacklist[0].end_at)
+              }
+            : undefined
+        })
+      )
     }
 
     const { data: userProfiles, error } = await supabase.rpc('get_user_datas')
@@ -132,6 +150,20 @@ export class SupabaseUser implements User {
         })
       ) || []
     )
+  }
+
+  async updateProfile(data: any): Promise<void> {
+    const { error } = await supabase.from('user_profiles').update([
+      {
+        name: data.name,
+        phone: data.phone,
+        id_card: data.idcard
+      }
+    ]).eq('id', data.id)
+    
+    if (error) {
+      throw new Error(error.message)
+    }
   }
 
   /**
