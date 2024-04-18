@@ -41,7 +41,7 @@ const bookingRecord = computed(() =>
   position: relative;
   margin-top: 16px;
   height: 500px;
-  width: 80%;
+  width: 100%;
   border-radius: 6px;
   background-color: #e8e8e8;
 

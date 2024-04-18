@@ -19,7 +19,7 @@ useResizeObserver(mapRef, (entries) => {
 
 <template>
   <SeatIllustration />
-  <TheFilter />
+  <TheFilter style="width: 80%" />
   <div class="map" ref="mapRef">
     <SeatMap :width="mapRefWidth" :height="mapRefHeight" />
   </div>

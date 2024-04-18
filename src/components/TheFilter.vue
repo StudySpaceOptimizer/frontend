@@ -120,7 +120,7 @@ form {
   justify-content: center;
   background-color: gray;
   border-radius: 6px;
-  width: 80%;
+  width: 100%;
   padding: 20px;
 
   label,
