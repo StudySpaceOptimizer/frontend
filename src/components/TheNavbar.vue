@@ -14,9 +14,7 @@ const accountStore = useAccountStore()
     </div>
     <div class="user">
       <template v-if="accountStore.isSignIn">
-        <span class="toggle"
-          >Hi, {{ accountStore.userDisplayName }}</span
-        >
+        <span class="toggle">Hi, {{ accountStore.userDisplayName }}</span>
         <div class="dropdown">
           <button @click="accountStore.signOut()">Sign Out</button>
           <RouterLink to="/profile">Profile</RouterLink>

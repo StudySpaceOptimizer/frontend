@@ -15,7 +15,7 @@ const props = defineProps({
   width: {
     type: Number,
     default: 1200
-   },
+  },
   height: {
     type: Number,
     default: 600
@@ -32,14 +32,14 @@ const drawStageConfig = reactive({
   scaleX: 0.55,
   scaleY: 0.55,
   offsetX: -600,
-  offsetY: -300,
+  offsetY: -300
 })
 let isDragging = false
 let lastPos = { x: 0, y: 0 }
 
 const drawStage = new DrawStage()
 
-const handleWheel = (e: any) => {
+function handleWheel(e: any): void {
   e.evt.preventDefault()
   const scaleBy = 1.1
   const stage = stageRef.value.getStage()
@@ -48,24 +48,24 @@ const handleWheel = (e: any) => {
 
   var mousePointTo = {
     x: (pointer.x - stage.x()) / oldScale,
-    y: (pointer.y - stage.y()) / oldScale,
+    y: (pointer.y - stage.y()) / oldScale
   }
   let newScale = e.evt.deltaY <= 0 ? oldScale * scaleBy : oldScale / scaleBy
   newScale = Math.max(0.25, newScale)
   newScale = Math.min(4, newScale)
 
   stage.scale({ x: newScale, y: newScale })
-  drawStageConfig.x = pointer.x - mousePointTo.x * newScale,
-  drawStageConfig.y = pointer.y - mousePointTo.y * newScale,
-  stage.batchDraw()
+  ;(drawStageConfig.x = pointer.x - mousePointTo.x * newScale),
+    (drawStageConfig.y = pointer.y - mousePointTo.y * newScale),
+    stage.batchDraw()
 }
 
-function handleMouseDown(e: any) {
+function handleMouseDown(e: any): void {
   isDragging = true
   lastPos = { x: e.evt.clientX, y: e.evt.clientY }
 }
 
-function handleMouseUp() {
+function handleMouseUp(): void {
   // TODO: This is a workaround to prevent selecting seat when dragging, need to find a better way
   setTimeout(() => {
     seatStore.toggleCanSelect(true)
@@ -74,11 +74,11 @@ function handleMouseUp() {
   isDragging = false
 }
 
-function handleMouseMove(e: any) {
+function handleMouseMove(e: any): void {
   if (isDragging) {
     seatStore.toggleCanSelect(false)
-    const deltaX = (e.evt.clientX - lastPos.x)
-    const deltaY = (e.evt.clientY - lastPos.y)
+    const deltaX = e.evt.clientX - lastPos.x
+    const deltaY = e.evt.clientY - lastPos.y
     drawStageConfig.x += deltaX
     drawStageConfig.y += deltaY
     lastPos = { x: e.evt.clientX, y: e.evt.clientY }

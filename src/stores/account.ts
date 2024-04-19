@@ -23,9 +23,9 @@ export const useAccountStore = defineStore(
       }
     }
 
-    async function signIn(_email: string, _password: string): Promise<void> {
+    async function signIn({ email, password }: { email: string; password: string }): Promise<void> {
       try {
-        await api.signIn(_email, _password)
+        await api.signIn(email, password)
         isSignIn.value = true
         toggleDialog()
         ElMessage.success('登入成功')
@@ -35,19 +35,38 @@ export const useAccountStore = defineStore(
       }
     }
 
-    async function studentSignUp(_name: string, _email: string, _password: string) {
-      await api.studentSignUp(_name, _email, _password)
+    async function studentSignUp({
+      name,
+      email,
+      password
+    }: {
+      name: string
+      email: string
+      password: string
+    }): Promise<void> {
+      await api.studentSignUp(name, email, password)
       toggleDialog()
       ElMessage.success('註冊成功')
     }
 
-    async function outsiderSignUp(_name: string, _phone: string, _idcard: string, _email: string) {
-      await api.outsiderSignUp(_name, _phone, _idcard, _email)
+    async function outsiderSignUp({
+      name,
+      phone,
+      idCard,
+      email
+    }: {
+      name: string
+      phone: string
+      idCard: string
+      email: string
+    }): Promise<void> {
+      throw new Error('尚未開放註冊校外人士')
+      await api.outsiderSignUp(name, phone, idCard, email)
       toggleDialog()
       ElMessage.success('註冊成功')
     }
 
-    function signOut() {
+    function signOut(): void {
       try {
         api.signOut()
         isSignIn.value = false
@@ -59,7 +78,7 @@ export const useAccountStore = defineStore(
       }
     }
 
-    async function checkIsSignIn() {
+    async function checkIsSignIn(): Promise<void> {
       try {
         isSignIn.value = await api.checkIsSignIn()
       } catch (error) {
@@ -71,7 +90,7 @@ export const useAccountStore = defineStore(
       }
     }
 
-    async function getUserProfile() {
+    async function getUserProfile(): Promise<void> {
       try {
         const userData = await api.getUsers(false)
         userDisplayName.value = userData[0].name ?? 'guest'

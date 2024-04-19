@@ -26,7 +26,7 @@ watchEffect(() => {
   }
 })
 
-const clearTimeSetting = () => {
+function clearTimeSetting(): void {
   beginTime.value = undefined
   endTime.value = undefined
   oldCheckboxGroup1 = []
@@ -34,7 +34,7 @@ const clearTimeSetting = () => {
   timeRange.forEach((time) => (time.disabled = false))
 }
 
-const handleClose = () => {
+function handleClose(): void {
   dialogVisible.value = false
   seatStore.unselectSeat()
   clearTimeSetting()
@@ -49,7 +49,7 @@ const nowFilterDate = computed(() => {
 const beginTime = ref<string | undefined>(undefined)
 const endTime = ref<string | undefined>(undefined)
 let oldCheckboxGroup1: string[] = []
-const handleBooking = () => {
+function handleBooking(): void {
   if (beginTime.value === undefined || endTime.value === undefined) {
     ElMessage.warning('請選擇預約時間')
     return
@@ -70,7 +70,13 @@ const handleBooking = () => {
     })
 }
 
-const findSelectedTime = (oldValue: string[], newValue: string[]) => {
+function findSelectedTime({
+  oldValue,
+  newValue
+}: {
+  oldValue: string[]
+  newValue: string[]
+}): string | undefined {
   if (oldValue.length < newValue.length) {
     return newValue.find((value) => !oldValue.includes(value))
   } else if (oldValue.length > newValue.length) {
@@ -79,8 +85,8 @@ const findSelectedTime = (oldValue: string[], newValue: string[]) => {
   return undefined
 }
 
-const handleCheckboxChange = (value: string[]) => {
-  const nowSelectedTime = findSelectedTime(oldCheckboxGroup1, value)
+function handleCheckboxChange(value: string[]): void {
+  const nowSelectedTime = findSelectedTime({ oldValue: oldCheckboxGroup1, newValue: value })
 
   if (beginTime.value === nowSelectedTime) {
     beginTime.value = undefined

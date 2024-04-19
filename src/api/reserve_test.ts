@@ -9,12 +9,12 @@ const admin = 'admin@mail.com'
 const password = 'password'
 
 async function signIn(email: string, password: string): Promise<any> {
-  let { error: signOut } = await supabase.auth.signOut()
+  const { error: signOut } = await supabase.auth.signOut()
   if (signOut) {
     throw signOut
   }
 
-  let { data: _, error: signIn } = await supabase.auth.signInWithPassword({
+  const { data: _, error: signIn } = await supabase.auth.signInWithPassword({
     email: email,
     password: password
   })
@@ -23,7 +23,7 @@ async function signIn(email: string, password: string): Promise<any> {
     throw signIn
   }
 
-  let {
+  const {
     data: { user },
     error: getUser
   } = await supabase.auth.getUser()
@@ -36,7 +36,7 @@ async function signIn(email: string, password: string): Promise<any> {
 }
 
 async function testReserveSuccess() {
-  let user = await signIn(student, password)
+  const user = await signIn(student, password)
 
   // 生成預訂資料
   const reservation = {
@@ -63,14 +63,14 @@ async function testReserveSuccess() {
 }
 
 async function testGetPersonalReservationsSuccess() {
-  let user = await signIn(student, password)
+  const user = await signIn(student, password)
 
-  let { data: reservations, error } = await supabase.rpc('get_my_reservations')
+  const { data: reservations, error } = await supabase.rpc('get_my_reservations')
   console.log(reservations, error)
 }
 
 async function testDeleteReservationSuccess() {
-  let user = await signIn(student, password)
+  const user = await signIn(student, password)
 
   const id = '20fc4dd0-2d14-4f98-8531-e4afe13926a1'
 
@@ -80,7 +80,7 @@ async function testDeleteReservationSuccess() {
 }
 
 async function testTerminateReservationSuccess() {
-  let user = await signIn(admin, password)
+  const user = await signIn(admin, password)
 
   const id = '2ea209f5-2a41-4c6c-a5b5-1f5b441b314a'
 

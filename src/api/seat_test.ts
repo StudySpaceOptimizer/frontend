@@ -10,12 +10,12 @@ const admin = 'admin@mail.com'
 const password = 'password'
 
 async function signIn(email: string, password: string): Promise<any> {
-  let { error: signOut } = await supabase.auth.signOut()
+  const { error: signOut } = await supabase.auth.signOut()
   if (signOut) {
     throw signOut
   }
 
-  let { data: _, error: signIn } = await supabase.auth.signInWithPassword({
+  const { data: _, error: signIn } = await supabase.auth.signInWithPassword({
     email: email,
     password: password
   })
@@ -24,7 +24,7 @@ async function signIn(email: string, password: string): Promise<any> {
     throw signIn
   }
 
-  let {
+  const {
     data: { user },
     error: getUser
   } = await supabase.auth.getUser()
@@ -37,16 +37,16 @@ async function signIn(email: string, password: string): Promise<any> {
 }
 
 async function testGetSeatStatusUser() {
-  let user = await signIn(student, password)
+  const user = await signIn(student, password)
 
-  let seatID = 1
+  const seatID = 1
 
-  let { data: active_seat_reservations, error } = await supabase
+  const { data: active_seat_reservations, error } = await supabase
     .from('active_seat_reservations')
     .select('*')
     .eq('seat_id', seatID)
 
-  let seatDetail: model.SeatDetail = {
+  const seatDetail: model.SeatDetail = {
     id: seatID,
     reservations:
       active_seat_reservations?.map((reservation: any) => ({
@@ -61,11 +61,11 @@ async function testGetSeatStatusUser() {
 }
 
 async function testGetSeatStatusAdmin() {
-  let user = await signIn(admin, password)
+  const user = await signIn(admin, password)
 
-  let seatID = 1
+  const seatID = 1
 
-  let { data: active_seat_reservations, error } = await supabase.rpc(
+  const { data: active_seat_reservations, error } = await supabase.rpc(
     'get_seat_active_reservations',
     {
       seatID
@@ -74,7 +74,7 @@ async function testGetSeatStatusAdmin() {
 
   console.log(active_seat_reservations, error)
 
-  let seatDetail: model.SeatDetail = {
+  const seatDetail: model.SeatDetail = {
     id: seatID,
     reservations:
       active_seat_reservations?.map((reservation: any) => ({
@@ -104,7 +104,7 @@ async function testGetSeatStatusAdmin() {
 }
 
 async function testGetSeatsStatus() {
-  let user = await signIn(outsider, password)
+  const user = await signIn(outsider, password)
   const beginTime = new Date()
   const now = new Date() // 取得當前時間
   const endTime = new Date(now) // 創建一個新的 Date 物件，以當前時間為基礎
@@ -112,10 +112,10 @@ async function testGetSeatsStatus() {
 
   console.log(beginTime.toLocaleString(), endTime.toLocaleString())
 
-  let { data: seatInfo, error: getSeatsError } = await supabase.from('seats').select('*')
+  const { data: seatInfo, error: getSeatsError } = await supabase.from('seats').select('*')
   console.log(seatInfo, getSeatsError)
 
-  let seatData: { [key: number]: model.SeatData } = {}
+  const seatData: { [key: number]: model.SeatData } = {}
 
   if (seatInfo == null) return
 
@@ -128,7 +128,7 @@ async function testGetSeatsStatus() {
     }
   })
 
-  let { data: reservationsData, error: getActiveReservationError } = await supabase
+  const { data: reservationsData, error: getActiveReservationError } = await supabase
     .from('active_seat_reservations')
     .select('*')
     .gte('begin_time', beginTime.toLocaleString())

@@ -12,29 +12,29 @@ export const useSeatStore = defineStore('seat', () => {
   const seatsStatus = ref<Model.SeatData[]>([])
   let canSelect = true
 
-  const selectSeat = (seatId: string) => {
+  function selectSeat(seatId: string): void {
     if (!canSelect) return
     nowSelectedSeat.value = seatId
   }
 
-  const unselectSeat = () => {
+  function unselectSeat(): void {
     nowSelectedSeat.value = null
   }
 
-  const toggleCanSelect = (state: boolean) => {
+  function toggleCanSelect(state: boolean): void {
     canSelect = state
   }
 
-  const fetchSeatsStatus = async (filter: Filter) => {
-    seatsStatus.value =  await seatApi.getSeatsStatus({
+  async function fetchSeatsStatus(filter: Filter): Promise<void> {
+    seatsStatus.value = await seatApi.getSeatsStatus({
       beginTime: filter.beginTime,
       endTime: filter.endTime
     })
   }
 
-  const getSeatStatus = async (seatID: string) => {
+  async function getSeatStatus(seatID: string): Promise<Model.SeatData | undefined> {
     // TODO: optimize this
-    return seatsStatus.value.find(seat => seat.id === seatID)
+    return seatsStatus.value.find((seat) => seat.id === seatID)
   }
 
   return {

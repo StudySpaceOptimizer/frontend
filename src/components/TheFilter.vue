@@ -38,7 +38,7 @@ const filter = reactive<Filter>({
   endTime: new Date()
 })
 
-const doFilter = () => {
+function doFilter(): void {
   if (!filter.beginTime || !filter.endTime) return
   if (filter.beginTime > filter.endTime) {
     ElMessage.error('開始時間不得晚於結束時間')
@@ -64,11 +64,7 @@ watchEffect(() => {
   <form @submit.prevent="doFilter">
     <template v-if="show.time">
       <div class="date-filter-item">
-        <el-date-picker
-          v-model="DateTimePicker.date"
-          type="date"
-          size="default"
-        />
+        <el-date-picker v-model="DateTimePicker.date" type="date" size="default" />
       </div>
       <div class="date-filter-item">
         <el-time-select

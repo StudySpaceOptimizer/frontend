@@ -12,7 +12,7 @@ const props = defineProps({
 })
 const components = computed<any[]>(() => props.components)
 
-const checkIsSeat = () => {
+function checkIsSeat(): boolean {
   if (components.value.length !== 2) {
     return false
   }
@@ -29,7 +29,7 @@ watchEffect(async () => {
     isSeat = false
     return
   }
-  
+
   const seatStatus = await seatStore.getSeatStatus(components.value[1].config.text)
   if (!seatStatus) {
     components.value[0].config.fill = '#808080'
@@ -61,7 +61,7 @@ watchEffect(async () => {
   }
 })
 
-const seatHandler = () => {
+function seatHandler(): void {
   if (!isSeat) {
     return
   }
@@ -79,7 +79,7 @@ const seatHandler = () => {
       </v-group>
     </template>
     <template v-else>
-      <component :is="component.type" :config="component.config" @click="seatHandler"/>
+      <component :is="component.type" :config="component.config" @click="seatHandler" />
     </template>
   </template>
 </template>

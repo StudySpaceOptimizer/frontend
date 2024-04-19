@@ -16,7 +16,7 @@ const studentSignUp = reactive({
 const otherSignUp = reactive({
   name: '',
   telphone: '',
-  id: '',
+  idCard: '',
   email: ''
 })
 const loading = ref(false)
@@ -43,8 +43,7 @@ const rules = {
   ]
 }
 
-const signUp = async (formEl: FormInstance | undefined) => {
-  console.log(formEl)
+async function signUp(formEl: FormInstance | undefined): Promise<void> {
   if (!formEl) return
   if (!(await formEl.validate())) return
 
@@ -56,22 +55,22 @@ const signUp = async (formEl: FormInstance | undefined) => {
       return
     }
     try {
-      await accountStore.studentSignUp(
-        studentSignUp.name,
-        studentSignUp.studentId + '@mail.ntou.edu.tw',
-        studentSignUp.password
-      )
+      await accountStore.studentSignUp({
+        name: studentSignUp.name,
+        email: studentSignUp.studentId + '@mail.ntou.edu.tw',
+        password: studentSignUp.password
+      })
     } catch (error: any) {
       ElMessage.error('註冊失敗:' + error.message)
     }
     loading.value = false
   } else {
-    await accountStore.outsiderSignUp(
-      otherSignUp.name,
-      otherSignUp.telphone,
-      otherSignUp.id,
-      otherSignUp.email
-    )
+    await accountStore.outsiderSignUp({
+      name: otherSignUp.name,
+      phone: otherSignUp.telphone,
+      idCard: otherSignUp.idCard,
+      email: otherSignUp.email
+    })
     loading.value = false
   }
 }
@@ -94,11 +93,8 @@ const signUp = async (formEl: FormInstance | undefined) => {
       ref="signUpForm"
     >
       <template v-if="identity === 'student'">
-        <!-- <el-form-item label="姓名" prop="name">
-          <el-input v-model="studentSignUp.name" placeholder="姓名" autofocus></el-input>
-        </el-form-item> -->
         <el-form-item label="信箱" prop="studentId">
-          <el-input v-model="studentSignUp.studentId" placeholder="學號" maxlength="8">
+          <el-input v-model="studentSignUp.studentId" placeholder="學號" maxlength="8" autofocus>
             <template #append>@mail.ntou.edu.tw</template>
           </el-input>
         </el-form-item>
@@ -130,7 +126,7 @@ const signUp = async (formEl: FormInstance | undefined) => {
           <el-input v-model="otherSignUp.telphone" placeholder="手機號碼"></el-input>
         </el-form-item>
         <el-form-item label="身分證字號">
-          <el-input v-model="otherSignUp.id" placeholder="身分證字號"></el-input>
+          <el-input v-model="otherSignUp.idCard" placeholder="身分證字號"></el-input>
         </el-form-item>
         <el-form-item label="電子郵件">
           <el-input v-model="otherSignUp.email" placeholder="電子郵件"></el-input>
@@ -139,9 +135,7 @@ const signUp = async (formEl: FormInstance | undefined) => {
     </el-form>
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="accountStore.toggleDialog('signIn')" text
-          >已經有帳號了？登入</el-button
-        >
+        <el-button @click="accountStore.toggleDialog('signIn')" text>已經有帳號了？登入</el-button>
         <el-button type="primary" @click="signUp(signUpForm)" :loading="loading">註冊</el-button>
       </div>
     </template>

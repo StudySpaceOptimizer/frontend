@@ -11,7 +11,7 @@ const bookingRecord = computed(() =>
       newItem.range = {
         date: new Date(item.beginTime).toLocaleDateString(),
         start: new Date(item.beginTime).toLocaleTimeString().split(':').splice(0, 2).join(':'),
-        end: new Date(item.endTime).toLocaleTimeString().split(':').splice(0, 2).join(':'),
+        end: new Date(item.endTime).toLocaleTimeString().split(':').splice(0, 2).join(':')
       }
     }
     return newItem
@@ -30,7 +30,9 @@ const bookingRecord = computed(() =>
         <p v-if="item.user?.idCard">身分證字號：{{ item.user.idCard }}</p>
         <p v-if="item.user?.ban">{{ item.user.ban.points }} 點</p>
         <p v-if="item.user?.ban?.banned">{{ item.user.ban.banned }} ~ {{ item.user.ban.until }}</p>
-        <el-button v-for="action in item.actions" :key="action" @click="action.handler">{{ action.text }}</el-button>
+        <el-button v-for="action in item.actions" :key="action" @click="action.handler">{{
+          action.text
+        }}</el-button>
       </li>
     </ul>
   </div>

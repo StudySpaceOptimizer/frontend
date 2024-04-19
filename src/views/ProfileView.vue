@@ -16,14 +16,14 @@ const filterStore = useFilterStore()
 
 const listViewData = ref<any[]>([])
 
-const getData = (config: Filter) => {
+function getData(config: Filter): void {
   api.getPersonalReservations(config).then((res) => {
     listViewData.value = listViewDataConstructor(res)
   })
 }
 
 // Construct data for ListView
-const listViewDataConstructor = (res: any) => {
+function listViewDataConstructor(res: any): any {
   return res.map((item: any) => {
     // personal reservation unnecessary to show user's data
     item.user = null
@@ -49,24 +49,23 @@ const listViewDataConstructor = (res: any) => {
   })
 }
 
-const cancelBooking = async (id: string) => {
+async function cancelBooking(id: string): Promise<void> {
   ElMessageBox.confirm('確定要取消預約嗎？' + id, '提示', {
     confirmButtonText: '確定',
     cancelButtonText: '取消',
     type: 'warning'
+  }).then(async () => {
+    try {
+      await api.deleteReservation(id)
+      ElMessage.success('取消預約成功')
+      getData(filterStore.getFilter('profile'))
+    } catch (error: any) {
+      ElMessage.error(error.message)
+    }
   })
-    .then(async () => {
-      try {
-        await api.deleteReservation(id)
-        ElMessage.success('取消預約成功')
-        getData(filterStore.getFilter('profile'))
-      } catch (error: any) {
-        ElMessage.error(error.message)
-      }
-    })
 }
 
-const terminateBooking = (id: string) => {
+function terminateBooking(id: string): void {
   const confirm = window.confirm('確定要提前離開嗎？')
   if (!confirm) return
   api.terminateReservation(id).then(() => {
@@ -97,7 +96,7 @@ const rules = {
   ]
 }
 
-const getUserProfile = async () => {
+async function getUserProfile(): Promise<void> {
   try {
     const data = await userApi.getUsers(false)
     userProfile.value = data[0]
@@ -107,7 +106,7 @@ const getUserProfile = async () => {
 }
 
 const accountStore = useAccountStore()
-const onSaveProfile = async (fromEl: FormInstance | undefined) => {
+async function onSaveProfile(fromEl: FormInstance | undefined): Promise<void> {
   if (!fromEl) return
   if (!(await fromEl.validate())) return
 
@@ -126,7 +125,7 @@ const onSaveProfile = async (fromEl: FormInstance | undefined) => {
   }
 }
 
-const onCanceled = () => {
+function onCanceled(): void {
   isGetedUserProfile = false
   isUserProfileChange.value = false
   getUserProfile()

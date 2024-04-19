@@ -7,9 +7,14 @@ const email = ref('')
 const password = ref('')
 const loading = ref(false)
 
-const signIn = () => {
+function signIn(): void {
   loading.value = true
-  accountStore.signIn(email.value, password.value).then(() => loading.value = false)
+  accountStore
+    .signIn({
+      email: email.value,
+      password: password.value
+    })
+    .then(() => (loading.value = false))
 }
 </script>
 
@@ -31,7 +36,9 @@ const signIn = () => {
     </el-form>
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="accountStore.toggleDialog('signUp')" text> 還沒有帳號？ Sign Up</el-button>
+        <el-button @click="accountStore.toggleDialog('signUp')" text>
+          還沒有帳號？ Sign Up</el-button
+        >
         <el-button type="primary" @click="signIn" :loading="loading"> Sign In </el-button>
       </div>
     </template>

@@ -1,6 +1,6 @@
 import type { Filter } from '@/types'
 
-export const filterToUrlQuery = (filter: Filter) => {
+export function filterToUrlQuery(filter: Filter): string {
   return Object.entries(filter)
     .filter(([, value]) => value !== '' && value !== null && value !== undefined)
     .map(([key, value]) => {
@@ -13,7 +13,7 @@ export const filterToUrlQuery = (filter: Filter) => {
     .join('&')
 }
 
-export const timeToString = (time?: Date): string => {
+export function timeToString(time?: Date): string {
   if (!time) return ''
   const year = time.getFullYear()
   const month = (time.getMonth() + 1).toString().padStart(2, '0')
@@ -23,7 +23,7 @@ export const timeToString = (time?: Date): string => {
   return `${year}-${month}-${day} ${hours}:${minutes}`
 }
 
-export const seatConverterToDB = (seat: string) => {
+export function seatConverterToDB(seat: string): number | undefined {
   const prefix = seat[0]
   const rowNumber = parseInt(seat.slice(1))
 
@@ -34,7 +34,7 @@ export const seatConverterToDB = (seat: string) => {
   }
 }
 
-export const seatConverterFromDB = (seat: number) => {
+export function seatConverterFromDB(seat: number): string {
   if (seat < 1000) {
     return `A${seat.toString()}`
   } else {
@@ -42,7 +42,11 @@ export const seatConverterFromDB = (seat: number) => {
   }
 }
 
-export const createTimeRange = (beginTime: number, endTime: number, step: number) => {
+export function createTimeRange(
+  beginTime: number,
+  endTime: number,
+  step: number
+): { value: string; disabled: boolean }[] {
   const times = []
   for (let hour = beginTime; hour < endTime; hour++) {
     for (let minute = 0; minute < 60; minute += step) {
