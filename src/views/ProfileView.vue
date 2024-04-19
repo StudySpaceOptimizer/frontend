@@ -50,7 +50,6 @@ const listViewDataConstructor = (res: any) => {
 }
 
 const cancelBooking = async (id: string) => {
-  // const confirm = window.confirm('確定要取消預約嗎？' + id)
   ElMessageBox.confirm('確定要取消預約嗎？' + id, '提示', {
     confirmButtonText: '確定',
     cancelButtonText: '取消',
@@ -65,7 +64,6 @@ const cancelBooking = async (id: string) => {
         ElMessage.error(error.message)
       }
     })
-    .catch(() => {})
 }
 
 const terminateBooking = (id: string) => {
