@@ -35,18 +35,16 @@ export const useAccountStore = defineStore(
       }
     }
 
-    function studentSignUp(_name: string, _email: string, _password: string): void {
-      api.studentSignUp(_name, _email, _password).then(() => {
-        toggleDialog()
-        ElMessage.success('註冊成功')
-      })
+    async function studentSignUp(_name: string, _email: string, _password: string) {
+      await api.studentSignUp(_name, _email, _password)
+      toggleDialog()
+      ElMessage.success('註冊成功')
     }
 
-    function outsiderSignUp(_name: string, _phone: string, _idcard: string, _email: string) {
-      api.outsiderSignUp(_name, _phone, _idcard, _email).then(() => {
-        toggleDialog()
-        ElMessage.success('註冊成功')
-      })
+    async function outsiderSignUp(_name: string, _phone: string, _idcard: string, _email: string) {
+      await api.outsiderSignUp(_name, _phone, _idcard, _email)
+      toggleDialog()
+      ElMessage.success('註冊成功')
     }
 
     function signOut() {
@@ -76,7 +74,10 @@ export const useAccountStore = defineStore(
     async function getUserProfile() {
       try {
         const userData = await api.getUsers(false)
-        userDisplayName.value = userData[0].name
+        userDisplayName.value = userData[0].name ?? 'guest'
+        if (userData[0].name == undefined) {
+          ElMessage.warning('可以到個人資料修改名稱')
+        }
       } catch (error) {
         ElMessage.error('取得使用者資料失敗')
       }

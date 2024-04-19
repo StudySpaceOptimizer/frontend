@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, watch, ref, watchEffect } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
 
 import * as API from '@/api'
 import * as Model from '@/api/model'
@@ -55,16 +55,17 @@ const cancelBooking = async (id: string) => {
     confirmButtonText: '確定',
     cancelButtonText: '取消',
     type: 'warning'
-  }).then(async () => {
-    try {
-      await api.deleteReservation(id)
-      ElMessage.success('取消預約成功')
-      getData(filterStore.getFilter('profile'))
-    } catch (error: any) {
-      ElMessage.error(error.message)
-    }
-  }).catch(() => {})
-
+  })
+    .then(async () => {
+      try {
+        await api.deleteReservation(id)
+        ElMessage.success('取消預約成功')
+        getData(filterStore.getFilter('profile'))
+      } catch (error: any) {
+        ElMessage.error(error.message)
+      }
+    })
+    .catch(() => {})
 }
 
 const terminateBooking = (id: string) => {
@@ -86,6 +87,7 @@ const isStudent = computed(() => userProfile.value?.userRole === 'student')
 let isGetedUserProfile = false
 const isUserProfileChange = ref(false)
 const _test_tabs = ref('reservation')
+const updateProfileForm = ref<FormInstance>()
 const rules = {
   name: [
     { required: true, message: '請輸入姓名', trigger: 'blur' },
@@ -95,7 +97,7 @@ const rules = {
     { required: true, message: '請輸入手機號碼', trigger: 'blur' },
     { pattern: /^09\d{8}$/, message: '手機號碼格式不正確', trigger: 'blur' }
   ]
-};
+}
 
 const getUserProfile = async () => {
   try {
@@ -107,7 +109,10 @@ const getUserProfile = async () => {
 }
 
 const accountStore = useAccountStore()
-const onSaveProfile = async () => {
+const onSaveProfile = async (fromEl: FormInstance | undefined) => {
+  if (!fromEl) return
+  if (!(await fromEl.validate())) return
+
   try {
     const data = {
       id: userProfile.value?.id,
@@ -129,18 +134,22 @@ const onCanceled = () => {
   getUserProfile()
 }
 
-onMounted(() => { 
+onMounted(() => {
   isGetedUserProfile = false
   getUserProfile()
 })
 
-watch(userProfile, () => {
-  if (isGetedUserProfile) {
-    isUserProfileChange.value = true
-  } else {
-    isGetedUserProfile = true
-  }
-}, { deep: true })
+watch(
+  userProfile,
+  () => {
+    if (isGetedUserProfile) {
+      isUserProfileChange.value = true
+    } else {
+      isGetedUserProfile = true
+    }
+  },
+  { deep: true }
+)
 </script>
 
 <template>
@@ -152,6 +161,7 @@ watch(userProfile, () => {
     <el-tab-pane label="個人資料" name="profile">
       <el-container class="profile-container">
         <el-form
+          ref="updateProfileForm"
           v-if="userProfile"
           :model="userProfile"
           label-width="auto"
@@ -159,10 +169,12 @@ watch(userProfile, () => {
           :rules="rules"
         >
           <el-form-item label="Email">
-            <el-input v-model="userProfile.email" disabled />
+            <el-tooltip content="若需要修改電子信箱，請告知管理員" placement="topgit">
+              <el-input v-model="userProfile.email" disabled />
+            </el-tooltip>
           </el-form-item>
           <el-form-item label="姓名" prop="name">
-            <el-input v-model="userProfile.name"/>
+            <el-input v-model="userProfile.name" />
           </el-form-item>
           <el-form-item label="電話" v-if="!isStudent">
             <el-input v-model="userProfile.phone" />
@@ -172,7 +184,12 @@ watch(userProfile, () => {
           </el-form-item>
           <el-form-item>
             <el-button text @click="onCanceled">取消變更</el-button>
-            <el-button type="primary" @click="onSaveProfile" :disabled="!isUserProfileChange">儲存變更</el-button>
+            <el-button
+              type="primary"
+              @click="onSaveProfile(updateProfileForm)"
+              :disabled="!isUserProfileChange"
+              >儲存變更</el-button
+            >
           </el-form-item>
         </el-form>
       </el-container>
