@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, watch, ref, watchEffect } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 import * as API from '@/api'
 import * as Model from '@/api/model'
@@ -29,7 +29,7 @@ const listViewDataConstructor = (res: any) => {
     item.user = null
 
     const nowTime = new Date().getTime()
-    const beginTime = new Date(item.begin).getTime()
+    const beginTime = new Date(item.beginTime).getTime()
     if (beginTime > nowTime) {
       item.actions = [
         {
@@ -49,12 +49,22 @@ const listViewDataConstructor = (res: any) => {
   })
 }
 
-const cancelBooking = (id: string) => {
-  const confirm = window.confirm('確定要取消預約嗎？')
-  if (!confirm) return
-  api.deleteReservation(id).then(() => {
-    getData(filterStore.getFilter('profile'))
-  })
+const cancelBooking = async (id: string) => {
+  // const confirm = window.confirm('確定要取消預約嗎？' + id)
+  ElMessageBox.confirm('確定要取消預約嗎？' + id, '提示', {
+    confirmButtonText: '確定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(async () => {
+    try {
+      await api.deleteReservation(id)
+      ElMessage.success('取消預約成功')
+      getData(filterStore.getFilter('profile'))
+    } catch (error: any) {
+      ElMessage.error(error.message)
+    }
+  }).catch(() => {})
+
 }
 
 const terminateBooking = (id: string) => {
@@ -75,7 +85,7 @@ const userProfile = ref<Model.UserData>()
 const isStudent = computed(() => userProfile.value?.userRole === 'student')
 let isGetedUserProfile = false
 const isUserProfileChange = ref(false)
-const _test_tabs = ref('profile')
+const _test_tabs = ref('reservation')
 const rules = {
   name: [
     { required: true, message: '請輸入姓名', trigger: 'blur' },
