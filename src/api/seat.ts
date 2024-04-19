@@ -30,10 +30,10 @@ export class SupabaseSeat implements Seat {
 
     console.log(beginTime.toLocaleString(), endTime.toLocaleString())
 
-    let { data: seatInfo, error: getSeatsError } = await supabase.from('seats').select('*')
+    const { data: seatInfo, error: getSeatsError } = await supabase.from('seats').select('*')
     console.log(seatInfo, getSeatsError)
 
-    let seatData: { [key: number]: model.SeatData } = {}
+    const seatData: { [key: number]: model.SeatData } = {}
 
     if (seatInfo == null) throw new Error('找不到座位')
 
@@ -46,7 +46,7 @@ export class SupabaseSeat implements Seat {
       }
     })
 
-    let { data: reservationsData, error: getActiveReservationError } = await supabase
+    const { data: reservationsData, error: getActiveReservationError } = await supabase
       .from('active_seat_reservations')
       .select('*')
       .gte('begin_time', beginTime.toLocaleString())
