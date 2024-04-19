@@ -29,8 +29,6 @@ export interface Reserve {
   getPersonalReservations(config: any): Promise<any>
   deleteReservation(id: string): Promise<any>
   terminateReservation(id: string): Promise<any>
-  getReserveConfiguration(): Promise<any>
-  updateReserveConfiguration(config: any): Promise<any>
 }
 
 export const API_SERVICE = {

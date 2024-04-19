@@ -295,7 +295,3 @@ export class SupabaseUser implements User {
 function camelToSnakeCase(str: string): string {
   return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
 }
-
-function snakeToCamelCase(str: string): string {
-  return str.replace(/(_\w)/g, (match) => match[1].toUpperCase())
-}

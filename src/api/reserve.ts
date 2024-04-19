@@ -7,14 +7,14 @@ import { seatConverterToDB, seatConverterFromDB } from '@/utils'
 
 export class SupabaseReserve implements Reserve {
   /**
-   * Book a seat, return success or fail (true or false)
+   * Book a seat, if the seat is already booked or something error, it will throw an error
    * @url POST /api/seats/:
    * @param seatId
    * @param begin
    * @param end
    * @returns Promise<Response<null>>
    */
-  async reserve(seatID: string, beginTime: Date, endTime: Date): Promise<model.Success> {
+  async reserve(seatID: string, beginTime: Date, endTime: Date): Promise<void> {
     const { data: authData, error: getUserError } = await supabase.auth.getUser()
 
     // 檢查是否成功獲取用戶資訊，或用戶是否存在
@@ -38,10 +38,10 @@ export class SupabaseReserve implements Reserve {
     if (error) {
       throw new Error(error.message)
     }
-    return true
   }
 
   async getPersonalReservations(config: any): Promise<model.Reservation[]> {
+    // TODO: implement config
     const { data: reservations } = await supabase.rpc('get_my_reservations')
     return (
       reservations?.map(
@@ -74,7 +74,7 @@ export class SupabaseReserve implements Reserve {
     )
   }
 
-  async deleteReservation(id: string): Promise<any> {
+  async deleteReservation(id: string): Promise<void> {
     const { error } = await supabase.from('reservations').delete().eq('id', id)
 
     if (error) {
@@ -83,10 +83,12 @@ export class SupabaseReserve implements Reserve {
 
     const { data } = await supabase.from('reservations').select('*').eq('id', id)
 
-    if (data?.length != 0) throw new Error('刪除預約失敗')
+    if (data?.length != 0) {
+      throw new Error('刪除預約失敗')
+    }
   }
 
-  async terminateReservation(id: string): Promise<any> {
+  async terminateReservation(id: string): Promise<void> {
     const seatId = seatConverterToDB(id)
     const { error } = await supabase
       .from('reservations')
@@ -97,22 +99,5 @@ export class SupabaseReserve implements Reserve {
     if (error) {
       throw new Error(error.message)
     }
-  }
-
-  /**
-   * Get reservation configuration, assumed to return a generic object for now
-   * @returns Promise<Response<any>>
-   */
-  getReserveConfiguration(): Promise<Response<any>> {
-    throw new Error('Method not implemented.')
-  }
-
-  /**
-   * Update reservation configuration, accepting a generic object as configuration
-   * @param config
-   * @returns Promise<Response<any>>
-   */
-  updateReserveConfiguration(config: any): Promise<Response<any>> {
-    throw new Error('Method not implemented.')
   }
 }
