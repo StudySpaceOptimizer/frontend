@@ -83,7 +83,7 @@ export class SupabaseReserve implements Reserve {
 
     const { data } = await supabase.from('reservations').select('*').eq('id', id)
 
-    if (data) throw new Error('刪除預約失敗')
+    if (data?.length != 0) throw new Error('刪除預約失敗')
   }
 
   async terminateReservation(id: string): Promise<any> {
