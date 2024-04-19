@@ -34,28 +34,29 @@ const DateTimePicker = ref({
 })
 
 const filter = reactive<Filter>({
-  begin: new Date(),
-  end: new Date()
+  beginTime: new Date(),
+  endTime: new Date()
 })
 
 const doFilter = () => {
-  if (!filter.begin || !filter.end) return
-  if (filter.begin > filter.end) {
+  if (!filter.beginTime || !filter.endTime) return
+  if (filter.beginTime > filter.endTime) {
     ElMessage.error('開始時間不得晚於結束時間')
     return
-  } else if (filter.begin.getTime() === filter.end.getTime()) {
+  } else if (filter.beginTime.getTime() === filter.endTime.getTime()) {
     return
   }
   filterStore.setFilter(route.name?.toString() || 'default', {
-    begin: filter.begin,
-    end: filter.end
+    beginTime: filter.beginTime,
+    endTime: filter.endTime
   })
 }
 
 watchEffect(() => {
   const date: string = DateTimePicker.value.date.toLocaleDateString().split('T')[0]
-  filter.begin = new Date(`${date} ${DateTimePicker.value.beginTime}`)
-  filter.end = new Date(`${date} ${DateTimePicker.value.endTime}`)
+  filter.beginTime = new Date(`${date} ${DateTimePicker.value.beginTime}`)
+  filter.endTime = new Date(`${date} ${DateTimePicker.value.endTime}`)
+  doFilter()
 })
 </script>
 

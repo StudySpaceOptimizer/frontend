@@ -1,6 +1,6 @@
 export interface Filter {
-  begin?: Date
-  end?: Date
+  beginTime?: Date
+  endTime?: Date
   identity?: 'student' | 'others'
   seat?: string
   username?: string
