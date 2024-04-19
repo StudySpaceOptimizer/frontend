@@ -120,8 +120,6 @@ BEGIN
     NEW.raw_app_meta_data := NEW.raw_app_meta_data || jsonb_build_object('user_role', user_role);
     -- 設置 claims_admin
     NEW.raw_app_meta_data := NEW.raw_app_meta_data || jsonb_build_object('admin_role', admin_role);
-    -- 設置 banned
-    NEW.raw_app_meta_data := NEW.raw_app_meta_data || jsonb_build_object('banned', false);
 
     RETURN NEW;
 END;
@@ -155,6 +153,41 @@ CREATE TRIGGER after_insert_user
 AFTER INSERT ON auth.users
 FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_profile();
 
+CREATE OR REPLACE FUNCTION check_points_and_blacklist()
+RETURNS TRIGGER AS $$
+DECLARE
+    points_to_ban_user TIME;
+BEGIN
+    SELECT value::int INTO points_to_ban_user FROM settings WHERE key_name = 'points_to_ban_user';
+
+    -- 檢查點數是否大於或等於7
+    IF NEW.point >= points_to_ban_user THEN
+        -- 將點數重設為0
+        NEW.point := 0;
+
+        
+        -- 將使用者加入blacklist
+        INSERT INTO blacklist (user_id, reason, end_at)
+        VALUES (NEW.id, '違規點數達到上限', CURRENT_TIMESTAMP + INTERVAL '30 days');
+
+        -- 更新使用者的點數
+        UPDATE user_profiles SET point = 0 WHERE id = NEW.id;
+    END IF;
+
+    -- 返回更新後的記錄
+    RETURN NEW;
+END;
+$$ 
+LANGUAGE plpgsql
+SECURITY DEFINER;
+
+-- 建立觸發器，當user_profiles表的point欄位被更新時觸發
+DROP TRIGGER IF EXISTS trigger_check_points ON user_profiles;
+CREATE TRIGGER trigger_check_points
+AFTER UPDATE OF point ON user_profiles
+FOR EACH ROW
+WHEN (OLD.point <> NEW.point)
+EXECUTE FUNCTION check_points_and_blacklist();
 
 
 
@@ -196,9 +229,46 @@ FOR SELECT
 USING (auth.uid() = user_id);
 
 
-
-/* todo: 
-    - trigger判斷是否進入blacklist
-    - timmer判斷解禁時間
+/**
+- 檢查使用者是否被ban
+- 如果會話使用者是 authenticator，則進一步檢查 JWT 中的 claims
+- 首先檢查 JWT 是否已過期
+- 如果 JWT 中的角色是 service_role，則回傳 false
+- 如果使用者的 app_metadata 中的 banned 屬性為 true，則回傳 true
+- 其他情況下，回傳 true
+- example:
+    select is_not_banned();
 */
- 
+CREATE OR REPLACE FUNCTION is_not_banned() RETURNS BOOLEAN
+  AS $$
+  DECLARE
+  is_banned BOOLEAN;
+  BEGIN
+    IF session_user = 'authenticator' THEN
+      -- 判断 JWT 是否过期
+      IF extract(epoch from now()) > coalesce((current_setting('request.jwt.claims', true)::jsonb)->>'exp', '0')::numeric THEN
+        return false; -- jwt expired
+      END IF;
+
+      -- 判断 service_role
+      If current_setting('request.jwt.claims', true)::jsonb->>'role' = 'service_role' THEN
+        RETURN true;
+      END IF;
+
+      -- 檢查該用戶是否目前在黑名單中
+      SELECT NOT EXISTS (
+        SELECT 1 FROM active_blacklist
+        WHERE auth.uid() = user_id
+      ) INTO is_banned;
+
+      RETURN is_banned;
+
+      
+      --------------------------------------------
+      -- End of block 
+      --------------------------------------------
+    ELSE -- not a user session, probably being called from a trigger or something
+      return true;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql;

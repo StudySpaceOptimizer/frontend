@@ -1,9 +1,3 @@
-/* TODO:
-- delete RLS for user
-- delete trigger 如果是使用者要刪除，要先判斷...
-
-*/
-
 -- 創建預約表
 CREATE TABLE IF NOT EXISTS reservations(
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -155,8 +149,8 @@ BEGIN
     -- 從設定中提取時間和限制
     SELECT (value::jsonb)->>'begin_time', (value::jsonb)->>'end_time' INTO weekday_opening, weekday_closing FROM settings WHERE key_name = 'weekday_opening_hours';
     SELECT (value::jsonb)->>'begin_time', (value::jsonb)->>'end_time' INTO weekend_opening, weekend_closing FROM settings WHERE key_name = 'weekend_opening_hours';
-    SELECT value::int INTO minimum_duration FROM settings WHERE key_name = 'minimum_reservatio_duration';
-    SELECT value::int INTO maximum_duration FROM settings WHERE key_name = 'maximum_reservation_duration';
+    SELECT value::numeric INTO minimum_duration FROM settings WHERE key_name = 'minimum_reservation_duration';
+    SELECT value::numeric INTO maximum_duration FROM settings WHERE key_name = 'maximum_reservation_duration';
     SELECT value::int INTO student_limit FROM settings WHERE key_name = 'student_reservation_limit';
     SELECT value::int INTO outsider_limit FROM settings WHERE key_name = 'outsider_reservation_limit';
 

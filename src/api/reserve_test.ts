@@ -95,5 +95,12 @@ async function testTerminateReservationSuccess() {
 
 // await testReserveSuccess()
 // await testGetPersonalReservationsSuccess()
-await testDeleteReservationSuccess()
+// await testDeleteReservationSuccess()
 // await testTerminateReservationSuccess()
+
+const { data, error } = await supabase
+  .from('reservations')
+  .select('*')
+  .eq('id', '20fc4dd0-2d14-4f98-8531-e4afe13926a1')
+
+console.log(data, error)

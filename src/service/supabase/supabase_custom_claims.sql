@@ -57,49 +57,6 @@ CREATE OR REPLACE FUNCTION is_claims_admin() RETURNS "bool"
 $$;
 
 
-/**
-- 檢查使用者是否被ban
-- 如果會話使用者是 authenticator，則進一步檢查 JWT 中的 claims
-- 首先檢查 JWT 是否已過期
-- 如果 JWT 中的角色是 service_role，則回傳 false
-- 如果使用者的 app_metadata 中的 banned 屬性為 true，則回傳 true
-- 其他情況下，回傳 true
-- example:
-    select is_not_banned();
-*/
-CREATE OR REPLACE FUNCTION is_not_banned() RETURNS "bool"
-  LANGUAGE "plpgsql" 
-  AS $$
-  BEGIN
-    IF session_user = 'authenticator' THEN
-      -- 判断 JWT 是否过期
-      IF extract(epoch from now()) > coalesce((current_setting('request.jwt.claims', true)::jsonb)->>'exp', '0')::numeric THEN
-        return false; -- jwt expired
-      END IF;
-
-      -- 判断 service_role
-      If current_setting('request.jwt.claims', true)::jsonb->>'role' = 'service_role' THEN
-        RETURN true;
-      END IF;
-
-      -- 判断 banned 是否设置为 true
-      --- issue
-      IF coalesce((current_setting('request.jwt.claims', true)::jsonb)->'app_metadata'->>'banned', 'false')::bool = 'false' THEN
-        return true; -- user is banned
-      ELSE
-        return false;
-      END IF;
-      
-      --------------------------------------------
-      -- End of block 
-      --------------------------------------------
-    ELSE -- not a user session, probably being called from a trigger or something
-      return true;
-    END IF;
-  END;
-$$;
-
-
 
 /*
 - 傳回目前會話使用者的所有 claims

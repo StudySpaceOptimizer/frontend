@@ -1,8 +1,5 @@
 export type Success = Boolean
 
-/**
- *
- */
 export type userRole = 'student' | 'outsider'
 export type adminRole = 'admin' | 'assistant'
 
