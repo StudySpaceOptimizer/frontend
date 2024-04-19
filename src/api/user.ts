@@ -153,14 +153,17 @@ export class SupabaseUser implements User {
   }
 
   async updateProfile(data: any): Promise<void> {
-    const { error } = await supabase.from('user_profiles').update([
-      {
-        name: data.name,
-        phone: data.phone,
-        id_card: data.idcard
-      }
-    ]).eq('id', data.id)
-    
+    const { error } = await supabase
+      .from('user_profiles')
+      .update([
+        {
+          name: data.name,
+          phone: data.phone,
+          id_card: data.idcard
+        }
+      ])
+      .eq('id', data.id)
+
     if (error) {
       throw new Error(error.message)
     }
@@ -212,10 +215,7 @@ export class SupabaseUser implements User {
    */
   async addPointUser(id: string, point: number): Promise<model.Success> {
     // TODO:get point
-    const { error } = await supabase
-      .from('user_profiles')
-      .update({ point: point })
-      .eq('id', id)
+    const { error } = await supabase.from('user_profiles').update({ point: point }).eq('id', id)
 
     if (error) {
       throw new Error(error.message)
@@ -249,6 +249,53 @@ export class SupabaseUser implements User {
     if (error) throw new Error(error.message)
 
     return true
+  }
+
+  async getSettings(): Promise<model.SettingsData> {
+    let { data, error } = await supabase.from('settings').select('*')
+
+    if (error) throw new Error(error.message)
+
+    let settings: Partial<model.SettingsData> = {}
+
+    data?.forEach((item: any) => {
+      switch (item.key_name) {
+        case 'weekday_opening_hours':
+          settings.weekdayOpeningHours = JSON.parse(item.value)
+          break
+        case 'weekend_opening_hours':
+          settings.weekendOpeningHours = JSON.parse(item.value)
+          break
+        case 'minimum_reservation_duration':
+          settings.minimumReservationDuration = parseFloat(item.value)
+          break
+        case 'maximum_reservation_duration':
+          settings.maximumReservationDuration = parseInt(item.value, 10)
+          break
+        case 'student_reservation_limit':
+          settings.studentReservationLimit = parseInt(item.value, 10)
+          break
+        case 'outsider_reservation_limit':
+          settings.outsiderReservationLimit = parseInt(item.value, 10)
+          break
+        case 'points_to_ban_user':
+          settings.pointsToBanUser = parseInt(item.value, 10)
+          break
+        case 'checkin_deadline_minutes':
+          settings.checkin_deadline_minutes = parseInt(item.value, 10)
+          break
+        case 'temporary_leave_deadline_minutes':
+          settings.temporary_leave_deadline_minutes = parseInt(item.value, 10)
+          break
+        case 'check_in_violation_points':
+          settings.check_in_violation_points = parseInt(item.value, 10)
+          break
+        default:
+          throw new Error('設定名稱不匹配')
+      }
+    })
+
+    return settings as model.SettingsData
   }
 }
 

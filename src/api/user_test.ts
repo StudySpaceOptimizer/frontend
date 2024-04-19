@@ -49,4 +49,55 @@ async function testGrantAdminRoleSuccess() {
   else console.log(data)
 }
 
+async function testGetSettingData() {
+  let user = await signIn(student, password)
+
+  let { data, error } = await supabase.from('settings').select('*')
+
+  if (error) console.error(error)
+  // else console.log(data)
+
+  let settings: Partial<model.SettingsData> = {}
+
+  data?.forEach((item: any) => {
+    switch (item.key_name) {
+      case 'weekday_opening_hours':
+        settings.weekdayOpeningHours = JSON.parse(item.value)
+        break
+      case 'weekend_opening_hours':
+        settings.weekendOpeningHours = JSON.parse(item.value)
+        break
+      case 'minimum_reservation_duration':
+        settings.minimumReservationDuration = parseFloat(item.value)
+        break
+      case 'maximum_reservation_duration':
+        settings.maximumReservationDuration = parseInt(item.value, 10)
+        break
+      case 'student_reservation_limit':
+        settings.studentReservationLimit = parseInt(item.value, 10)
+        break
+      case 'outsider_reservation_limit':
+        settings.outsiderReservationLimit = parseInt(item.value, 10)
+        break
+      case 'points_to_ban_user':
+        settings.pointsToBanUser = parseInt(item.value, 10)
+        break
+      case 'checkin_deadline_minutes':
+        settings.checkin_deadline_minutes = parseInt(item.value, 10)
+        break
+      case 'temporary_leave_deadline_minutes':
+        settings.temporary_leave_deadline_minutes = parseInt(item.value, 10)
+        break
+      case 'check_in_violation_points':
+        settings.check_in_violation_points = parseInt(item.value, 10)
+        break
+      default:
+        return
+    }
+  })
+
+  console.log('Settings loaded:', settings)
+}
+
 // await testGrantAdminRoleSuccess()
+await testGetSettingData()

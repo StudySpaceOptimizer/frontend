@@ -84,11 +84,14 @@ export interface SettingsData {
     beginTime: string
     endTime: string
   }
-  minimumReservationDuration: number // 單位為小時，最小預約時間單位
-  maximumReservationDuration: number // 單位為小時，表示單次預約時間上限
-  studentReservationLimit: number // 單位為天，表示學生提前預約期限
-  outsiderReservationLimit: number // 單位為天，表示校外人士提前預約期限
+  minimumReservationDuration: number // 最小預約時間(小時)
+  maximumReservationDuration: number // 單次預約時間上限(小時)
+  studentReservationLimit: number // 學生提前預約期限(天)
+  outsiderReservationLimit: number // 校外人士提前預約期限(天)
   pointsToBanUser: number // 達到一定的點數就自動封禁使用者
+  checkin_deadline_minutes: number // checkin時間(分鐘)
+  temporary_leave_deadline_minutes: number // 暫時中離時間(分鐘)
+  check_in_violation_points: number // 違反checkin截止時間時增加的點數
 }
 
 export interface ClosedPeriods {
