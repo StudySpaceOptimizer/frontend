@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import type { DrawObjectData } from './basic'
+import { DrawUntil, type DrawObjectData } from './basic'
 import { Seat } from './seat'
 import Group from './group'
 import Container from './container'
@@ -23,6 +23,7 @@ export default class DrawStage {
       this.drawObjectDatas.value = this.datas
       return
     }
+    DrawUntil.seat_id_reset()
 
     const non_notebook_seats = new Group(0, 0, -45, [], 'non-notebook-seats')
 
@@ -43,14 +44,12 @@ export default class DrawStage {
       [0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0]
     ]
 
-    let seat_count = 0
     non_notebook_seat_map.forEach((row, rowIndex) => {
       row.forEach((seat, columnIndex) => {
         if (seat === 1) {
-          seat_count++
           const x = columnIndex * 55
           const y = rowIndex * 55
-          non_notebook_seats.add(new Seat(x, y, 0, 'B' + seat_count))
+          non_notebook_seats.add(new Seat(x, y, 0, DrawUntil.seat_id_gen('B')))
         }
       })
     })
@@ -60,19 +59,19 @@ export default class DrawStage {
     for (let i = 1; i <= 21; ++i) {
       for (let j = 1; j <= 2; ++j) {
         if (i === 5 || i === 6 || i === 19) continue
-        notebook_seats.add(new Seat(i * 55, j * 55, 0, 'A' + (i + (j - 1) * 21)))
+        notebook_seats.add(new Seat(i * 55, j * 55, 0, DrawUntil.seat_id_gen('A')))
       }
     }
 
     for (let i = 1; i <= 14; ++i) {
       for (let j = 1; j <= 3; ++j) {
-        notebook_seats.add(new Seat(j * 55, i * 60 + 190, 0, 'A' + (i + 21 + (j - 1) * 14)))
+        notebook_seats.add(new Seat(j * 55, i * 60 + 190, 0, DrawUntil.seat_id_gen('A')))
       }
     }
 
     for (let i = 1; i <= 2; ++i) {
       for (let j = 1; j <= 4; ++j) {
-        notebook_seats.add(new Seat(i * 55 + 190, j * 55 + 780, 0, 'B' + (i + 21 + 42 + (j - 1) * 2)))
+        notebook_seats.add(new Seat(i * 55 + 190, j * 55 + 780, 0, DrawUntil.seat_id_gen('B')))
       }
     }
 

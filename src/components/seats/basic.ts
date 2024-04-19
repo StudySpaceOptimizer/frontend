@@ -9,7 +9,7 @@ export type DrawObjectData = {
 
 export class DrawUntil {
   static draw_id: { [key: string]: number } = {}
-  static seat_id: number = 1
+  static seat_id: { [key: string]: number } = {}
 
   static draw_id_gen(name: string) {
     if (DrawUntil.draw_id[name]) {
@@ -20,7 +20,16 @@ export class DrawUntil {
     }
   }
 
-  static seat_id_gen() {
-    return `B${DrawUntil.seat_id++}`
+  static seat_id_reset() {
+    DrawUntil.seat_id = {}
+  }
+
+  static seat_id_gen(type: string = 'A') {
+    if (DrawUntil.seat_id[type] !== undefined) {
+      return `${type}${DrawUntil.seat_id[type]++}`
+    } else {
+      DrawUntil.seat_id[type] = 1
+      return `${type}1`
+    }
   }
 }
