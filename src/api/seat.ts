@@ -2,6 +2,7 @@ import type * as model from './model'
 import { toLocalDateTime } from './common'
 import type { Seat } from './index'
 import { supabase } from '../service/supabase/supabase'
+import { seatConverterFromDB } from '@/utils'
 
 interface SeatRequest {
   beginTime?: Date
@@ -28,18 +29,19 @@ export class SupabaseSeat implements Seat {
       endTime.setHours(23, 59, 59)
     }
 
-    console.log(beginTime.toLocaleString(), endTime.toLocaleString())
-
     const { data: seatInfo, error: getSeatsError } = await supabase.from('seats').select('*')
-    console.log(seatInfo, getSeatsError)
 
-    const seatData: { [key: number]: model.SeatData } = {}
+    if (getSeatsError) {
+      throw new Error(getSeatsError.message)
+    }
+
+    const seatData: { [key: string]: model.SeatData } = {}
 
     if (seatInfo == null) throw new Error('找不到座位')
 
     seatInfo.forEach((seat: any) => {
       seatData[seat.id] = {
-        id: seat.id,
+        id: seatConverterFromDB(seat.id),
         available: seat.available,
         status: seat.available ? 'available' : 'unavailable', // 初始化狀態
         otherInfo: seat.other_info
@@ -49,16 +51,19 @@ export class SupabaseSeat implements Seat {
     const { data: reservationsData, error: getActiveReservationError } = await supabase
       .from('active_seat_reservations')
       .select('*')
-      .gte('begin_time', beginTime.toLocaleString())
-      .lt('end_time', endTime.toLocaleString())
+      .gte('begin_time', beginTime.toLocaleString('en-us'))
+      .lt('end_time', endTime.toLocaleString('en-us'))
 
-    console.log(reservationsData, getActiveReservationError)
+    if (getActiveReservationError) {
+      throw new Error(getActiveReservationError.message)
+    }
 
     reservationsData?.forEach((reservation: any) => {
+      const seatId = seatConverterFromDB(reservation.seat_id)
       if (reservation.beginTime <= now && reservation.endTime > now) {
-        seatData[reservation.seat_id].status = 'reserved'
+        seatData[seatId].status = 'reserved'
       } else {
-        seatData[reservation.seat_id].status = 'partiallyReserved'
+        seatData[seatId].status = 'partiallyReserved'
       }
     })
 
@@ -96,7 +101,7 @@ export class SupabaseSeat implements Seat {
     }
 
     const seatDetail: model.SeatDetail = {
-      id: seatID,
+      id: seatConverterFromDB(seatID),
       reservations:
         active_seat_reservations?.map((reservation: any) => ({
           beginTime: toLocalDateTime(reservation.begin_time),

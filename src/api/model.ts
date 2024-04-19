@@ -44,7 +44,7 @@ export interface Reservation {
  * This file contains all the api calls to the backend
  */
 export interface SeatData {
-  id: number
+  id: string
   available: boolean
 
   otherInfo?: string
@@ -60,7 +60,7 @@ export interface SeatData {
 }
 
 export interface SeatDetail {
-  id: number
+  id: string
   /**
    * The booked range of the seat
    */
