@@ -38,7 +38,6 @@ export class SupabaseUser implements User {
 
   async checkIsSignIn(): Promise<boolean> {
     const { data } = await supabase.auth.getSession()
-    console.log(data)
     return data.session != null
   }
 
@@ -51,7 +50,11 @@ export class SupabaseUser implements User {
    * @returns Promise<Response<Sign>>
    * @error username already exists
    */
-  async studentSignUp(name: string, email: string, password: string): Promise<model.Success> {
+  async studentSignUp(name: string, email: string, password: string): Promise<void> {
+    if (email.split('@')[1] !== 'mail.ntou.edu.tw') {
+      throw new Error('請使用學校信箱註冊')
+    }
+
     const { error } = await supabase.auth.signUp({
       email: email,
       password: password
@@ -66,9 +69,6 @@ export class SupabaseUser implements User {
           throw new Error('遇到未知錯誤，請稍後再試')
       }
     }
-
-    //update user profile
-    throw new Error('Method not implemented.')
   }
 
   /**
@@ -177,7 +177,7 @@ export class SupabaseUser implements User {
    * @param end_at
    * @returns Promise<Response<sucess>>
    */
-  async banUser(id: string, reason: string, endAt: Date): Promise<model.Success> {
+  async banUser(id: string, reason: string, endAt: Date): Promise<void> {
     const { error } = await supabase.from('blacklist').insert([
       {
         user_id: id,
@@ -189,7 +189,6 @@ export class SupabaseUser implements User {
     if (error) {
       throw new Error(error.message)
     }
-    return true
   }
 
   /**
@@ -198,13 +197,12 @@ export class SupabaseUser implements User {
    * @param id
    * @returns Promise<Response<sucess>>
    */
-  async unbanUser(id: string): Promise<model.Success> {
+  async unbanUser(id: string): Promise<void> {
     const { error } = await supabase.from('active_blacklist').delete().eq('user_id', id)
 
     if (error) {
       throw new Error(error.message)
     }
-    return true
   }
 
   /**
@@ -213,17 +211,16 @@ export class SupabaseUser implements User {
    * @param point
    * @returns Promise<Response<sucess>>
    */
-  async addPointUser(id: string, point: number): Promise<model.Success> {
+  async addPointUser(id: string, point: number): Promise<void> {
     // TODO:get point
     const { error } = await supabase.from('user_profiles').update({ point: point }).eq('id', id)
 
     if (error) {
       throw new Error(error.message)
     }
-    return true
   }
 
-  async updateSettings(newSettings: model.SettingsData): Promise<model.Success> {
+  async updateSettings(newSettings: model.SettingsData): Promise<void> {
     for (const key in newSettings) {
       const value = JSON.stringify(newSettings[key as keyof model.SettingsData])
       const { error } = await supabase
@@ -235,11 +232,9 @@ export class SupabaseUser implements User {
         throw new Error(error.message)
       }
     }
-
-    return true
   }
 
-  async grantAdminRole(userID: String, adminRole: model.adminRole): Promise<model.Success> {
+  async grantAdminRole(userID: String, adminRole: model.adminRole): Promise<void> {
     const { error } = await supabase.rpc('set_claim', {
       claim: 'admin_role',
       uid: userID,
@@ -247,16 +242,14 @@ export class SupabaseUser implements User {
     })
 
     if (error) throw new Error(error.message)
-
-    return true
   }
 
   async getSettings(): Promise<model.SettingsData> {
-    let { data, error } = await supabase.from('settings').select('*')
+    const { data, error } = await supabase.from('settings').select('*')
 
     if (error) throw new Error(error.message)
 
-    let settings: Partial<model.SettingsData> = {}
+    const settings: Partial<model.SettingsData> = {}
 
     data?.forEach((item: any) => {
       switch (item.key_name) {
