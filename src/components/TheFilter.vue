@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { reactive, computed } from 'vue'
+import { reactive, ref, watchEffect } from 'vue'
+import { ElMessage } from 'element-plus'
 
 import type { Filter } from '@/types'
-import { timeToString } from '@/utils'
 import { useFilterStore } from '@/stores/filter'
 import { useRoute } from 'vue-router'
 
@@ -27,51 +27,21 @@ const show = defineProps({
   }
 })
 
-type AdjustTimeToDateStepOptions = {
-  stepInSeconds?: number,
-  func?: 'round' | 'floor' | 'ceil'
-}
-
-const adjustTimeToDateStep = (time?: Date, options?: AdjustTimeToDateStepOptions): Date => {
-  if (!time) return new Date()
-  const { stepInSeconds = 1800, func = 'round' } = options || {}
-  const _func = Math[func as 'round' | 'floor' | 'ceil']
-  
-  const secondsSinceMidnight = time.getHours() * 3600 + time.getMinutes() * 60 + time.getSeconds()
-  const adjustedSeconds = _func(secondsSinceMidnight / stepInSeconds) * stepInSeconds
-  const adjustedDate = new Date(time)
-  adjustedDate.setHours(
-    Math.floor(adjustedSeconds / 3600),
-    Math.floor((adjustedSeconds % 3600) / 60),
-    0,
-    0
-  )
-  return adjustedDate
-}
+const DateTimePicker = ref({
+  date: new Date(),
+  beginTime: '08:30',
+  endTime: '20:30'
+})
 
 const filter = reactive<Filter>({
-  begin: adjustTimeToDateStep(new Date(), {
-    func: 'floor'
-  }),
-  end: adjustTimeToDateStep(new Date(), {
-    func: 'round'
-  }),
-})
-
-const inputFilterBegin = computed<string>({
-  get: () => timeToString(filter.begin),
-  set: (value: string) => (filter.begin = adjustTimeToDateStep(new Date(value)))
-})
-
-const inputFilterEnd = computed<string>({
-  get: () => timeToString(filter.end),
-  set: (value: string) => (filter.end = adjustTimeToDateStep(new Date(value)))
+  begin: new Date(),
+  end: new Date()
 })
 
 const doFilter = () => {
   if (!filter.begin || !filter.end) return
   if (filter.begin > filter.end) {
-    alert('開始時間不得晚於結束時間')
+    ElMessage.error('開始時間不得晚於結束時間')
     return
   } else if (filter.begin.getTime() === filter.end.getTime()) {
     return
@@ -81,16 +51,47 @@ const doFilter = () => {
     end: filter.end
   })
 }
+
+watchEffect(() => {
+  const date: string = DateTimePicker.value.date.toLocaleDateString().split('T')[0]
+  filter.begin = new Date(`${date} ${DateTimePicker.value.beginTime}`)
+  filter.end = new Date(`${date} ${DateTimePicker.value.endTime}`)
+})
 </script>
 
 <template>
   <form @submit.prevent="doFilter">
     <template v-if="show.time">
-      <label for="start">開始時間</label>
-      <input v-model="inputFilterBegin" type="datetime-local" name="start" />
-
-      <label for="end">結束時間</label>
-      <input v-model="inputFilterEnd" type="datetime-local" name="end" />
+      <div class="date-filter-item">
+        <el-date-picker
+          v-model="DateTimePicker.date"
+          type="date"
+          size="default"
+        />
+      </div>
+      <div class="date-filter-item">
+        <el-time-select
+          v-model="DateTimePicker.beginTime"
+          style="width: 240px"
+          :max-time="DateTimePicker.endTime"
+          class="mr-4"
+          placeholder="開始時間"
+          start="08:30"
+          step="01:00"
+          end="20:30"
+        />
+      </div>
+      <div class="date-filter-item">
+        <el-time-select
+          v-model="DateTimePicker.endTime"
+          style="width: 240px"
+          :min-time="DateTimePicker.beginTime"
+          placeholder="結束時間"
+          start="08:30"
+          step="01:00"
+          end="20:30"
+        />
+      </div>
     </template>
 
     <template v-if="show.identity">
@@ -132,5 +133,9 @@ form {
   label {
     color: white;
   }
+}
+
+.date-filter-item {
+  margin: 0 10px;
 }
 </style>
