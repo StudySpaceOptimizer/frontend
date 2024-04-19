@@ -77,7 +77,7 @@ watchEffect(() => {
           class="mr-4"
           placeholder="開始時間"
           start="08:30"
-          step="01:00"
+          step="00:30"
           end="20:30"
         />
       </div>
@@ -88,7 +88,7 @@ watchEffect(() => {
           :min-time="DateTimePicker.beginTime"
           placeholder="結束時間"
           start="08:30"
-          step="01:00"
+          step="00:30"
           end="20:30"
         />
       </div>

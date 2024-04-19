@@ -17,17 +17,29 @@ const seatName = ref('')
 const checkboxGroup1 = ref<string[]>([])
 const timeRange = reactive([
   { value: '09:00', disabled: false },
+  { value: '09:30', disabled: false },
   { value: '10:00', disabled: false },
+  { value: '10:30', disabled: false },
   { value: '11:00', disabled: false },
+  { value: '11:30', disabled: false },
   { value: '12:00', disabled: false },
+  { value: '12:30', disabled: false },
   { value: '13:00', disabled: false },
+  { value: '13:30', disabled: false },
   { value: '14:00', disabled: false },
+  { value: '14:30', disabled: false },
   { value: '15:00', disabled: false },
+  { value: '15:30', disabled: false },
   { value: '16:00', disabled: false },
+  { value: '16:30', disabled: false },
   { value: '17:00', disabled: false },
+  { value: '17:30', disabled: false },
   { value: '18:00', disabled: false },
+  { value: '18:30', disabled: false },
   { value: '19:00', disabled: false },
+  { value: '19:30', disabled: false },
   { value: '20:00', disabled: false },
+  { value: '20:30', disabled: false },
 ])
 
 watchEffect(() => {
