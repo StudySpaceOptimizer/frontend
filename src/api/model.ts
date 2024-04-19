@@ -59,7 +59,7 @@ export interface SeatData {
    * partiallyBooked: the seat is partially range time booked \
    * unavailable: the seat is unavailable
    */
-  status: 'available' | 'booked' | 'partiallyBooked' | 'unavailable'
+  status: 'available' | 'reserved' | 'partiallyReserved' | 'unavailable'
 }
 
 export interface SeatDetail {

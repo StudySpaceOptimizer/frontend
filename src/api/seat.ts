@@ -4,8 +4,8 @@ import type { Seat } from './index'
 import { supabase } from '../service/supabase/supabase'
 
 interface SeatRequest {
-  begin?: Date
-  end?: Date
+  beginTime?: Date
+  endTime?: Date
 }
 
 export class SupabaseSeat implements Seat {
@@ -15,13 +15,56 @@ export class SupabaseSeat implements Seat {
    * @url GET /api/seats?begin=begin&end=end
    * @returns Promise<Response<SeatData[]>>
    */
-  getSeatsStatus(config: SeatRequest): Promise<model.SeatData[]> {
-    const { begin, end } = config
-    if (Boolean(begin) !== Boolean(end)) {
-      throw new Error('begin and end need to provide same time, or both not provide')
+  async getSeatsStatus(config: SeatRequest): Promise<model.SeatData[]> {
+    let { beginTime, endTime } = config
+    if (Boolean(beginTime) !== Boolean(endTime)) {
+      throw new Error('beginTime and endTime need to provide same time, or both not provide')
     }
 
-    throw new Error('Method not implemented.')
+    const now = new Date() // 取得當前時間
+    if (beginTime == undefined || endTime == undefined) {
+      beginTime = new Date()
+      endTime = new Date(now) // 創建一個新的 Date 物件，以當前時間為基礎
+      endTime.setHours(23, 59, 59)
+    }
+
+    console.log(beginTime.toLocaleString(), endTime.toLocaleString())
+
+    let { data: seatInfo, error: getSeatsError } = await supabase.from('seats').select('*')
+    console.log(seatInfo, getSeatsError)
+
+    let seatData: { [key: number]: model.SeatData } = {}
+
+    if (seatInfo == null) throw new Error('找不到座位')
+
+    seatInfo.forEach((seat: any) => {
+      seatData[seat.id] = {
+        id: seat.id,
+        available: seat.available,
+        status: seat.available ? 'available' : 'unavailable', // 初始化狀態
+        otherInfo: seat.other_info
+      }
+    })
+
+    let { data: reservationsData, error: getActiveReservationError } = await supabase
+      .from('active_seat_reservations')
+      .select('*')
+      .gte('begin_time', beginTime.toLocaleString())
+      .lt('end_time', endTime.toLocaleString())
+
+    console.log(reservationsData, getActiveReservationError)
+
+    reservationsData?.forEach((reservation: any) => {
+      if (reservation.beginTime <= now && reservation.endTime > now) {
+        seatData[reservation.seat_id].status = 'reserved'
+      } else {
+        seatData[reservation.seat_id].status = 'partiallyReserved'
+      }
+    })
+
+    const seatDataArray = Object.values(seatData)
+
+    return seatDataArray
   }
 
   /**

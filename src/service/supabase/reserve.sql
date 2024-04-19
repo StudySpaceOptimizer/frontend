@@ -219,38 +219,35 @@ LANGUAGE plpgsql
 SECURITY INVOKER
 AS $$
 DECLARE
-    -- 宣告 next_half_hour 和 end_of_day 兩個 TIMESTAMP 變數，用於計算時間點
     next_half_hour TIMESTAMP;
     end_of_day TIMESTAMP;
 BEGIN
-    -- 計算下一個30分鐘的時間點，如果當前分鐘數大於或等於30，則下一個半小時時間點為下一個整點；否則為當前小時的30分
-    next_half_hour := DATE_TRUNC('hour', CURRENT_TIMESTAMP) + 
+    -- 計算下一個30分鐘的時間點，基於 NEW.begin_time 的日期部分
+    next_half_hour := DATE_TRUNC('hour', NEW.begin_time) + 
                       CASE
-                          WHEN EXTRACT(minute FROM CURRENT_TIMESTAMP) >= 30 THEN INTERVAL '1 hour'
+                          WHEN EXTRACT(minute FROM NEW.begin_time) >= 30 THEN INTERVAL '1 hour'
                           ELSE INTERVAL '30 minutes'
                       END;
     
-    -- 計算當天結束的時間點，即當天的 23:59:59
-    end_of_day := CURRENT_DATE + INTERVAL '23 hours 59 minutes 59 seconds';
+    -- 計算該預約開始日期的當天結束時間點，即當天的 23:59:59
+    end_of_day := CAST(NEW.begin_time AS DATE) + INTERVAL '23 hours 59 minutes 59 seconds';
 
-    -- 檢查是否用戶今天有未完成的預約
+    -- 檢查是否該用戶在預約的當天有未完成的預約
     IF EXISTS (
         SELECT 1
-        FROM active_reservations
+        FROM reservations
         WHERE user_id = NEW.user_id
-        -- 預約的開始日期為當天
-        AND CAST(begin_time AS DATE) = CURRENT_DATE
-        -- 預約的結束時間在當天結束前
+        AND CAST(begin_time AS DATE) = CAST(NEW.begin_time AS DATE)  -- 確保是同一天
         AND end_time <= end_of_day
-        -- 預約的結束時間在30分鐘之內
         AND end_time > next_half_hour
     ) THEN
-        RAISE EXCEPTION '用戶今天有未完成的預約';
+        RAISE EXCEPTION '用戶在預約當天有未完成的預約';
     END IF;
 
     RETURN NEW;
 END;
 $$;
+
 
 DROP TRIGGER IF EXISTS trigger_check_for_unfinished_reservations ON reservations;
 CREATE TRIGGER trigger_check_for_unfinished_reservations

@@ -40,8 +40,8 @@ async function testReserveSuccess() {
 
   // 生成預訂資料
   const reservation = {
-    beginTime: new Date('2024-04-20T10:00:00'),
-    endTime: new Date('2024-04-20T12:00:00'),
+    beginTime: new Date('2024-04-21T10:00:00'),
+    endTime: new Date('2024-04-21T12:00:00'),
     userID: user!.id,
     seatID: 1
   }

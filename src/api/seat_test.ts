@@ -108,30 +108,46 @@ async function testGetSeatsStatus() {
   const beginTime = new Date()
   const now = new Date() // 取得當前時間
   const endTime = new Date(now) // 創建一個新的 Date 物件，以當前時間為基礎
-  endTime.setHours(23, 59, 59, 999)
+  endTime.setHours(23, 59, 59)
 
-  console.log(beginTime, endTime)
+  console.log(beginTime.toLocaleString(), endTime.toLocaleString())
 
   let { data: seatInfo, error: getSeatsError } = await supabase.from('seats').select('*')
-
   console.log(seatInfo, getSeatsError)
 
-  let seatData = seatInfo || []
+  let seatData: { [key: number]: model.SeatData } = {}
+
+  if (seatInfo == null) return
+
+  seatInfo.forEach((seat: any) => {
+    seatData[seat.id] = {
+      id: seat.id,
+      available: seat.available,
+      status: seat.available ? 'available' : 'unavailable', // 初始化狀態
+      otherInfo: seat.other_info
+    }
+  })
 
   let { data: reservationsData, error: getActiveReservationError } = await supabase
     .from('active_seat_reservations')
     .select('*')
-    .gte('begin_time', beginTime)
-    .lt('end_time', endTime)
+    .gte('begin_time', beginTime.toLocaleString())
+    .lt('end_time', endTime.toLocaleString())
 
   console.log(reservationsData, getActiveReservationError)
+
+  reservationsData?.forEach((reservation: any) => {
+    if (reservation.beginTime <= now && reservation.endTime > now) {
+      seatData[reservation.seat_id].status = 'reserved'
+    } else {
+      seatData[reservation.seat_id].status = 'partiallyReserved'
+    }
+  })
+
+  console.log(seatData)
 }
 
 // await testGetSeatStatusUser()
 // await testGetSeatStatusAdmin()
+
 await testGetSeatsStatus()
-
-// let today = new Date()
-// let endTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59)
-
-// console.log(endTime.toLocaleString())
