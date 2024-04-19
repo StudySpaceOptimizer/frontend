@@ -3,8 +3,8 @@ import { ref } from 'vue'
 import { useAccountStore } from '@/stores/account'
 
 const accountStore = useAccountStore()
-const email = ref('student@mail.ntou.edu.tw')
-const password = ref('password')
+const email = ref('')
+const password = ref('')
 const loading = ref(false)
 
 const signIn = () => {

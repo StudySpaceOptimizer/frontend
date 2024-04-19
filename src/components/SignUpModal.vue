@@ -8,10 +8,10 @@ const accountStore = useAccountStore()
 const identity = ref('student')
 const signUpForm = ref<FormInstance>()
 const studentSignUp = reactive({
-  studentId: '00957125',
-  name: '簡蔚驊',
-  password: '00957125',
-  password_confirm: '00957125'
+  studentId: '',
+  name: '',
+  password: '',
+  password_confirm: ''
 })
 const otherSignUp = reactive({
   name: '',
