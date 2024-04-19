@@ -93,7 +93,7 @@ watchEffect(() => {
   drawStage.draw(props.width, props.height)
 })
 
-onMounted(() => {
+watchEffect(() => {
   const filter = filterStore.getFilter(route.name?.toString() || 'default')
   seatStore.fetchSeatsStatus(filter)
 })
