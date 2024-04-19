@@ -40,8 +40,9 @@ export class SupabaseSeat implements Seat {
     if (seatInfo == null) throw new Error('找不到座位')
 
     seatInfo.forEach((seat: any) => {
-      seatData[seat.id] = {
-        id: seatConverterFromDB(seat.id),
+      const seatId = seatConverterFromDB(seat.id)
+      seatData[seatId] = {
+        id: seatId,
         available: seat.available,
         status: seat.available ? 'available' : 'unavailable', // 初始化狀態
         otherInfo: seat.other_info
@@ -60,6 +61,7 @@ export class SupabaseSeat implements Seat {
 
     reservationsData?.forEach((reservation: any) => {
       const seatId = seatConverterFromDB(reservation.seat_id)
+      // TODO: 應該是在這個篩選區間內，如果都有預約才是 reserved，如果只有部分時間有預約，則是 partiallyReserved
       if (reservation.beginTime <= now && reservation.endTime > now) {
         seatData[seatId].status = 'reserved'
       } else {
