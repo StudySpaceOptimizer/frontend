@@ -12,16 +12,53 @@ const props = defineProps({
 })
 const components = computed<any[]>(() => props.components)
 
-let isSeat = false
-watchEffect(() => {
+const checkIsSeat = () => {
   if (components.value.length !== 2) {
+    return false
+  }
+  const type = components.value[0].id
+  if (type != 'chair-0') {
+    return false
+  }
+  return true
+}
+
+let isSeat = false
+watchEffect(async () => {
+  if (!checkIsSeat()) {
+    isSeat = false
     return
   }
-  const seat = components.value[1].config.text
-  if (seat && seat[0] !== 'A' && seat[0] !== 'B') {
+  
+  const seatStatus = await seatStore.getSeatStatus(components.value[1].config.text)
+  if (!seatStatus) {
+    components.value[0].config.fill = '#808080'
+    isSeat = false
     return
   }
+
   isSeat = true
+
+  if (components.value[1].config.text === 'B101') {
+    console.log(seatStatus)
+  }
+
+  // TODO: optimize, refactor
+  const status = seatStatus.status
+  switch (status) {
+    case 'available':
+      components.value[0].config.fill = '#00bd7e'
+      break
+    case 'reserved':
+      components.value[0].config.fill = '#bd0000'
+      break
+    case 'partiallyReserved':
+      components.value[0].config.fill = '#bda700'
+      break
+    default:
+      components.value[0].config.fill = '#808080'
+      isSeat = false
+  }
 })
 
 const seatHandler = () => {

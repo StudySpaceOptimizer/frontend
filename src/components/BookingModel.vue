@@ -7,40 +7,17 @@ import { useSeatStore } from '@/stores/seat'
 import { useFilterStore } from '@/stores/filter'
 import * as api from '@/api'
 import DependencyContainer from '@/DependencyContainer'
+import { createTimeRange } from '@/utils'
 
 const reserveApi = DependencyContainer.inject<api.Reserve>(api.API_SERVICE.RESERVE)
 const seatStore = useSeatStore()
 const filterStore = useFilterStore()
 const route = useRoute()
+
 const dialogVisible = ref(false)
 const seatName = ref('')
-const checkboxGroup1 = ref<string[]>([])
-const timeRange = reactive([
-  { value: '09:00', disabled: false },
-  { value: '09:30', disabled: false },
-  { value: '10:00', disabled: false },
-  { value: '10:30', disabled: false },
-  { value: '11:00', disabled: false },
-  { value: '11:30', disabled: false },
-  { value: '12:00', disabled: false },
-  { value: '12:30', disabled: false },
-  { value: '13:00', disabled: false },
-  { value: '13:30', disabled: false },
-  { value: '14:00', disabled: false },
-  { value: '14:30', disabled: false },
-  { value: '15:00', disabled: false },
-  { value: '15:30', disabled: false },
-  { value: '16:00', disabled: false },
-  { value: '16:30', disabled: false },
-  { value: '17:00', disabled: false },
-  { value: '17:30', disabled: false },
-  { value: '18:00', disabled: false },
-  { value: '18:30', disabled: false },
-  { value: '19:00', disabled: false },
-  { value: '19:30', disabled: false },
-  { value: '20:00', disabled: false },
-  { value: '20:30', disabled: false },
-])
+const timeSelectRange = ref<string[]>([])
+const timeRange = reactive(createTimeRange(8, 22, 30))
 
 watchEffect(() => {
   if (seatStore.nowSelectedSeat != null) {
@@ -53,8 +30,8 @@ const clearTimeSetting = () => {
   beginTime.value = undefined
   endTime.value = undefined
   oldCheckboxGroup1 = []
-  checkboxGroup1.value = []
-  timeRange.forEach(time => time.disabled = false)
+  timeSelectRange.value = []
+  timeRange.forEach((time) => (time.disabled = false))
 }
 
 const handleClose = () => {
@@ -65,8 +42,8 @@ const handleClose = () => {
 
 const nowFilterDate = computed(() => {
   const filter = filterStore.getFilter(route.name?.toString() || 'default')
-  if (!filter.begin) return new Date().toLocaleDateString()
-  return filter.begin.toLocaleDateString()
+  if (!filter.beginTime) return new Date().toLocaleDateString()
+  return filter.beginTime.toLocaleDateString()
 })
 
 const beginTime = ref<string | undefined>(undefined)
@@ -80,7 +57,8 @@ const handleBooking = () => {
 
   const beginTimeValue = new Date(`${nowFilterDate.value} ${beginTime.value}`)
   const endTimeValue = new Date(`${nowFilterDate.value} ${endTime.value}`)
-  reserveApi.reserve(seatName.value, beginTimeValue, endTimeValue)
+  reserveApi
+    .reserve(seatName.value, beginTimeValue, endTimeValue)
     .then(() => {
       ElMessage.success('預約成功')
       dialogVisible.value = false
@@ -92,11 +70,11 @@ const handleBooking = () => {
     })
 }
 
-const findSelectedTime = (oldValue: string[], newValue: string[])=> {
+const findSelectedTime = (oldValue: string[], newValue: string[]) => {
   if (oldValue.length < newValue.length) {
-    return newValue.find(value => !oldValue.includes(value))
+    return newValue.find((value) => !oldValue.includes(value))
   } else if (oldValue.length > newValue.length) {
-    return oldValue.find(value => !newValue.includes(value))
+    return oldValue.find((value) => !newValue.includes(value))
   }
   return undefined
 }
@@ -127,11 +105,13 @@ const handleCheckboxChange = (value: string[]) => {
   })
 
   if (beginTime.value != undefined && endTime.value != undefined) {
-    checkboxGroup1.value = timeRange.slice(beginIndex, endIndex + 1).map(time => time.value)
+    timeSelectRange.value = timeRange.slice(beginIndex, endIndex + 1).map((time) => time.value)
   } else {
-    checkboxGroup1.value = [beginTime.value, endTime.value].filter(time => time != undefined) as string[]
+    timeSelectRange.value = [beginTime.value, endTime.value].filter(
+      (time) => time != undefined
+    ) as string[]
   }
-  oldCheckboxGroup1 = checkboxGroup1.value
+  oldCheckboxGroup1 = timeSelectRange.value
 }
 
 const isCompleteSelectTime = computed(() => {
@@ -145,16 +125,21 @@ const isCompleteSelectTime = computed(() => {
     width="500"
     :before-close="handleClose"
   >
-    <div class="date">
-      預約日期：{{ nowFilterDate }}
+    <div class="date">預約日期：{{ nowFilterDate }}</div>
+
+    <div class="time-selector">
+      <el-checkbox-group v-model="timeSelectRange" size="large" @change="handleCheckboxChange">
+        <el-checkbox-button
+          v-for="time in timeRange"
+          :key="time.value"
+          :value="time.value"
+          :disabled="time.disabled"
+        >
+          {{ time.value }}
+        </el-checkbox-button>
+      </el-checkbox-group>
     </div>
-    
-    <el-checkbox-group v-model="checkboxGroup1" size="large" @change="handleCheckboxChange">
-      <el-checkbox-button v-for="time in timeRange" :key="time.value" :value="time.value" :disabled="time.disabled">
-        {{ time.value }}
-      </el-checkbox-button>
-    </el-checkbox-group>
-    
+
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="handleClose">取消</el-button>
@@ -165,3 +150,11 @@ const isCompleteSelectTime = computed(() => {
     </template>
   </el-dialog>
 </template>
+
+<style scoped>
+.time-selector {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+</style>

@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { reactive, ref, watchEffect } from 'vue'
-import DrawStage from '@/components/seats/stage'
-import { useSeatStore } from '@/stores/seat'
+import { onMounted, reactive, ref, watchEffect } from 'vue'
+import { useRoute } from 'vue-router'
 
+import DrawStage from '@/components/seats/stage'
+import { useFilterStore } from '@/stores/filter'
+import { useSeatStore } from '@/stores/seat'
 import KonvaRecursiveComponent from '@/components/KonvaRecursiveComponent.vue'
 import BookingModel from '@/components/BookingModel.vue'
 
+const route = useRoute()
+const filterStore = useFilterStore()
 const seatStore = useSeatStore()
 const props = defineProps({
   width: {
@@ -24,6 +28,11 @@ const drawStageConfig = reactive({
   height: props.height,
   x: 0,
   y: 0,
+  // TODO: compute center
+  scaleX: 0.55,
+  scaleY: 0.55,
+  offsetX: -600,
+  offsetY: -300,
 })
 let isDragging = false
 let lastPos = { x: 0, y: 0 }
@@ -82,6 +91,11 @@ watchEffect(() => {
   drawStageConfig.width = props.width
   drawStageConfig.height = props.height
   drawStage.draw(props.width, props.height)
+})
+
+onMounted(() => {
+  const filter = filterStore.getFilter(route.name?.toString() || 'default')
+  seatStore.fetchSeatsStatus(filter)
 })
 </script>
 
