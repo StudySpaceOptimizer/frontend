@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watchEffect } from 'vue'
+import { useRoute } from 'vue-router'
+import { ElMessage } from 'element-plus'
+
 import { useSeatStore } from '@/stores/seat'
+import { useFilterStore } from '@/stores/filter'
 import * as api from '@/api'
 import DependencyContainer from '@/DependencyContainer'
-import { ElMessage } from 'element-plus'
 
 const reserveApi = DependencyContainer.inject<api.Reserve>(api.API_SERVICE.RESERVE)
 const seatStore = useSeatStore()
+const filterStore = useFilterStore()
+const route = useRoute()
 const dialogVisible = ref(false)
 const seatName = ref('')
 const checkboxGroup1 = ref<string[]>([])
@@ -46,11 +51,24 @@ const handleClose = () => {
   clearTimeSetting()
 }
 
+const nowFilterDate = computed(() => {
+  const filter = filterStore.getFilter(route.name?.toString() || 'default')
+  if (!filter.begin) return new Date().toLocaleDateString()
+  return filter.begin.toLocaleDateString()
+})
+
 const beginTime = ref<string | undefined>(undefined)
 const endTime = ref<string | undefined>(undefined)
 let oldCheckboxGroup1: string[] = []
 const handleBooking = () => {
-  reserveApi.reserve(seatName.value, new Date(beginTime.value!), new Date(endTime.value!))
+  if (beginTime.value === undefined || endTime.value === undefined) {
+    ElMessage.warning('請選擇預約時間')
+    return
+  }
+
+  const beginTimeValue = new Date(`${nowFilterDate.value} ${beginTime.value}`)
+  const endTimeValue = new Date(`${nowFilterDate.value} ${endTime.value}`)
+  reserveApi.reserve(seatName.value, beginTimeValue, endTimeValue)
     .then(() => {
       ElMessage.success('預約成功')
       dialogVisible.value = false
@@ -115,9 +133,8 @@ const isCompleteSelectTime = computed(() => {
     width="500"
     :before-close="handleClose"
   >
-    <!-- TODO -->
     <div class="date">
-      預約日期：{{ new Date().toLocaleDateString() }}
+      預約日期：{{ nowFilterDate }}
     </div>
     
     <el-checkbox-group v-model="checkboxGroup1" size="large" @change="handleCheckboxChange">
