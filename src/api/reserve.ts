@@ -3,10 +3,7 @@ import type * as model from './model'
 import type { Reserve } from './index'
 import { supabase } from '../service/supabase/supabase'
 
-interface FilterRequest {
-  begin: Date
-  end: Date
-}
+import { seatConverterToDB, seatConverterFromDB } from '@/utils'
 
 export class SupabaseReserve implements Reserve {
   /**
@@ -25,6 +22,7 @@ export class SupabaseReserve implements Reserve {
       throw new Error('Failed to get user data:' + getUserError?.message)
     }
 
+    const seatIDNumber = seatConverterToDB(seatID)
     // 提取用戶ID
     const userID = authData.user.id
 
@@ -33,7 +31,7 @@ export class SupabaseReserve implements Reserve {
         begin_time: beginTime,
         end_time: endTime,
         user_id: userID,
-        seat_id: seatID
+        seat_id: seatIDNumber
       }
     ])
 
@@ -68,7 +66,7 @@ export class SupabaseReserve implements Reserve {
                 }
               : undefined
           },
-          seatID: reservation.seat_id,
+          seatID: seatConverterFromDB(reservation.seat_id),
           checkInTime: reservation.check_in_time,
           temporaryLeaveTime: reservation.temporary_leave_time
         })
@@ -87,10 +85,11 @@ export class SupabaseReserve implements Reserve {
   }
 
   async terminateReservation(id: string): Promise<any> {
+    const seatId = seatConverterToDB(id)
     const { error } = await supabase
       .from('reservations')
       .update({ end_time: new Date() })
-      .eq('id', id)
+      .eq('id', seatId)
       .select()
 
     if (error) {
