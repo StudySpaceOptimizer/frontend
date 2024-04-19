@@ -81,7 +81,9 @@ export class SupabaseReserve implements Reserve {
       throw new Error(error.message)
     }
 
-    // 是否要確認成功刪除
+    const { data } = await supabase.from('reservations').select('*').eq('id', id)
+
+    if (data) throw new Error('刪除預約失敗')
   }
 
   async terminateReservation(id: string): Promise<any> {

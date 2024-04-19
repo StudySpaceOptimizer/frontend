@@ -52,6 +52,15 @@ AS PERMISSIVE
 FOR INSERT
 WITH CHECK (auth.uid() = user_id AND is_not_banned());
 
+-- 允許使用者刪除自己的預約
+DROP POLICY IF EXISTS user_delete_own ON reservations;
+CREATE POLICY user_delete_own ON reservations
+AS PERMISSIVE
+FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+
+
+
 
 
 -- 檢查合法預約：begin 跟 end 在同一天且end在begin之後
@@ -61,15 +70,27 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
-  -- 檢查begin_time和end_time是否在同一天
-  IF DATE(NEW.begin_time) != DATE(NEW.end_time) THEN
-    RAISE EXCEPTION '開始和結束時間必須在同一天';
-  END IF;
-  -- 檢查end_time是否在begin_time之後
-  IF NEW.end_time <= NEW.begin_time THEN
-    RAISE EXCEPTION '結束時間必須晚於開始時間';
-  END IF;
-  RETURN NEW;
+    -- 檢查begin_time和end_time是否在同一天
+    IF DATE(NEW.begin_time) != DATE(NEW.end_time) THEN
+        RAISE EXCEPTION '開始和結束時間必須在同一天';
+    END IF;
+
+    -- 檢查end_time是否在begin_time之後
+    IF NEW.end_time <= NEW.begin_time THEN
+        RAISE EXCEPTION '結束時間必須晚於開始時間';
+    END IF;
+
+    -- 確保預約的開始和結束時間都是每小時的 00 分或 30 分
+    IF (EXTRACT(MINUTE FROM NEW.begin_time) NOT IN (0, 30)) OR (EXTRACT(MINUTE FROM NEW.end_time) NOT IN (0, 30)) THEN
+        RAISE EXCEPTION '預約時間必須以30分鐘為單位';
+    END IF;
+
+    -- 確保預約開始時間大於當前時間
+    IF NEW.begin_time <= current_timestamp THEN
+        RAISE EXCEPTION '預約開始時間必須大於當前時間';
+    END IF;
+
+    RETURN NEW;
 END;
 $$;
 
@@ -288,6 +309,23 @@ CREATE TRIGGER trigger_update_seat_reservations
 AFTER INSERT OR UPDATE ON reservations
 FOR EACH ROW
 EXECUTE FUNCTION update_seat_reservations();
+
+CREATE OR REPLACE FUNCTION check_reservation_delete_time()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- 檢查是否嘗試刪除的預約開始時間在當前時間後至少30分鐘
+    IF (OLD.begin_time <= current_timestamp + interval '30 minutes') THEN
+        RAISE EXCEPTION '只能刪除開始時間在30分鐘之後的預約';
+    END IF;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trigger_check_reservation_delete ON reservations;
+CREATE TRIGGER trigger_check_reservation_delete
+BEFORE DELETE ON reservations
+FOR EACH ROW
+EXECUTE FUNCTION check_reservation_delete_time();
 
 
 
