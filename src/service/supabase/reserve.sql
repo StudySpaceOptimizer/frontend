@@ -56,8 +56,8 @@ WITH CHECK (auth.uid() = user_id AND is_not_banned());
 DROP POLICY IF EXISTS user_delete_own ON reservations;
 CREATE POLICY user_delete_own ON reservations
 AS PERMISSIVE
-FOR INSERT
-WITH CHECK (auth.uid() = user_id);
+FOR DELETE
+USING (auth.uid() = user_id);
 
 
 

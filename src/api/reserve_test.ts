@@ -70,9 +70,9 @@ async function testGetPersonalReservationsSuccess() {
 }
 
 async function testDeleteReservationSuccess() {
-  let user = await signIn(admin, password)
+  let user = await signIn(student, password)
 
-  const id = '90f1fa25-7506-402f-a532-750a4587ca24'
+  const id = '20fc4dd0-2d14-4f98-8531-e4afe13926a1'
 
   const { data, error } = await supabase.from('reservations').delete().eq('id', id)
 
