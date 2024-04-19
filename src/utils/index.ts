@@ -36,8 +36,19 @@ export const seatConverterToDB = (seat: string) => {
 
 export const seatConverterFromDB = (seat: number) => {
   if (seat < 1000) {
-    return `A${seat.toString().padStart(2, '0')}`
+    return `A${seat.toString()}`
   } else {
-    return `B${(seat - 1000).toString().padStart(2, '0')}`
+    return `B${(seat - 1000).toString()}`
   }
+}
+
+export const createTimeRange = (beginTime: number, endTime: number, step: number) => {
+  const times = []
+  for (let hour = beginTime; hour < endTime; hour++) {
+    for (let minute = 0; minute < 60; minute += step) {
+      const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
+      times.push({ value: time, disabled: false })
+    }
+  }
+  return times
 }
