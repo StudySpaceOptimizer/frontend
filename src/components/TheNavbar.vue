@@ -1,112 +1,37 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+
 import { useAccountStore } from '@/stores/account'
 
 const accountStore = useAccountStore()
+const activeIndex = ref('/')
 </script>
 
 <template>
-  <header>
-    <RouterLink to="/"><p>全興書苑 預約系統</p></RouterLink>
-    <div class="wrapper">
-      <nav>
-        <RouterLink to="/">Home</RouterLink>
-      </nav>
-    </div>
-    <div class="user">
-      <template v-if="accountStore.isSignIn">
-        <span class="toggle">Hi, {{ accountStore.userDisplayName }}</span>
-        <div class="dropdown">
-          <button @click="accountStore.signOut()">Sign Out</button>
-          <RouterLink to="/profile">Profile</RouterLink>
-          <RouterLink to="/admin">admin</RouterLink>
-        </div>
-      </template>
-      <template v-else>
-        <el-button @click="accountStore.toggleDialog('signIn')">Sign In</el-button>
-      </template>
-    </div>
-  </header>
+  <el-menu
+    :default-active="activeIndex"
+    class="el-menu-demo"
+    mode="horizontal"
+    router="true"
+    :ellipsis="false"
+  >
+    <el-menu-item index="/"> 全興書苑 預約系統 </el-menu-item>
+    <div class="flex-grow"></div>
+    <el-sub-menu index="" v-if="accountStore.isSignIn">
+      <template #title>Hi, {{ accountStore.userDisplayName }}</template>
+      <el-menu-item index="" @click="accountStore.signOut()">登出</el-menu-item>
+      <el-menu-item index="/profile?tabs=person">個人資料</el-menu-item>
+      <el-menu-item index="/profile?tabs=reservation">預約紀錄</el-menu-item>
+      <el-menu-item index="/admin" v-if="accountStore.adminRole !== 'non-admin'">
+        管理員介面
+      </el-menu-item>
+    </el-sub-menu>
+    <el-menu-item index="" v-else @click="accountStore.toggleDialog('signIn')"> 登入 </el-menu-item>
+  </el-menu>
 </template>
 
-<style scoped lang="scss">
-header {
-  display: flex;
-  height: 30px;
-  padding: 32px 48px;
-  align-items: center;
-}
-
-p {
-  font-size: 1.5rem;
-  font-weight: bold;
-  margin: 0;
-}
-
-a {
-  text-decoration: none;
-
-  &:visited {
-    color: var(--color-text);
-  }
-}
-
-.wrapper {
-  flex: 1;
-
-  nav {
-    display: flex;
-    justify-content: flex-end;
-
-    a {
-      margin: 0 1rem;
-      text-decoration: none;
-      color: #2024dc;
-    }
-  }
-}
-
-.dropdown {
-  position: absolute;
-  width: 120px;
-  top: 100%;
-  right: 0;
-  display: none;
-  flex-direction: column;
-  background-color: #fff;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 0.5rem 0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 1;
-
-  button,
-  a {
-    padding: 0.5rem 1rem;
-    text-align: left;
-    text-decoration: none;
-    color: #2024dc;
-    border: none;
-    background-color: transparent;
-    cursor: pointer;
-
-    &:hover {
-      background-color: #eee;
-    }
-  }
-}
-
-.user {
-  position: relative;
-  margin-left: 1rem;
-
-  .toggle {
-    cursor: pointer;
-  }
-
-  &:hover {
-    .dropdown {
-      display: flex;
-    }
-  }
+<style>
+.flex-grow {
+  flex-grow: 1;
 }
 </style>

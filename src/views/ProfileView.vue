@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, watch, ref, watchEffect } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
 
 import * as API from '@/api'
@@ -77,13 +78,14 @@ watchEffect(() => {
   getData(filterStore.getFilter('profile'))
 })
 
+const route = useRoute()
 const userApi = DependencyContainer.inject<API.User>(API.API_SERVICE.USER)
 
 const userProfile = ref<Model.UserData>()
 const isStudent = computed(() => userProfile.value?.userRole === 'student')
 let isGetedUserProfile = false
 const isUserProfileChange = ref(false)
-const _test_tabs = ref('reservation')
+const _test_tabs = ref(route.query.tabs)
 const updateProfileForm = ref<FormInstance>()
 const rules = {
   name: [
@@ -147,15 +149,20 @@ watch(
   },
   { deep: true }
 )
+
+const router = useRouter()
+watchEffect(() => {
+  _test_tabs.value = route.query.tabs ?? 'person'
+})
+
+watch(_test_tabs, () => {
+  router.push({ query: { tabs: _test_tabs.value } })
+})
 </script>
 
 <template>
   <el-tabs tab-position="top" class="profile-tabs" v-model="_test_tabs">
-    <el-tab-pane label="預約紀錄" name="reservation">
-      <TheFiliter />
-      <ListView :data="listViewData" />
-    </el-tab-pane>
-    <el-tab-pane label="個人資料" name="profile">
+    <el-tab-pane label="個人資料" name="person">
       <el-container class="profile-container">
         <el-form
           ref="updateProfileForm"
@@ -166,7 +173,7 @@ watch(
           :rules="rules"
         >
           <el-form-item label="Email">
-            <el-tooltip content="若需要修改電子信箱，請告知管理員" placement="topgit">
+            <el-tooltip content="若需要修改電子信箱，請告知管理員" placement="top">
               <el-input v-model="userProfile.email" disabled />
             </el-tooltip>
           </el-form-item>
@@ -190,6 +197,10 @@ watch(
           </el-form-item>
         </el-form>
       </el-container>
+    </el-tab-pane>
+    <el-tab-pane label="預約紀錄" name="reservation">
+      <TheFiliter />
+      <ListView :data="listViewData" />
     </el-tab-pane>
   </el-tabs>
 </template>

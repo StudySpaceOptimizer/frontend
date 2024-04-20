@@ -28,6 +28,7 @@ const show = defineProps({
 })
 
 const DateTimePicker = ref({
+  // TODO: if nowtime > endTime, date must be tomorrow
   date: new Date(),
   beginTime: '08:30',
   endTime: '20:30'
@@ -108,7 +109,7 @@ watchEffect(() => {
       <label for="username">使用者</label>
       <input v-model="filter.username" type="text" name="username" />
     </template>
-    <input type="submit" value="開始篩選" />
+    <el-button type="submit" style="margin: 0 10px;">開始篩選</el-button>
   </form>
 </template>
 

@@ -21,11 +21,11 @@ function signIn(): void {
 <template>
   <el-dialog v-model="accountStore.dialogStatus.signIn" title="登入" width="400" height="800">
     <el-form @submit.prevent="signIn" label-width="auto" style="max-width: 600px">
-      <el-form-item label="Email">
-        <el-input v-model="email" placeholder="請輸入Email" autofocus></el-input>
+      <el-form-item label="信箱">
+        <el-input v-model="email" placeholder="請輸入信箱" autofocus></el-input>
       </el-form-item>
 
-      <el-form-item label="Password">
+      <el-form-item label="密碼">
         <el-input
           type="password"
           v-model="password"
@@ -37,9 +37,9 @@ function signIn(): void {
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="accountStore.toggleDialog('signUp')" text>
-          還沒有帳號？ Sign Up</el-button
+          還沒有帳號？ 註冊</el-button
         >
-        <el-button type="primary" @click="signIn" :loading="loading"> Sign In </el-button>
+        <el-button type="primary" @click="signIn" :loading="loading"> 登入 </el-button>
       </div>
     </template>
   </el-dialog>

@@ -11,6 +11,8 @@ export const useAccountStore = defineStore(
     const api = DependencyContainer.inject<API.User>(API.API_SERVICE.USER)
     const isSignIn = ref(false)
     const userDisplayName = ref('guest')
+    const userRole = ref('student')
+    const adminRole = ref('non-admin')
 
     const dialogStatus = reactive({
       signIn: false,
@@ -94,6 +96,8 @@ export const useAccountStore = defineStore(
       try {
         const userData = await api.getUsers(false)
         userDisplayName.value = userData[0].name ?? 'guest'
+        userRole.value = userData[0].userRole ?? 'student'
+        adminRole.value = userData[0].adminRole ?? 'non-admin'
         if (userData[0].name == undefined) {
           ElMessage.warning('可以到個人資料修改名稱')
         }
@@ -103,6 +107,7 @@ export const useAccountStore = defineStore(
     }
 
     watch(isSignIn, (newValue, oldValue) => {
+      // TODO: optimize
       if (oldValue === false && newValue === true) {
         getUserProfile()
       }
@@ -111,14 +116,17 @@ export const useAccountStore = defineStore(
     return {
       isSignIn,
       userDisplayName,
+      userRole,
+      adminRole,
+      dialogStatus,
+
       signIn,
       signOut,
       checkIsSignIn,
       studentSignUp,
       outsiderSignUp,
       toggleDialog,
-      getUserProfile,
-      dialogStatus
+      getUserProfile
     }
   },
   {
