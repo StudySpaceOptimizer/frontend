@@ -1,7 +1,7 @@
 import type { Response } from './common'
 import type { User } from './index'
 import { supabase } from '../service/supabase/supabase'
-import type * as model from './model'
+import type * as Type from '@/types'
 
 const student = 'student@mail.ntou.edu.tw'
 const bannedstudent = 'bannedstudent@mail.ntou.edu.tw'
@@ -57,7 +57,7 @@ async function testGetSettingData() {
   if (error) console.error(error)
   // else console.log(data)
 
-  const settings: Partial<model.SettingsData> = {}
+  const settings: Partial<Type.SettingsData> = {}
 
   data?.forEach((item: any) => {
     switch (item.key_name) {

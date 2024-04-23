@@ -1,6 +1,4 @@
-import type { toLocalDateTime } from './common.ts'
-import { supabase } from '../service/supabase/supabase'
-import type * as model from './model'
+import { supabase } from '@/service/supabase/supabase'
 
 const student = 'student@mail.ntou.edu.tw'
 const bannedstudent = 'bannedstudent@mail.ntou.edu.tw'

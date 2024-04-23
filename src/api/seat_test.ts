@@ -1,4 +1,4 @@
-import type * as model from './model'
+import type * as Type from '@/types'
 import { toLocalDateTime } from './common'
 import type { Seat } from './index'
 import { supabase } from '../service/supabase/supabase'
@@ -46,8 +46,8 @@ async function testGetSeatStatusUser() {
     .select('*')
     .eq('seat_id', seatID)
 
-  const seatDetail: model.SeatDetail = {
-    id: seatID,
+  const seatDetail: Type.SeatDetail = {
+    id: seatID.toString(),
     reservations:
       active_seat_reservations?.map((reservation: any) => ({
         beginTime: toLocalDateTime(reservation.begin_time),
@@ -74,8 +74,8 @@ async function testGetSeatStatusAdmin() {
 
   console.log(active_seat_reservations, error)
 
-  const seatDetail: model.SeatDetail = {
-    id: seatID,
+  const seatDetail: Type.SeatDetail = {
+    id: seatID.toString(),
     reservations:
       active_seat_reservations?.map((reservation: any) => ({
         beginTime: toLocalDateTime(reservation.begin_time),
@@ -115,7 +115,7 @@ async function testGetSeatsStatus() {
   const { data: seatInfo, error: getSeatsError } = await supabase.from('seats').select('*')
   console.log(seatInfo, getSeatsError)
 
-  const seatData: { [key: number]: model.SeatData } = {}
+  const seatData: { [key: number]: Type.SeatData } = {}
 
   if (seatInfo == null) return
 
