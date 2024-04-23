@@ -12,7 +12,7 @@ const activeIndex = ref('/')
     :default-active="activeIndex"
     class="el-menu-demo"
     mode="horizontal"
-    router="true"
+    :router="true"
     :ellipsis="false"
   >
     <el-menu-item index="/"> 全興書苑 預約系統 </el-menu-item>
