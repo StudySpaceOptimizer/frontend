@@ -109,7 +109,7 @@ watchEffect(() => {
       <label for="username">使用者</label>
       <input v-model="filter.username" type="text" name="username" />
     </template>
-    <el-button type="submit" style="margin: 0 10px;">開始篩選</el-button>
+    <el-button type="primary" style="margin: 0 10px;">開始篩選</el-button>
   </form>
 </template>
 
