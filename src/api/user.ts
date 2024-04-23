@@ -1,6 +1,6 @@
+import type * as Type from '@/types'
 import { supabase } from '@/service/supabase/supabase'
 import type { User } from './index'
-import type * as model from './model'
 
 export class SupabaseUser implements User {
   /**
@@ -91,7 +91,7 @@ export class SupabaseUser implements User {
     phone: string,
     idcard: string,
     email: string
-  ): Promise<model.Success> {
+  ): Promise<void> {
     throw new Error('Method not implemented.')
   }
 
@@ -101,7 +101,7 @@ export class SupabaseUser implements User {
    * @param getAllUser 是否獲取所有用戶
    * @returns 返回用戶數據列表
    */
-  async getUsers(getAllUser: boolean): Promise<model.UserData[]> {
+  async getUsers(getAllUser: boolean): Promise<Type.UserData[]> {
     if (getAllUser == false) {
       const { data: userProfiles, error } = await supabase.rpc('get_my_user_data')
 
@@ -110,7 +110,7 @@ export class SupabaseUser implements User {
       }
 
       return userProfiles?.map(
-        (profile: any): model.UserData => ({
+        (profile: any): Type.UserData => ({
           id: profile.id,
           email: profile.email,
           userRole: profile.user_role,
@@ -138,7 +138,7 @@ export class SupabaseUser implements User {
 
     return (
       userProfiles?.map(
-        (profile: any): model.UserData => ({
+        (profile: any): Type.UserData => ({
           id: profile.id,
           email: profile.email,
           userRole: profile.user_role,
@@ -232,14 +232,9 @@ export class SupabaseUser implements User {
     }
   }
 
-  /**
-   * 更新系統設定
-   * @param newSettings 包含新設定值的數據對象
-   * @returns 無返回值，操作失敗將拋出錯誤
-   */
-  async updateSettings(newSettings: model.SettingsData): Promise<void> {
+  async updateSettings(newSettings: Type.SettingsData): Promise<void> {
     for (const key in newSettings) {
-      const value = JSON.stringify(newSettings[key as keyof model.SettingsData])
+      const value = JSON.stringify(newSettings[key as keyof Type.SettingsData])
       const { error } = await supabase
         .from('settings')
         .update({ value: camelToSnakeCase(value) })
@@ -251,13 +246,7 @@ export class SupabaseUser implements User {
     }
   }
 
-  /**
-   * 為指定用戶賦予管理員角色
-   * @param userID 要賦予角色的用戶ID
-   * @param adminRole 指定的管理員角色
-   * @returns 無返回值，操作失敗將拋出錯誤
-   */
-  async grantAdminRole(userID: String, adminRole: model.adminRole): Promise<void> {
+  async grantAdminRole(userID: String, adminRole: Type.adminRole): Promise<void> {
     const { error } = await supabase.rpc('set_claim', {
       claim: 'admin_role',
       uid: userID,
@@ -267,16 +256,12 @@ export class SupabaseUser implements User {
     if (error) throw new Error(error.message)
   }
 
-  /**
-   * 獲取當前的系統設定
-   * @returns 返回解析後的系統設定數據對象
-   */
-  async getSettings(): Promise<model.SettingsData> {
+  async getSettings(): Promise<Type.SettingsData> {
     const { data, error } = await supabase.from('settings').select('*')
 
     if (error) throw new Error(error.message)
 
-    const settings: Partial<model.SettingsData> = {}
+    const settings: Partial<Type.SettingsData> = {}
 
     data?.forEach((item: any) => {
       switch (item.key_name) {
@@ -315,7 +300,7 @@ export class SupabaseUser implements User {
       }
     })
 
-    return settings as model.SettingsData
+    return settings as Type.SettingsData
   }
 }
 

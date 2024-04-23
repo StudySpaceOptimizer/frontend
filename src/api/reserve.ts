@@ -1,7 +1,8 @@
-import { supabase } from '../service/supabase/supabase'
-import type * as model from './model'
-import type { Reserve } from './index'
+import type * as Type from '@/types'
+import { supabase } from '@/service/supabase/supabase'
 import { seatConverterToDB, seatConverterFromDB } from '@/utils'
+
+import type { Reserve } from './index'
 
 export class SupabaseReserve implements Reserve {
   /**
@@ -38,17 +39,12 @@ export class SupabaseReserve implements Reserve {
     }
   }
 
-  /**
-   * 取得個人的所有預約記錄
-   * @param config 設定參數，用於調整查詢條件或結果
-   * @returns 傳回預約記錄數組
-   */
-  async getPersonalReservations(config: any): Promise<model.Reservation[]> {
+  async getPersonalReservations(config: any): Promise<Type.Reservation[]> {
     // TODO: implement config
     const { data: reservations } = await supabase.rpc('get_my_reservations')
     return (
       reservations?.map(
-        (reservation: any): model.Reservation => ({
+        (reservation: any): Type.Reservation => ({
           id: reservation.id,
           beginTime: reservation.begin_time,
           endTime: reservation.end_time,

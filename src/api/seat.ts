@@ -1,8 +1,9 @@
-import type * as model from './model'
+import type * as Type from '@/types'
+import { supabase } from '@/service/supabase/supabase'
+import { seatConverterFromDB } from '@/utils'
+
 import { toLocalDateTime } from './common'
 import type { Seat } from './index'
-import { supabase } from '../service/supabase/supabase'
-import { seatConverterFromDB } from '@/utils'
 
 interface SeatRequest {
   beginTime?: Date
@@ -16,7 +17,7 @@ export class SupabaseSeat implements Seat {
    * @param config 包含 beginTime 和 endTime 的配置對象
    * @returns 返回座位數據列表的 Promise
    */
-  async getSeatsStatus(config: SeatRequest): Promise<model.SeatData[]> {
+  async getSeatsStatus(config: SeatRequest): Promise<Type.SeatData[]> {
     let { beginTime, endTime } = config
     if (Boolean(beginTime) !== Boolean(endTime)) {
       throw new Error('beginTime and endTime need to provide same time, or both not provide')
@@ -35,7 +36,7 @@ export class SupabaseSeat implements Seat {
       throw new Error(getSeatsError.message)
     }
 
-    const seatData: { [key: string]: model.SeatData } = {}
+    const seatData: { [key: string]: Type.SeatData } = {}
 
     if (seatInfo == null) throw new Error('找不到座位')
 
@@ -90,7 +91,7 @@ export class SupabaseSeat implements Seat {
    * @param id 要查詢的座位ID
    * @returns 返回座位詳細資訊的 Promise
    */
-  async getSeatStatus(seatID: number): Promise<model.SeatDetail> {
+  async getSeatStatus(seatID: number): Promise<Type.SeatDetail> {
     const { data: active_seat_reservations, error } = await supabase.rpc(
       'get_seat_active_reservations',
       {
@@ -102,7 +103,7 @@ export class SupabaseSeat implements Seat {
       throw new Error(error.message)
     }
 
-    const seatDetail: model.SeatDetail = {
+    const seatDetail: Type.SeatDetail = {
       id: seatConverterFromDB(seatID),
       reservations:
         active_seat_reservations?.map((reservation: any) => ({
