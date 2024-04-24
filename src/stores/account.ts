@@ -4,7 +4,7 @@ import { ElMessage } from 'element-plus'
 
 import * as API from '@/api'
 import DependencyContainer from '@/DependencyContainer'
-import { useSettingStore } from './settings'
+import { useSettingStore } from './setting'
 
 export const useAccountStore = defineStore(
   'account',
