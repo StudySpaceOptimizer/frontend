@@ -40,8 +40,8 @@ async function testReserveSuccess() {
 
   // 生成預訂資料
   const reservation = {
-    beginTime: new Date('2024-04-23T10:00:00'),
-    endTime: new Date('2024-04-23T12:00:00'),
+    beginTime: new Date('2024-04-26T10:00:00'),
+    endTime: new Date('2024-04-26T12:00:00'),
     userID: user!.id,
     seatID: 1
   }
@@ -93,14 +93,24 @@ async function testTerminateReservationSuccess() {
   console.log(data, error)
 }
 
-// await testReserveSuccess()
+await testReserveSuccess()
 // await testGetPersonalReservationsSuccess()
 // await testDeleteReservationSuccess()
 // await testTerminateReservationSuccess()
 
-const { data, error } = await supabase
-  .from('reservations')
-  .select('*')
-  .eq('id', '20fc4dd0-2d14-4f98-8531-e4afe13926a1')
+// const { data, error } = await supabase
+//   .from('reservations')
+//   .select('*')
+//   .eq('id', '20fc4dd0-2d14-4f98-8531-e4afe13926a1')
 
-console.log(data, error)
+// console.log(data, error)
+
+// const user = await signIn(admin, password)
+
+// const { data, error } = await supabase
+//   .from('reservations')
+//   .update({ end_time: new Date() })
+//   .eq('id', '4870e1a6-25e2-492e-8867-8afdf1514485')
+//   .select()
+
+// console.log(data, error)

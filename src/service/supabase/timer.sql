@@ -14,6 +14,7 @@ FOR ALL
 USING (is_claims_admin())
 WITH CHECK (is_claims_admin());
 
+-- 檢查是否有位 check in 的預約
 CREATE OR REPLACE FUNCTION process_reservation_time_violations()
 RETURNS VOID AS $$
 DECLARE

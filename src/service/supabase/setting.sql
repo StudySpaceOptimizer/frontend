@@ -35,7 +35,7 @@ INSERT INTO settings (key_name, value, description)
 VALUES
     ('weekday_opening_hours', '{"begin_time": "08:00", "end_time": "22:00"}', '工作日開放時間'),
     ('weekend_opening_hours', '{"begin_time": "09:00", "end_time": "17:00"}', '週末開放時間'),
-    ('minimum_reservation_duration', '0.5', '最小預約時間(小時)'),
+    ('minimum_reservation_duration', '0', '最小預約時間(小時)'),
     ('maximum_reservation_duration', '6', '單次預約時間上限(小時)'),
     ('student_reservation_limit', '7', '學生提前預約期限(天)'),
     ('outsider_reservation_limit', '0', '校外人士提前預約期限(天)'),

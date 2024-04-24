@@ -1,9 +1,3 @@
-export interface Response<T> {
-  status: number
-  error?: string
-  data?: T
-}
-
 export function toLocalDateTime(time: string): Date {
   // 將 ISO 字符串轉為 UTC Date 對象
   const timeUTC = new Date(time)

@@ -85,7 +85,7 @@ SECURITY INVOKER;
 
 
 
-
+-- 取得當前用戶的預約資料及個人資訊
 CREATE OR REPLACE FUNCTION get_my_reservations()
 RETURNS TABLE(
     -- reservation
@@ -140,7 +140,7 @@ $$
 LANGUAGE plpgsql STABLE
 SECURITY INVOKER;
 
-
+-- 根據座位ID取得該座位的活躍預約資訊及預約用戶的個人資料
 CREATE OR REPLACE FUNCTION get_seat_active_reservations(p_seat_id INT DEFAULT NULL)
 RETURNS TABLE(
     -- reservation

@@ -1,8 +1,3 @@
-/**
-- 自訂枚舉類型 userrole
-- 學生: student
-- 校外人士: outsider
-*/
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
@@ -60,7 +55,7 @@ FOR UPDATE
 USING (auth.uid() = id)
 WITH CHECK (auth.uid() = id);
 
--- 創建觸發器函數以限制非管理員的更新範圍
+-- 限制非管理員的更新範圍
 CREATE OR REPLACE FUNCTION cls_user_profiles_update()
 RETURNS TRIGGER AS
 $$
@@ -83,21 +78,19 @@ BEGIN
     RETURN NEW;
 END;
 $$
-LANGUAGE plpgsql SECURITY DEFINER;
+LANGUAGE plpgsql STABLE
+SECURITY INVOKER;
 
 -- 在更新前檢查用戶個人資料更新條件
-DROP TRIGGER IF EXISTS before_update ON public.user_profiles;
-CREATE TRIGGER before_update
+DROP TRIGGER IF EXISTS trigger_cls_user_profiles_update ON user_profiles;
+CREATE TRIGGER trigger_cls_user_profiles_update
 BEFORE UPDATE ON user_profiles
 FOR EACH ROW EXECUTE FUNCTION cls_user_profiles_update();
 
 
--- 在新增用戶時自動設置 raw_app_meta_data
+-- 根據用戶的email後綴來設置用戶角色及管理員角色，並儲存於 meta_data
 CREATE OR REPLACE FUNCTION auth.handle_new_user_metadata()
 RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = auth 
 AS $$
 DECLARE
     user_role public.user_role;
@@ -115,7 +108,6 @@ BEGIN
     admin_role := 'non-admin';
 
     -- 更新 raw_app_meta_data
-    
     -- 設置 userrole
     NEW.raw_app_meta_data := NEW.raw_app_meta_data || jsonb_build_object('user_role', user_role);
     -- 設置 claims_admin
@@ -123,21 +115,20 @@ BEGIN
 
     RETURN NEW;
 END;
-$$;
-
--- 在新增用戶記錄前執行 raw_app_meta_data 設置
-DROP TRIGGER IF EXISTS before_insert_user ON auth.users;
-CREATE TRIGGER before_insert_user
-BEFORE INSERT ON auth.users
-FOR EACH ROW EXECUTE FUNCTION auth.handle_new_user_metadata();
-  
-
--- 在用戶註冊時自動新增 user_profile
-CREATE OR REPLACE FUNCTION public.handle_new_user_profile()
-RETURNS TRIGGER
+$$
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = auth;
+
+-- 在新增用戶記錄前執行 raw_app_meta_data 設置
+DROP TRIGGER IF EXISTS trigger_handle_new_user_metadata ON auth.users;
+CREATE TRIGGER trigger_handle_new_user_metadata
+BEFORE INSERT ON auth.users
+FOR EACH ROW EXECUTE FUNCTION auth.handle_new_user_metadata();
+
+-- 在用戶註冊時自動新增 user_profile
+CREATE OR REPLACE FUNCTION handle_new_user_profile()
+RETURNS TRIGGER
 AS $$
 BEGIN
     -- 插入新的 user_profile 記錄
@@ -145,18 +136,22 @@ BEGIN
 
     RETURN NULL;
 END;
-$$;
+$$
+LANGUAGE plpgsql
+SECURITY DEFINER;
 
 -- 在新增用戶記錄後執行 user_profile 記錄的新增
-DROP TRIGGER IF EXISTS after_insert_user ON auth.users;
-CREATE TRIGGER after_insert_user
+DROP TRIGGER IF EXISTS trigger_handle_new_user_profile ON auth.users;
+CREATE TRIGGER trigger_handle_new_user_profile
 AFTER INSERT ON auth.users
-FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_profile();
+FOR EACH ROW EXECUTE FUNCTION handle_new_user_profile();
 
+-- 檢查違規點數是否到達上限
 CREATE OR REPLACE FUNCTION check_points_and_blacklist()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+AS $$
 DECLARE
-    points_to_ban_user TIME;
+    points_to_ban_user INT;
 BEGIN
     SELECT value::int INTO points_to_ban_user FROM settings WHERE key_name = 'points_to_ban_user';
 
@@ -181,9 +176,9 @@ $$
 LANGUAGE plpgsql
 SECURITY DEFINER;
 
--- 建立觸發器，當user_profiles表的point欄位被更新時觸發
-DROP TRIGGER IF EXISTS trigger_check_points ON user_profiles;
-CREATE TRIGGER trigger_check_points
+-- 當user_profiles表的point欄位被更新時檢查違規點數是否到達上限
+DROP TRIGGER IF EXISTS trigger_check_points_and_blacklist ON user_profiles;
+CREATE TRIGGER trigger_check_points_and_blacklist
 AFTER UPDATE OF point ON user_profiles
 FOR EACH ROW
 WHEN (OLD.point <> NEW.point)
@@ -239,36 +234,35 @@ USING (auth.uid() = user_id);
 - example:
     select is_not_banned();
 */
-CREATE OR REPLACE FUNCTION is_not_banned() RETURNS BOOLEAN
-  AS $$
-  DECLARE
-  is_banned BOOLEAN;
-  BEGIN
+CREATE OR REPLACE FUNCTION is_not_banned() 
+RETURNS BOOLEAN
+AS $$
+DECLARE
+is_banned BOOLEAN;
+BEGIN
     IF session_user = 'authenticator' THEN
-      -- 判断 JWT 是否过期
-      IF extract(epoch from now()) > coalesce((current_setting('request.jwt.claims', true)::jsonb)->>'exp', '0')::numeric THEN
+        -- 判断 JWT 是否過期
+        IF extract(epoch from now()) > coalesce((current_setting('request.jwt.claims', true)::jsonb)->>'exp', '0')::numeric THEN
         return false; -- jwt expired
-      END IF;
+        END IF;
 
-      -- 判断 service_role
-      If current_setting('request.jwt.claims', true)::jsonb->>'role' = 'service_role' THEN
+        -- 判断 service_role
+        If current_setting('request.jwt.claims', true)::jsonb->>'role' = 'service_role' THEN
         RETURN true;
-      END IF;
+        END IF;
 
-      -- 檢查該用戶是否目前在黑名單中
-      SELECT NOT EXISTS (
+        -- 檢查該用戶是否目前在黑名單中
+        SELECT NOT EXISTS (
         SELECT 1 FROM active_blacklist
         WHERE auth.uid() = user_id
-      ) INTO is_banned;
+        ) INTO is_banned;
 
-      RETURN is_banned;
+        RETURN is_banned;
 
-      
-      --------------------------------------------
-      -- End of block 
-      --------------------------------------------
     ELSE -- not a user session, probably being called from a trigger or something
-      return true;
+        return true;
     END IF;
-  END;
-$$ LANGUAGE plpgsql;
+END;
+$$ LANGUAGE plpgsql STABLE
+SECURITY INVOKER;
+

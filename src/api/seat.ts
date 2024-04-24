@@ -11,10 +11,10 @@ interface SeatRequest {
 
 export class SupabaseSeat implements Seat {
   /**
-   * Get all the seats, returns a list of seats
-   * if begin time and end time is provided, returns the status of the seats in the range
+   * 獲取所有座位的狀態，如果提供了開始和結束時間，則返回該時間範圍內座位的狀態
    * @url GET /api/seats?begin=begin&end=end
-   * @returns Promise<Response<SeatData[]>>
+   * @param config 包含 beginTime 和 endTime 的配置對象
+   * @returns 返回座位數據列表的 Promise
    */
   async getSeatsStatus(config: SeatRequest): Promise<model.SeatData[]> {
     let { beginTime, endTime } = config
@@ -85,10 +85,10 @@ export class SupabaseSeat implements Seat {
   }
 
   /**
-   * Get the seat status, returns a seat
+   * 獲取特定座位的狀態
    * @url GET /api/seats/:id
-   * @param id
-   * @returns Promise<Response<SeatDetail>>
+   * @param id 要查詢的座位ID
+   * @returns 返回座位詳細資訊的 Promise
    */
   async getSeatStatus(seatID: number): Promise<model.SeatDetail> {
     const { data: active_seat_reservations, error } = await supabase.rpc(

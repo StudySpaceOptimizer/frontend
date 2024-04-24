@@ -1,18 +1,16 @@
-import type { Response } from './common'
+import { supabase } from '../service/supabase/supabase'
 import type * as model from './model'
 import type { Reserve } from './index'
-import { supabase } from '../service/supabase/supabase'
-
 import { seatConverterToDB, seatConverterFromDB } from '@/utils'
 
 export class SupabaseReserve implements Reserve {
   /**
-   * Book a seat, if the seat is already booked or something error, it will throw an error
-   * @url POST /api/seats/:
-   * @param seatId
-   * @param begin
-   * @param end
-   * @returns Promise<Response<null>>
+   * 預約座位，若座位已被預約或發生其他錯誤，將拋出錯誤
+   * @url POST /api/seats/
+   * @param seatID 座位ID
+   * @param beginTime 預約開始時間
+   * @param endTime 預約結束時間
+   * @returns 無返回值，操作失敗將拋出錯誤
    */
   async reserve(seatID: string, beginTime: Date, endTime: Date): Promise<void> {
     const { data: authData, error: getUserError } = await supabase.auth.getUser()
@@ -40,6 +38,11 @@ export class SupabaseReserve implements Reserve {
     }
   }
 
+  /**
+   * 取得個人的所有預約記錄
+   * @param config 設定參數，用於調整查詢條件或結果
+   * @returns 傳回預約記錄數組
+   */
   async getPersonalReservations(config: any): Promise<model.Reservation[]> {
     // TODO: implement config
     const { data: reservations } = await supabase.rpc('get_my_reservations')
@@ -74,6 +77,11 @@ export class SupabaseReserve implements Reserve {
     )
   }
 
+  /**
+   * 删除指定的预约记录
+   * @param id 預約記錄的ID
+   * @returns 無回傳值，操作失敗將拋出錯誤
+   */
   async deleteReservation(id: string): Promise<void> {
     const { error } = await supabase.from('reservations').delete().eq('id', id)
 
@@ -88,12 +96,17 @@ export class SupabaseReserve implements Reserve {
     }
   }
 
+  /**
+   * 終止指定的預約
+   * @param id 預約記錄的ID
+   * @returns 無回傳值，操作失敗將拋出錯誤
+   */
   async terminateReservation(id: string): Promise<void> {
-    const seatId = seatConverterToDB(id)
+    // const seatId = seatConverterToDB(id)
     const { error } = await supabase
       .from('reservations')
       .update({ end_time: new Date() })
-      .eq('id', seatId)
+      .eq('id', id)
       .select()
 
     if (error) {

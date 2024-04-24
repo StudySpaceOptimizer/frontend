@@ -53,31 +53,33 @@ AS PERMISSIVE
 FOR DELETE
 USING (auth.uid() = user_id);
 
+-- TODO: 提早離開
 
 
 
-
--- 檢查合法預約：begin 跟 end 在同一天且end在begin之後
+-- 檢查預約的合法性
 CREATE OR REPLACE FUNCTION check_reservation_validity()
 RETURNS TRIGGER 
-LANGUAGE plpgsql
-SECURITY DEFINER
 AS $$
 BEGIN
-    -- 檢查begin_time和end_time是否在同一天
+    -- 檢查 begin_time 和 end_time 是否在同一天
     IF DATE(NEW.begin_time) != DATE(NEW.end_time) THEN
         RAISE EXCEPTION '開始和結束時間必須在同一天';
     END IF;
 
-    -- 檢查end_time是否在begin_time之後
+    -- 檢查 end_time 是否在 begin_time 之後
     IF NEW.end_time <= NEW.begin_time THEN
         RAISE EXCEPTION '結束時間必須晚於開始時間';
     END IF;
 
     -- 確保預約的開始和結束時間都是每小時的 00 分或 30 分
-    IF (EXTRACT(MINUTE FROM NEW.begin_time) NOT IN (0, 30)) OR (EXTRACT(MINUTE FROM NEW.end_time) NOT IN (0, 30)) THEN
-        RAISE EXCEPTION '預約時間必須以30分鐘為單位';
+    -- 只在插入操作時進行檢查
+    IF TG_OP = 'INSERT' THEN
+        IF (EXTRACT(MINUTE FROM NEW.begin_time) NOT IN (0, 30)) OR (EXTRACT(MINUTE FROM NEW.end_time) NOT IN (0, 30)) THEN
+            RAISE EXCEPTION '預約時間必須以30分鐘為單位';
+        END IF;
     END IF;
+    
 
     -- 確保預約開始時間大於當前時間
     IF NEW.begin_time <= current_timestamp THEN
@@ -86,19 +88,20 @@ BEGIN
 
     RETURN NEW;
 END;
-$$;
+$$
+LANGUAGE plpgsql
+SECURITY DEFINER;
 
+-- 在新增或修改之前檢查合法預約
 DROP TRIGGER IF EXISTS trigger_check_reservation_validity ON reservations;
 CREATE TRIGGER trigger_check_reservation_validity
 BEFORE INSERT OR UPDATE ON reservations
 FOR EACH ROW EXECUTE FUNCTION check_reservation_validity();
 
 
--- 檢查座位可用性和預約時間重疊
-CREATE OR REPLACE FUNCTION check_seat_availability_and_overlap()
+-- 檢查所選座位的可用性以及預約時間是否與現有預約時間重疊
+CREATE OR REPLACE FUNCTION check_seat_availability_and_seat_reservations_overlap()
 RETURNS TRIGGER 
-LANGUAGE plpgsql
-SECURITY DEFINER
 AS $$
 BEGIN
     -- 檢查選定座位是否可用
@@ -117,19 +120,20 @@ BEGIN
 
     RETURN NEW;
 END;
-$$;
+$$
+LANGUAGE plpgsql
+SECURITY DEFINER;
 
-DROP TRIGGER IF EXISTS trigger_check_seat_availability_and_overlap ON reservations;
-CREATE TRIGGER trigger_check_seat_availability_and_overlap
-BEFORE INSERT ON reservations
-FOR EACH ROW EXECUTE FUNCTION check_seat_availability_and_overlap();
+-- 在新增或修改之前檢查座位可用性和預約時間重疊
+DROP TRIGGER IF EXISTS trigger_check_seat_availability_and_seat_reservations_overlap ON reservations;
+CREATE TRIGGER trigger_check_seat_availability_and_seat_reservations_overlap
+BEFORE INSERT OR UPDATE ON reservations
+FOR EACH ROW EXECUTE FUNCTION check_seat_availability_and_seat_reservations_overlap();
 
 
 -- 檢查預約設定限制
-CREATE OR REPLACE FUNCTION verify_reservation_limits()
+CREATE OR REPLACE FUNCTION check_reservation_limits()
 RETURNS TRIGGER 
-LANGUAGE plpgsql
-SECURITY DEFINER
 AS $$
 DECLARE
     weekday_opening TIME;
@@ -171,12 +175,14 @@ BEGIN
     END IF;
 
     -- 檢查預約時長是否合法
-    IF reservation_duration < minimum_duration OR reservation_duration > maximum_duration THEN
-        RAISE EXCEPTION '預約時長必須介於 % 和 % 小時之間', minimum_duration, maximum_duration;
+    -- 只在插入操作時進行檢查
+    IF TG_OP = 'INSERT' THEN
+        IF reservation_duration < minimum_duration OR reservation_duration > maximum_duration THEN
+            RAISE EXCEPTION '預約時長必須介於 % 和 % 小時之間', minimum_duration, maximum_duration;
+       END IF; 
     END IF;
 
     user_role := get_my_claim('user_role')->> '';
-    -- user_role := 'student';
 
     -- 若不是管理員
     IF NOT is_claims_admin() THEN
@@ -193,23 +199,22 @@ BEGIN
 
     RETURN NEW;
 END;
-$$;
-
-
-DROP TRIGGER IF EXISTS trigger_verify_reservation ON reservations;
-CREATE TRIGGER trigger_verify_reservation
-BEFORE INSERT ON reservations
-FOR EACH ROW EXECUTE FUNCTION verify_reservation_limits();
-
-
--- 檢查是否與關閉時間重疊
-CREATE OR REPLACE FUNCTION check_reservation_overlap()
-RETURNS TRIGGER 
+$$
 LANGUAGE plpgsql
-SECURITY DEFINER
+SECURITY DEFINER;
+
+-- 在新增或修改之前檢查預約設定限制
+DROP TRIGGER IF EXISTS trigger_check_reservation_limits ON reservations;
+CREATE TRIGGER trigger_check_reservation_limits
+BEFORE INSERT OR UPDATE ON reservations
+FOR EACH ROW EXECUTE FUNCTION check_reservation_limits();
+
+
+-- 檢查新的預約時間是否與任何已存在的關閉時段重疊，確保預約在開放時間內
+CREATE OR REPLACE FUNCTION check_closed_periods_overlap()
+RETURNS TRIGGER 
 AS $$
 BEGIN
-    -- 檢查新的預約時間是否與任何已存在的關閉時段重疊
     IF EXISTS (
         SELECT 1
         FROM active_closed_periods
@@ -219,19 +224,20 @@ BEGIN
     END IF;
     RETURN NEW;
 END;
-$$;
+$$
+LANGUAGE plpgsql
+SECURITY DEFINER;
 
-DROP TRIGGER IF EXISTS trigger_check_reservation_overlap ON reservations;
-CREATE TRIGGER trigger_check_reservation_overlap
+-- 在新增或修改之前檢查是否與關閉時間重疊
+DROP TRIGGER IF EXISTS trigger_check_closed_periods_overlap ON reservations;
+CREATE TRIGGER trigger_check_closed_periods_overlap
 BEFORE INSERT OR UPDATE ON reservations
-FOR EACH ROW EXECUTE FUNCTION check_reservation_overlap();
+FOR EACH ROW EXECUTE FUNCTION check_closed_periods_overlap();
 
 
 -- 檢查用戶當天是否有未完成的預約
-CREATE OR REPLACE FUNCTION check_for_unfinished_reservations()
+CREATE OR REPLACE FUNCTION check_for_unfinished_reservation()
 RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY INVOKER
 AS $$
 DECLARE
     next_half_hour TIMESTAMP;
@@ -261,60 +267,32 @@ BEGIN
 
     RETURN NEW;
 END;
-$$;
+$$
+LANGUAGE plpgsql
+SECURITY INVOKER;
 
-
-DROP TRIGGER IF EXISTS trigger_check_for_unfinished_reservations ON reservations;
-CREATE TRIGGER trigger_check_for_unfinished_reservations
+-- 在新增或修改之前檢查用戶當天是否有未完成的預約
+DROP TRIGGER IF EXISTS trigger_check_for_unfinished_reservation ON reservations;
+CREATE TRIGGER trigger_check_for_unfinished_reservation
 BEFORE INSERT ON reservations
-FOR EACH ROW EXECUTE FUNCTION check_for_unfinished_reservations();
+FOR EACH ROW EXECUTE FUNCTION check_for_unfinished_reservation();
 
-CREATE OR REPLACE FUNCTION insert_seat_timeslot()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY INVOKER
-AS $$
-BEGIN
-    -- 插入新的 user_profile 記錄
-    INSERT INTO seat_reservations (seat_id, begin_time, end_time, reservation_id) VALUES (NEW.id, NEW.email, false, 0);
 
-    RETURN NULL;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION update_seat_reservations()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-BEGIN
-    INSERT INTO seat_reservations (seat_id, begin_time, end_time, reservation_id)
-    SELECT NEW.seat_id, NEW.begin_time, NEW.end_time, NEW.id
-    FROM reservations
-    WHERE id = NEW.id
-    ON CONFLICT (seat_id, begin_time, end_time) DO UPDATE
-    SET reservation_id = EXCLUDED.reservation_id;
-    RETURN NEW;
-END;
-$$;
-
-DROP TRIGGER IF EXISTS trigger_update_seat_reservations ON reservations;
-CREATE TRIGGER trigger_update_seat_reservations
-AFTER INSERT OR UPDATE ON reservations
-FOR EACH ROW
-EXECUTE FUNCTION update_seat_reservations();
-
+-- 檢查是否可以刪除預約
 CREATE OR REPLACE FUNCTION check_reservation_delete_time()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- 檢查是否嘗試刪除的預約開始時間在當前時間後至少30分鐘
-    IF (OLD.begin_time <= current_timestamp + interval '30 minutes') THEN
-        RAISE EXCEPTION '只能刪除開始時間在30分鐘之後的預約';
+    -- 檢查是否嘗試刪除的預約的開始時間在當前時間後
+    IF (OLD.begin_time <= current_timestamp) THEN
+        RAISE EXCEPTION '只能刪除尚未開始的預約';
     END IF;
     RETURN OLD;
 END;
-$$ LANGUAGE plpgsql;
+$$
+LANGUAGE plpgsql
+SECURITY INVOKER;
 
+-- 在新增或修改之前檢查是否可以刪除預約
 DROP TRIGGER IF EXISTS trigger_check_reservation_delete ON reservations;
 CREATE TRIGGER trigger_check_reservation_delete
 BEFORE DELETE ON reservations
@@ -361,3 +339,26 @@ CREATE POLICY select_policy ON seat_reservations
 AS PERMISSIVE
 FOR SELECT 
 USING (true);
+
+-- 當 reservations 表有新的插入或更新時，將相應數據插入至 seat_reservations 表
+CREATE OR REPLACE FUNCTION update_seat_reservations()
+RETURNS TRIGGER
+AS $$
+BEGIN
+    INSERT INTO seat_reservations (seat_id, begin_time, end_time, reservation_id)
+    SELECT NEW.seat_id, NEW.begin_time, NEW.end_time, NEW.id
+    FROM reservations
+    WHERE id = NEW.id
+    ON CONFLICT (seat_id, begin_time, end_time) DO UPDATE
+        SET reservation_id = EXCLUDED.reservation_id;
+    RETURN NEW;
+END;
+$$
+LANGUAGE plpgsql
+SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trigger_update_seat_reservations ON reservations;
+CREATE TRIGGER trigger_update_seat_reservations
+AFTER INSERT OR UPDATE ON reservations
+FOR EACH ROW
+EXECUTE FUNCTION update_seat_reservations();

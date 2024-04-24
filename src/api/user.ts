@@ -1,15 +1,14 @@
 import { supabase } from '@/service/supabase/supabase'
-
 import type { User } from './index'
 import type * as model from './model'
 
 export class SupabaseUser implements User {
   /**
-   * Sign in user with username and password, returns a token stored in cookie
+   * 使用郵件地址和密碼進行用戶登入，登入成功後將 Token 存儲在 Cookie 中
    * @url POST /api/signin
-   * @param email
-   * @param password
-   * @returns Promise<Response<Sign>>
+   * @param email 用戶的郵件地址
+   * @param password 用戶的密碼
+   * @returns 無返回值，登入失敗將拋出錯誤
    */
   async signIn(email: string, password: string): Promise<void> {
     const { error } = await supabase.auth.signInWithPassword({
@@ -28,6 +27,11 @@ export class SupabaseUser implements User {
     }
   }
 
+  /**
+   * 登出當前用戶，失敗將拋出錯誤
+   * @url POST /api/signout
+   * @returns 無返回值
+   */
   async signOut(): Promise<void> {
     const { error } = await supabase.auth.signOut()
 
@@ -36,21 +40,23 @@ export class SupabaseUser implements User {
     }
   }
 
+  /**
+   * 檢查用戶是否已經登入
+   * @returns 返回一個布林值，表示用戶是否已經登入
+   */
   async checkIsSignIn(): Promise<boolean> {
     const { data } = await supabase.auth.getSession()
     return data.session != null
   }
 
   /**
-   * Sign up student user with username and password, returns a token stored in cookie
+   * 學生用戶註冊，必須使用學校郵箱註冊，成功後將 Token 存儲在 Cookie 中
    * @url POST /api/signup
-   * @param name
-   * @param username
-   * @param password
-   * @returns Promise<Response<Sign>>
-   * @error username already exists
+   * @param email 用戶的學校郵件地址
+   * @param password 用戶的密碼
+   * @returns 無返回值，註冊失敗將拋出錯誤
    */
-  async studentSignUp(name: string, email: string, password: string): Promise<void> {
+  async studentSignUp(email: string, password: string): Promise<void> {
     if (email.split('@')[1] !== 'mail.ntou.edu.tw') {
       throw new Error('請使用學校信箱註冊')
     }
@@ -72,13 +78,13 @@ export class SupabaseUser implements User {
   }
 
   /**
-   * Sign up outside user with email (username) and idcard, returns a token stored in cookie
+   * 使用郵箱註冊外部用戶，註冊成功後會在 Cookie 中存儲一個 token
    * @url POST /api/signup
-   * @param name
-   * @param phone
-   * @param idcard
-   * @param email
-   * @returns Promise<Response<Sign>>
+   * @param name 用戶名
+   * @param phone 電話號碼
+   * @param idcard 身份證號
+   * @param email 電子郵件地址
+   * @returns 返回操作成功的結果
    */
   outsiderSignUp(
     name: string,
@@ -90,9 +96,10 @@ export class SupabaseUser implements User {
   }
 
   /**
-   * Get all users, only admin can use this
+   * 獲取所有用戶資料，只有管理員有權限調用此接口
    * @url GET /api/users?all=[Boolean]
-   * @returns Promise<Response<UserData[]>>
+   * @param getAllUser 是否獲取所有用戶
+   * @returns 返回用戶數據列表
    */
   async getUsers(getAllUser: boolean): Promise<model.UserData[]> {
     if (getAllUser == false) {
@@ -152,6 +159,11 @@ export class SupabaseUser implements User {
     )
   }
 
+  /**
+   * 更新用戶個人資料
+   * @param data 包含用戶id、姓名、電話和身份證號的數據對象
+   * @returns 無返回值，操作失敗將拋出錯誤
+   */
   async updateProfile(data: any): Promise<void> {
     const { error } = await supabase
       .from('user_profiles')
@@ -170,12 +182,12 @@ export class SupabaseUser implements User {
   }
 
   /**
-   * Ban a user, only admin can use this
+   * 禁止用戶訪問，只有管理員能使用此功能
    * @url POST /api/user/:id/ban
-   * @param id
-   * @param reason
-   * @param end_at
-   * @returns Promise<Response<sucess>>
+   * @param id 被禁用的用戶ID
+   * @param reason 禁用的原因
+   * @param end_at 禁用結束的時間
+   * @returns 無返回值，操作失敗將拋出錯誤
    */
   async banUser(id: string, reason: string, endAt: Date): Promise<void> {
     const { error } = await supabase.from('blacklist').insert([
@@ -192,10 +204,10 @@ export class SupabaseUser implements User {
   }
 
   /**
-   * Unban a user, only admin can use this
+   * 解禁用戶，只有管理員有權限執行此操作
    * @url DELETE /api/user/:id/ban
-   * @param id
-   * @returns Promise<Response<sucess>>
+   * @param id 要解禁的用戶ID
+   * @returns 無返回值，操作失敗將拋出錯誤
    */
   async unbanUser(id: string): Promise<void> {
     const { error } = await supabase.from('active_blacklist').delete().eq('user_id', id)
@@ -206,10 +218,10 @@ export class SupabaseUser implements User {
   }
 
   /**
-   * Add points to a user
-   * @param id
-   * @param point
-   * @returns Promise<Response<sucess>>
+   * 為用戶增加違規點數
+   * @param id 用戶ID
+   * @param point 要增加的積分數
+   * @returns 無返回值，操作失敗將拋出錯誤
    */
   async addPointUser(id: string, point: number): Promise<void> {
     // TODO:get point
@@ -220,6 +232,11 @@ export class SupabaseUser implements User {
     }
   }
 
+  /**
+   * 更新系統設定
+   * @param newSettings 包含新設定值的數據對象
+   * @returns 無返回值，操作失敗將拋出錯誤
+   */
   async updateSettings(newSettings: model.SettingsData): Promise<void> {
     for (const key in newSettings) {
       const value = JSON.stringify(newSettings[key as keyof model.SettingsData])
@@ -234,6 +251,12 @@ export class SupabaseUser implements User {
     }
   }
 
+  /**
+   * 為指定用戶賦予管理員角色
+   * @param userID 要賦予角色的用戶ID
+   * @param adminRole 指定的管理員角色
+   * @returns 無返回值，操作失敗將拋出錯誤
+   */
   async grantAdminRole(userID: String, adminRole: model.adminRole): Promise<void> {
     const { error } = await supabase.rpc('set_claim', {
       claim: 'admin_role',
@@ -244,6 +267,10 @@ export class SupabaseUser implements User {
     if (error) throw new Error(error.message)
   }
 
+  /**
+   * 獲取當前的系統設定
+   * @returns 返回解析後的系統設定數據對象
+   */
   async getSettings(): Promise<model.SettingsData> {
     const { data, error } = await supabase.from('settings').select('*')
 
