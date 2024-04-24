@@ -16,6 +16,7 @@ export interface User {
   unbanUser(id: string): Promise<any>
   addPointUser(id: string, point: number): Promise<any>
   updateSettings(newSettings: any): Promise<any>
+  getSettings(): Promise<any>
 }
 
 export interface Seat {

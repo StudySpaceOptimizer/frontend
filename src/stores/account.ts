@@ -4,10 +4,12 @@ import { ElMessage } from 'element-plus'
 
 import * as API from '@/api'
 import DependencyContainer from '@/DependencyContainer'
+import { useSettingStore } from './settings'
 
 export const useAccountStore = defineStore(
   'account',
   () => {
+    const settingStore = useSettingStore()
     const api = DependencyContainer.inject<API.User>(API.API_SERVICE.USER)
     const isSignIn = ref(false)
     const userDisplayName = ref('guest')
@@ -101,6 +103,8 @@ export const useAccountStore = defineStore(
         if (userData[0].name == undefined) {
           ElMessage.warning('可以到個人資料修改名稱')
         }
+
+        settingStore.getSettings()
       } catch (error) {
         ElMessage.error('取得使用者資料失敗')
       }
