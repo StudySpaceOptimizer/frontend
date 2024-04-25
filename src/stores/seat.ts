@@ -1,10 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-import * as API from '@/api'
-import * as Type from '@/types'
-import DependencyContainer from '@/DependencyContainer'
-import type { Filter } from '@/types'
+import * as API from '../api'
+import * as Type from '../types'
+import DependencyContainer from '../DependencyContainer'
+import type { Filter } from '../types'
 
 export const useSeatStore = defineStore('seat', () => {
   const seatApi = DependencyContainer.inject<API.Seat>(API.API_SERVICE.SEAT)

@@ -1,4 +1,3 @@
-import type { Response } from './common'
 import type { User } from './index'
 import { supabase } from '../service/supabase/supabase'
 import type * as Type from '@/types'

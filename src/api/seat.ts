@@ -1,6 +1,6 @@
-import type * as Type from '@/types'
-import { supabase } from '@/service/supabase/supabase'
-import { seatConverterFromDB } from '@/utils'
+import type * as Type from '../types'
+import { supabase } from '../service/supabase/supabase'
+import { seatConverterFromDB } from '../utils'
 
 import { toLocalDateTime } from './common'
 import type { Seat } from './index'
@@ -23,6 +23,9 @@ export class SupabaseSeat implements Seat {
       throw new Error('beginTime and endTime need to provide same time, or both not provide')
     }
 
+    // 如果沒有給定config : beginTime = Now 的下一個時間段 或是 營業開始時間, endTime = 營業結束時間
+    // 如果 now < 營業開始時間，beginTime = 營業開始時間
+    // 如果 now > 營業結束時間，返回 'unavailable'
     const now = new Date() // 取得當前時間
     if (beginTime == undefined || endTime == undefined) {
       beginTime = new Date()
@@ -59,6 +62,13 @@ export class SupabaseSeat implements Seat {
     if (getActiveReservationError) {
       throw new Error(getActiveReservationError.message)
     }
+
+    interface TimeRange {
+      start: Date
+      end: Date
+    }
+
+    const seatCoverages: { [seatId: string]: TimeRange[] } = {}
 
     reservationsData?.forEach((reservation: any) => {
       const seatId = seatConverterFromDB(reservation.seat_id)

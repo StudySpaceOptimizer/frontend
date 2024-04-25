@@ -1,6 +1,6 @@
-import type * as Type from '@/types'
-import { supabase } from '@/service/supabase/supabase'
-import { seatConverterToDB, seatConverterFromDB } from '@/utils'
+import type * as Type from '../types'
+import { supabase } from '../service/supabase/supabase'
+import { seatConverterToDB, seatConverterFromDB } from '../utils'
 
 import type { Reserve } from './index'
 

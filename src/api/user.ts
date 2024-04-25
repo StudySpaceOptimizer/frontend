@@ -1,5 +1,5 @@
-import type * as Type from '@/types'
-import { supabase } from '@/service/supabase/supabase'
+import type * as Type from '../types'
+import { supabase } from '../service/supabase/supabase'
 import type { User } from './index'
 
 export class SupabaseUser implements User {
@@ -86,12 +86,7 @@ export class SupabaseUser implements User {
    * @param email 電子郵件地址
    * @returns 返回操作成功的結果
    */
-  outsiderSignUp(
-    name: string,
-    phone: string,
-    idcard: string,
-    email: string
-  ): Promise<void> {
+  outsiderSignUp(name: string, phone: string, idcard: string, email: string): Promise<void> {
     throw new Error('Method not implemented.')
   }
 
