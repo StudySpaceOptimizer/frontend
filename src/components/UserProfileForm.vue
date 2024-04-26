@@ -18,16 +18,16 @@ const isUserProfileChange = ref(false)
 
 let isGetedUserProfile = false
 
-const onCanceled = () => {
-	isUserProfileChange.value = false
-	props.onCanceled()
+function onFormCanceled() {
+  isUserProfileChange.value = false
+  props.onCanceled()
 }
 
-const onSaveProfile = async (formEl: FormInstance | undefined) => {
+async function onFormSaveProfile(formEl: FormInstance | undefined) {
   if (!formEl || !(await formEl.validate())) return
 
-	isUserProfileChange.value = false
-	props.onSaveProfile(formEl)
+  isUserProfileChange.value = false
+  props.onSaveProfile(formEl)
 }
 
 watch(
@@ -70,7 +70,7 @@ watch(
         <el-input v-model="userProfileForm.name" />
       </el-form-item>
       <template v-if="!isStudent">
-        <el-form-item label="電話" >
+        <el-form-item label="電話">
           <el-input v-model="userProfileForm.phone" />
         </el-form-item>
         <el-form-item label="身分證字號">
@@ -78,10 +78,10 @@ watch(
         </el-form-item>
       </template>
       <el-form-item>
-        <el-button text @click="onCanceled">取消變更</el-button>
+        <el-button text @click="onFormCanceled">取消變更</el-button>
         <el-button
           type="primary"
-          @click="onSaveProfile(updateProfileForm)"
+          @click="onFormSaveProfile(updateProfileForm)"
           :disabled="!isUserProfileChange"
           >儲存變更</el-button
         >
