@@ -1,9 +1,9 @@
 import type * as Type from '../types'
 import { supabase } from '../service/supabase/supabase'
 import { seatConverterFromDB } from '../utils'
-
-import { toLocalDateTime } from './common'
+import { toLocalDateTime, parseTimeString } from './common'
 import type { Seat } from './index'
+import { useSettingStore } from '../stores/setting'
 
 interface SeatRequest {
   beginTime?: Date
@@ -26,11 +26,40 @@ export class SupabaseSeat implements Seat {
     // 如果沒有給定config : beginTime = Now 的下一個時間段 或是 營業開始時間, endTime = 營業結束時間
     // 如果 now < 營業開始時間，beginTime = 營業開始時間
     // 如果 now > 營業結束時間，返回 'unavailable'
-    const now = new Date() // 取得當前時間
-    if (beginTime == undefined || endTime == undefined) {
-      beginTime = new Date()
-      endTime = new Date(now) // 創建一個新的 Date 物件，以當前時間為基礎
-      endTime.setHours(23, 59, 59)
+    const settingStore = useSettingStore()
+    if (!settingStore.settings) throw new Error('系統錯誤，找不到設定')
+
+    const now = new Date()
+    const isWeekend = now.getDay() === 0 || now.getDay() === 6
+    const openingHours = isWeekend
+      ? settingStore.settings.weekendOpeningHours
+      : settingStore.settings.weekdayOpeningHours
+
+    let unavailable = false
+
+    if (!beginTime || !endTime) {
+      const openingTime = parseTimeString(openingHours.beginTime)
+      const closingTime = parseTimeString(openingHours.endTime)
+
+      beginTime = new Date(now.setHours(openingTime.hours, openingTime.minutes, 0, 0))
+      endTime = new Date(now.setHours(closingTime.hours, closingTime.minutes, 0, 0))
+
+      // 如果当前时间小于开业时间或超过闭店时间，处理逻辑
+      if (now >= endTime) {
+        unavailable = true
+      } else if (now >= beginTime && now < endTime) {
+        let nextPeriod = new Date(now)
+        const minutes = nextPeriod.getMinutes()
+        const hours = nextPeriod.getHours()
+
+        if (minutes < 30 && minutes > 0) {
+          nextPeriod.setMinutes(30, 0, 0)
+        } else if (minutes > 30) {
+          nextPeriod.setHours(hours + 1, 0, 0, 0)
+        }
+
+        beginTime = nextPeriod
+      }
     }
 
     const { data: seatInfo, error: getSeatsError } = await supabase.from('seats').select('*')
@@ -44,20 +73,23 @@ export class SupabaseSeat implements Seat {
     if (seatInfo == null) throw new Error('找不到座位')
 
     seatInfo.forEach((seat: any) => {
-      const seatId = seatConverterFromDB(seat.id)
-      seatData[seatId] = {
-        id: seatId,
+      const seatID = seatConverterFromDB(seat.id)
+      seatData[seatID] = {
+        id: seatID,
         available: seat.available,
-        status: seat.available ? 'available' : 'unavailable', // 初始化狀態
+        status: seat.available && !unavailable ? 'available' : 'unavailable', // 初始化狀態
         otherInfo: seat.other_info
       }
     })
 
     const { data: reservationsData, error: getActiveReservationError } = await supabase
-      .from('active_seat_reservations')
+      .from('seat_reservations')
+      // .from('active_seat_reservations')
       .select('*')
-      .gte('begin_time', beginTime.toLocaleString('en-us'))
-      .lt('end_time', endTime.toLocaleString('en-us'))
+      .gte('begin_time', beginTime.toISOString())
+      .lte('end_time', endTime.toISOString())
+      .order('seat_id', { ascending: true })
+      .order('begin_time', { ascending: true })
 
     if (getActiveReservationError) {
       throw new Error(getActiveReservationError.message)
@@ -68,21 +100,42 @@ export class SupabaseSeat implements Seat {
       end: Date
     }
 
-    const seatCoverages: { [seatId: string]: TimeRange[] } = {}
+    const seatCoverages: { [seatID: string]: TimeRange[] } = {}
 
     reservationsData?.forEach((reservation: any) => {
-      const seatId = seatConverterFromDB(reservation.seat_id)
-      // TODO: 應該是在這個篩選區間內，如果都有預約才是 reserved，如果只有部分時間有預約，則是 partiallyReserved
-      if (reservation.beginTime <= now && reservation.endTime > now) {
+      const seatID = seatConverterFromDB(reservation.seat_id)
+      if (!seatCoverages[seatID]) {
+        seatCoverages[seatID] = [] // 初始化每個座位 ID 的陣列
+      }
+
+      seatCoverages[seatID].push({
+        start: new Date(reservation.begin_time),
+        end: new Date(reservation.end_time)
+      })
+    })
+
+    Object.keys(seatCoverages).forEach((seatId) => {
+      const coverage = seatCoverages[seatId]
+
+      let currentEnd = beginTime
+
+      console.log(currentEnd)
+
+      // 可以用UTC時間比較
+      coverage.forEach((time) => {
+        if (time.start.toISOString() == currentEnd.toISOString()) {
+          currentEnd = time.end
+        }
+      })
+
+      if (currentEnd >= endTime) {
         seatData[seatId].status = 'reserved'
       } else {
         seatData[seatId].status = 'partiallyReserved'
       }
     })
 
-    const seatDataArray = Object.values(seatData)
-
-    return seatDataArray
+    return Object.values(seatData)
   }
 
   /**

@@ -8,3 +8,8 @@ export function toLocalDateTime(time: string): Date {
 
   return timeUTC8
 }
+
+export function parseTimeString(timeStr: string): { hours: number; minutes: number } {
+  const parts = timeStr.split(':')
+  return { hours: parseInt(parts[0], 10), minutes: parseInt(parts[1], 10) }
+}

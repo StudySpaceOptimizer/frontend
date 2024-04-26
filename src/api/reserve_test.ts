@@ -121,8 +121,6 @@ async function testGetSeatsStatus() {
   let endTime = new Date('2024-04-25T18:00:00')
   let unavailable = false
 
-  console.log(beginTime, endTime.toLocaleString())
-
   // if (!beginTime || !endTime) {
   //   const openingTime = parseTimeString(openingHours.beginTime)
   //   const closingTime = parseTimeString(openingHours.endTime)
@@ -168,18 +166,14 @@ async function testGetSeatsStatus() {
     }
   })
 
-  console.log(beginTime.toLocaleString('en-us'), endTime.toLocaleString('en-us'))
-
   const { data: reservationsData, error: getActiveReservationError } = await supabase
     .from('seat_reservations')
     // .from('active_seat_reservations')
     .select('*')
-    .gte('begin_time', beginTime)
-    .lte('end_time', endTime)
+    .gte('begin_time', beginTime.toISOString())
+    .lte('end_time', endTime.toISOString())
     .order('seat_id', { ascending: true })
     .order('begin_time', { ascending: true })
-
-  console.log(reservationsData)
 
   if (getActiveReservationError) {
     throw new Error(getActiveReservationError.message)
@@ -198,34 +192,22 @@ async function testGetSeatsStatus() {
       seatCoverages[seatID] = [] // 初始化每個座位 ID 的陣列
     }
 
-    console.log('begintime: ', reservation.begin_time)
-    console.log('begintime date: ', new Date(reservation.begin_time))
-    console.log('begintime date get hours: ', new Date(reservation.begin_time).getHours())
-
     seatCoverages[seatID].push({
-      start: new Date(toLocalDateTime(reservation.begin_time)),
-      end: new Date(toLocalDateTime(reservation.end_time))
+      start: new Date(reservation.begin_time),
+      end: new Date(reservation.end_time)
     })
   })
-  console.log(seatCoverages)
 
   Object.keys(seatCoverages).forEach((seatId) => {
     const coverage = seatCoverages[seatId]
 
-    console.log(beginTime)
-    console.log(beginTime.toLocaleString())
-    console.log(beginTime.toString())
-    const timeUTC = new Date(beginTime)
-    console.log(timeUTC)
-
-    let currentEnd = new Date(toLocalDateTime(beginTime.toString()))
+    let currentEnd = beginTime
 
     console.log(currentEnd)
 
     // 可以用UTC時間比較
     coverage.forEach((time) => {
-      console.log(time)
-      if (time.start == currentEnd) {
+      if (time.start.toISOString() == currentEnd.toISOString()) {
         currentEnd = time.end
       }
     })
@@ -246,19 +228,3 @@ function parseTimeString(timeStr: string): { hours: number; minutes: number } {
 }
 
 await testGetSeatsStatus()
-// let inputTime = new Date('2024-04-25T14:00:00')
-// let localinputTime = inputTime.toLocaleString()
-// console.log(inputTime)
-// console.log(inputTime.toString())
-// console.log(localinputTime)
-// {
-//   let { data, error } = await supabase.rpc('process_date', { input_time: inputTime })
-//   console.log(data)
-// }
-// {
-//   let { data, error } = await supabase.rpc('process_date', { input_time: localinputTime })
-//   console.log(data)
-
-//   let datetime = new Date(data)
-//   console.log(datetime.getHours())
-// }
