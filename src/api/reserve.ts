@@ -2,7 +2,7 @@ import type * as Type from '../types'
 import { supabase } from '../service/supabase/supabase'
 import { seatConverterToDB, seatConverterFromDB } from '../utils'
 
-import type { Reserve } from './index'
+import type { Reserve, Config } from './index'
 
 export class SupabaseReserve implements Reserve {
   /**
@@ -39,9 +39,13 @@ export class SupabaseReserve implements Reserve {
     }
   }
 
-  async getPersonalReservations(config: any): Promise<Type.Reservation[]> {
-    // TODO: implement config
-    const { data: reservations } = await supabase.rpc('get_my_reservations')
+  async getPersonalReservations(config: Config): Promise<Type.Reservation[]> {
+    let { pageSize, pageOffset } = config
+    const { data: reservations } = await supabase.rpc('get_my_reservations', {
+      page_size: pageSize,
+      page_offset: pageOffset
+    })
+
     return (
       reservations?.map(
         (reservation: any): Type.Reservation => ({

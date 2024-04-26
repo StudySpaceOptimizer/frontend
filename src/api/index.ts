@@ -39,6 +39,6 @@ export const API_SERVICE = {
 }
 
 export type Config = {
-  offset?: number
-  limit?: number
+  pageSize?: number
+  pageOffset?: number
 }

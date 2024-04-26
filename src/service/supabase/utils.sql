@@ -86,7 +86,7 @@ SECURITY INVOKER;
 
 
 -- 取得當前用戶的預約資料及個人資訊
-CREATE OR REPLACE FUNCTION get_my_reservations()
+CREATE OR REPLACE FUNCTION get_my_reservations(page_size INT DEFAULT 10, page_offset INT DEFAULT 0)
 RETURNS TABLE(
     -- reservation
     id UUID,
@@ -134,11 +134,14 @@ BEGIN
     CROSS JOIN LATERAL
         get_user_data(auth.uid()) as user_data
     WHERE
-        auth.uid() = res.user_id;
+        auth.uid() = res.user_id
+    ORDER BY res.begin_time DESC  -- 確保結果有一致的排序
+    LIMIT page_size OFFSET page_offset;
 END;
 $$
 LANGUAGE plpgsql STABLE
 SECURITY INVOKER;
+
 
 -- 根據座位ID取得該座位的活躍預約資訊及預約用戶的個人資料
 CREATE OR REPLACE FUNCTION get_seat_active_reservations(p_seat_id INT DEFAULT NULL)

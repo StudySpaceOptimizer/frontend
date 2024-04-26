@@ -10,7 +10,7 @@ export class SupabaseUser implements User {
    * @param password 用戶的密碼
    * @returns 無返回值，登入失敗將拋出錯誤
    */
-  async signIn(email: string, password: string): Promise<void> {
+  async signIn(email: string, password: string): Promise<string> {
     const { error } = await supabase.auth.signInWithPassword({
       email: email,
       password: password
@@ -25,6 +25,17 @@ export class SupabaseUser implements User {
           throw new Error('遇到未知錯誤，請稍後再試')
       }
     }
+
+    const {
+      data: { user },
+      error: getUserError
+    } = await supabase.auth.getUser()
+
+    if (getUserError || !user) {
+      throw new Error(getUserError?.message)
+    }
+
+    return user.id
   }
 
   /**

@@ -102,6 +102,12 @@ async function testTerminateReservationSuccess() {
 
 import { useSettingStore } from '../stores/setting'
 async function testGetSeatsStatus() {
+  // 如果沒有給定config : beginTime = Now 的下一個時間段 或是 營業開始時間, endTime = 營業結束時間
+  // 如果 now < 營業開始時間，beginTime = 營業開始時間
+  // 如果 now > 營業結束時間，返回 'unavailable'
+
+  /// get settings
+
   // const settingStore = useSettingStore()
   // if (!settingStore.settings) throw new Error('系統錯誤，找不到設定')
 
@@ -165,10 +171,11 @@ async function testGetSeatsStatus() {
   console.log(beginTime.toLocaleString('en-us'), endTime.toLocaleString('en-us'))
 
   const { data: reservationsData, error: getActiveReservationError } = await supabase
-    .from('active_seat_reservations')
+    .from('seat_reservations')
+    // .from('active_seat_reservations')
     .select('*')
-    .gte('begin_time', beginTime.toLocaleString('en-us'))
-    .lte('end_time', endTime.toLocaleString('en-us'))
+    .gte('begin_time', beginTime)
+    .lte('end_time', endTime)
     .order('seat_id', { ascending: true })
     .order('begin_time', { ascending: true })
 
@@ -190,6 +197,11 @@ async function testGetSeatsStatus() {
     if (!seatCoverages[seatID]) {
       seatCoverages[seatID] = [] // 初始化每個座位 ID 的陣列
     }
+
+    console.log('begintime: ', reservation.begin_time)
+    console.log('begintime date: ', new Date(reservation.begin_time))
+    console.log('begintime date get hours: ', new Date(reservation.begin_time).getHours())
+
     seatCoverages[seatID].push({
       start: new Date(toLocalDateTime(reservation.begin_time)),
       end: new Date(toLocalDateTime(reservation.end_time))
@@ -210,6 +222,7 @@ async function testGetSeatsStatus() {
 
     console.log(currentEnd)
 
+    // 可以用UTC時間比較
     coverage.forEach((time) => {
       console.log(time)
       if (time.start == currentEnd) {
@@ -233,3 +246,19 @@ function parseTimeString(timeStr: string): { hours: number; minutes: number } {
 }
 
 await testGetSeatsStatus()
+// let inputTime = new Date('2024-04-25T14:00:00')
+// let localinputTime = inputTime.toLocaleString()
+// console.log(inputTime)
+// console.log(inputTime.toString())
+// console.log(localinputTime)
+// {
+//   let { data, error } = await supabase.rpc('process_date', { input_time: inputTime })
+//   console.log(data)
+// }
+// {
+//   let { data, error } = await supabase.rpc('process_date', { input_time: localinputTime })
+//   console.log(data)
+
+//   let datetime = new Date(data)
+//   console.log(datetime.getHours())
+// }
