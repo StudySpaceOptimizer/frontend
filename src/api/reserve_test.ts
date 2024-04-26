@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { toLocalDateTime } from './common'
 import { supabase } from '../service/supabase/supabase'
 import type * as model from '../types/seat.ts'

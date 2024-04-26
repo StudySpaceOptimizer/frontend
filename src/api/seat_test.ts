@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type * as Type from '@/types'
 import { toLocalDateTime } from './common'
 import type { Seat } from './index'
