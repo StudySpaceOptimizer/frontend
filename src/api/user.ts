@@ -126,34 +126,6 @@ export class SupabaseUser implements User {
     )
   }
 
-  async getMyUser(): Promise<Type.UserData> {
-    const { data: userProfiles, error } = await supabase.rpc('get_my_user_data')
-
-    if (error) {
-      throw new Error(error.message)
-    }
-
-    return userProfiles?.map(
-      (profile: any): Type.UserData => ({
-        id: profile.id,
-        email: profile.email,
-        userRole: profile.user_role,
-        adminRole: profile.admin_role,
-        isIn: profile.is_in,
-        name: profile.name,
-        phone: profile.phone,
-        idCard: profile.id_card,
-        point: profile.point,
-        ban: profile.blacklist
-          ? {
-              reason: profile.blacklist[0].reason,
-              endAt: new Date(profile.blacklist[0].end_at)
-            }
-          : undefined
-      })
-    )
-  }
-
   /**
    * 更新用戶個人資料
    * @param data 包含用戶id、姓名、電話和身份證號的數據對象

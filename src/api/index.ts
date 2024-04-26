@@ -12,7 +12,6 @@ export interface User {
   studentSignUp(name: string, username: string, password: string): Promise<any>
   outsiderSignUp(name: string, phone: string, idcard: string, email: string): Promise<any>
   getUsers(config: any): Promise<any>
-  getMyUser(): Promise<any>
   banUser(id: string, reason: string, end_at: Date): Promise<any>
   unbanUser(id: string): Promise<any>
   addPointUser(id: string, point: number): Promise<any>
@@ -28,7 +27,6 @@ export interface Seat {
 
 export interface Reserve {
   reserve(seatId: string, begin: Date, end: Date): Promise<any>
-  getReservations(config: any): Promise<any>
   getPersonalReservations(config: any): Promise<any>
   deleteReservation(id: string): Promise<any>
   terminateReservation(id: string): Promise<any>
@@ -41,6 +39,6 @@ export const API_SERVICE = {
 }
 
 export type Config = {
-  page?: number
   offset?: number
+  limit?: number
 }
