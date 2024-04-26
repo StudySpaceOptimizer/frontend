@@ -1,43 +1,19 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref, watchEffect } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref } from 'vue'
 
-import DrawStage from '@/components/seats/stage'
-import { useFilterStore } from '@/stores/filter'
 import { useSeatStore } from '@/stores/seat'
 import KonvaRecursiveComponent from '@/components/KonvaRecursiveComponent.vue'
-import BookingModel from '@/components/BookingModel.vue'
 
-const route = useRoute()
-const filterStore = useFilterStore()
 const seatStore = useSeatStore()
-const props = defineProps({
-  width: {
-    type: Number,
-    default: 1200
-  },
-  height: {
-    type: Number,
-    default: 600
-  }
-})
+const props = defineProps<{
+  drawStageConfig: any
+  drawStage: any
+}>()
 
+const emit = defineEmits(['updateDrawStagePosition'])
 const stageRef = ref()
-const drawStageConfig = reactive({
-  width: props.width,
-  height: props.height,
-  x: 0,
-  y: 0,
-  // TODO: compute center
-  scaleX: 0.55,
-  scaleY: 0.55,
-  offsetX: -600,
-  offsetY: -300
-})
 let isDragging = false
 let lastPos = { x: 0, y: 0 }
-
-const drawStage = new DrawStage()
 
 function handleWheel(e: any): void {
   e.evt.preventDefault()
@@ -51,13 +27,16 @@ function handleWheel(e: any): void {
     y: (pointer.y - stage.y()) / oldScale
   }
   let newScale = e.evt.deltaY <= 0 ? oldScale * scaleBy : oldScale / scaleBy
-  newScale = Math.max(0.25, newScale)
-  newScale = Math.min(4, newScale)
+  newScale = Math.max(0.55, newScale)
+  newScale = Math.min(3, newScale)
 
   stage.scale({ x: newScale, y: newScale })
-  ;(drawStageConfig.x = pointer.x - mousePointTo.x * newScale),
-    (drawStageConfig.y = pointer.y - mousePointTo.y * newScale),
-    stage.batchDraw()
+  emit(
+    'updateDrawStagePosition',
+    pointer.x - mousePointTo.x * newScale,
+    pointer.y - mousePointTo.y * newScale
+  )
+  stage.batchDraw()
 }
 
 function handleMouseDown(e: any): void {
@@ -70,7 +49,6 @@ function handleMouseUp(): void {
   setTimeout(() => {
     seatStore.toggleCanSelect(true)
   }, 0)
-  console.log('mouse up', new Date().getTime())
   isDragging = false
 }
 
@@ -79,28 +57,14 @@ function handleMouseMove(e: any): void {
     seatStore.toggleCanSelect(false)
     const deltaX = e.evt.clientX - lastPos.x
     const deltaY = e.evt.clientY - lastPos.y
-    drawStageConfig.x += deltaX
-    drawStageConfig.y += deltaY
+    // TODO: optimize
+    emit('updateDrawStagePosition', props.drawStageConfig.x + deltaX, props.drawStageConfig.y + deltaY)
     lastPos = { x: e.evt.clientX, y: e.evt.clientY }
   }
 }
-
-watchEffect(() => {
-  // Mount the stage needs to wait parent element computed width and height
-  if (props.width === 0 && props.height === 0) return
-  drawStageConfig.width = props.width
-  drawStageConfig.height = props.height
-  drawStage.draw(props.width, props.height)
-})
-
-watchEffect(() => {
-  const filter = filterStore.getFilter(route.name?.toString() || 'default')
-  seatStore.fetchSeatsStatus(filter)
-})
 </script>
 
 <template>
-  <BookingModel />
   <v-stage
     ref="stageRef"
     :config="drawStageConfig"

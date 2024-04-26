@@ -1,19 +1,50 @@
 <script setup lang="ts">
-import SeatIllustration from '@/components/SeatIllustration.vue'
-import TheFilter from '@/components/TheFilter.vue'
-import SeatMap from '@/components/SeatMap.vue'
-
-import { ref } from 'vue'
+import { ref, reactive, watchEffect } from 'vue'
+import { useRoute } from 'vue-router'
 import { useResizeObserver } from '@vueuse/core'
 
+import { useFilterStore } from '@/stores/filter'
+import { useSeatStore } from '@/stores/seat'
+import BookingModel from '@/components/BookingModel.vue'
+import DrawStage from '@/components/seats/stage'
+import SeatIllustration from '@/components/SeatIllustration.vue'
+import SeatMap from '@/components/SeatMap.vue'
+import TheFilter from '@/components/TheFilter.vue'
+
 const mapRef = ref(null)
-const mapRefWidth = ref(0)
-const mapRefHeight = ref(0)
+const drawStageConfig = reactive({
+  width: 0,
+  height: 0,
+  x: 0,
+  y: 0,
+  // TODO: compute center
+  scaleX: 0.55,
+  scaleY: 0.55,
+  offsetX: -600,
+  offsetY: -310
+})
+// TODO: move to composable
+const drawStage = new DrawStage()
 
 useResizeObserver(mapRef, (entries) => {
-  const entry = entries[0]
-  mapRefWidth.value = entry.contentRect.width
-  mapRefHeight.value = entry.contentRect.height
+  const { width, height } = entries[0].contentRect
+
+  drawStageConfig.width = width
+  drawStageConfig.height = height
+  drawStage.draw(width, height)
+})
+
+function UpdateDrawStagePosition(x: number, y: number): void {
+  drawStageConfig.x = x
+  drawStageConfig.y = y
+}
+
+const route = useRoute()
+const filterStore = useFilterStore()
+const seatStore = useSeatStore()
+watchEffect(() => {
+  const filter = filterStore.getFilter(route.name?.toString() || 'default')
+  seatStore.fetchSeatsStatus(filter)
 })
 </script>
 
@@ -21,18 +52,23 @@ useResizeObserver(mapRef, (entries) => {
   <SeatIllustration />
   <div style="width: 80%">
     <TheFilter />
-  </div>
-  <div class="map" ref="mapRef">
-    <SeatMap :width="mapRefWidth" :height="mapRefHeight" />
+    <el-container class="map-container" ref="mapRef">
+      <BookingModel />
+      <SeatMap
+        :draw-stage="drawStage"
+        :draw-stage-config="drawStageConfig"
+        @update-draw-stage-position="UpdateDrawStagePosition"
+      />
+    </el-container>
   </div>
 </template>
 
 <style scoped lang="scss">
-.map {
+.map-container {
   position: relative;
   margin-top: 16px;
   height: 600px;
-  width: 80%;
+  width: 100%;
   border-radius: 6px;
   background-color: #e8e8e8;
 
