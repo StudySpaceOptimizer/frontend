@@ -96,35 +96,7 @@ export class SupabaseUser implements User {
    * @param getAllUser 是否獲取所有用戶
    * @returns 返回用戶數據列表
    */
-  async getUsers(getAllUser: boolean): Promise<Type.UserData[]> {
-    if (getAllUser == false) {
-      const { data: userProfiles, error } = await supabase.rpc('get_my_user_data')
-
-      if (error) {
-        throw new Error(error.message)
-      }
-
-      return userProfiles?.map(
-        (profile: any): Type.UserData => ({
-          id: profile.id,
-          email: profile.email,
-          userRole: profile.user_role,
-          adminRole: profile.admin_role,
-          isIn: profile.is_in,
-          name: profile.name,
-          phone: profile.phone,
-          idCard: profile.id_card,
-          point: profile.point,
-          ban: profile.blacklist
-            ? {
-                reason: profile.blacklist[0].reason,
-                endAt: new Date(profile.blacklist[0].end_at)
-              }
-            : undefined
-        })
-      )
-    }
-
+  async getUsers(config: any): Promise<Type.UserData[]> {
     const { data: userProfiles, error } = await supabase.rpc('get_user_datas')
 
     if (error) {
@@ -151,6 +123,34 @@ export class SupabaseUser implements User {
             : undefined
         })
       ) || []
+    )
+  }
+
+  async getMyUser(): Promise<Type.UserData> {
+    const { data: userProfiles, error } = await supabase.rpc('get_my_user_data')
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    return userProfiles?.map(
+      (profile: any): Type.UserData => ({
+        id: profile.id,
+        email: profile.email,
+        userRole: profile.user_role,
+        adminRole: profile.admin_role,
+        isIn: profile.is_in,
+        name: profile.name,
+        phone: profile.phone,
+        idCard: profile.id_card,
+        point: profile.point,
+        ban: profile.blacklist
+          ? {
+              reason: profile.blacklist[0].reason,
+              endAt: new Date(profile.blacklist[0].end_at)
+            }
+          : undefined
+      })
     )
   }
 
