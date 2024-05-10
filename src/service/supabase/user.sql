@@ -65,9 +65,9 @@ BEGIN
         RETURN NEW;
     END IF;
 
-    -- 對於非管理員，確保只更新 name、phone、id_card
-    IF NEW.email != OLD.email OR NEW.is_in != OLD.is_in OR NEW.point != OLD.point THEN
-        RAISE EXCEPTION '只有管理員可以更新 email、is_in 和 point 欄位';
+    -- 對於非管理員，確保只能更新 name、phone、id_card
+    IF NEW.id != OLD.id OR NEW.email != OLD.email OR NEW.is_in != OLD.is_in OR NEW.point != OLD.point THEN
+        RAISE EXCEPTION '使用者只能更新 name、phone、id_card 欄位';
     END IF;
 
     -- 確保更新操作由用戶本人發起

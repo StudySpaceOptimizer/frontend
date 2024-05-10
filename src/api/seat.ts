@@ -83,8 +83,7 @@ export class SupabaseSeat implements Seat {
     })
 
     const { data: reservationsData, error: getActiveReservationError } = await supabase
-      .from('seat_reservations')
-      // .from('active_seat_reservations')
+      .from('active_seat_reservations')
       .select('*')
       .gte('begin_time', beginTime.toISOString())
       .lte('end_time', endTime.toISOString())

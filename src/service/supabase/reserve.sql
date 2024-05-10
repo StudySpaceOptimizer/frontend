@@ -53,9 +53,67 @@ AS PERMISSIVE
 FOR DELETE
 USING (auth.uid() = user_id);
 
--- TODO: 提早離開
+-- 允許使用者更新自己的預約
+DROP POLICY IF EXISTS user_update_own ON reservations;
+CREATE POLICY user_update_own ON reservations
+AS PERMISSIVE
+FOR UPDATE
+USING (auth.uid() = id)
+WITH CHECK (auth.uid() = id);
 
+-- 更新cls
+CREATE OR REPLACE FUNCTION cls_reservations_update()
+RETURNS TRIGGER AS
+$$
+BEGIN
+    -- 若為管理員，允許任何更新
+    IF is_claims_admin() THEN
+        RETURN NEW;
+    END IF;
 
+    -- 對於非管理員，確保只能更新 begin_time
+    IF NEW.id != OLD.id OR NEW.begin_time != OLD.begin_time OR NEW.user_id != OLD.user_id OR NEW.seat_id != OLD.seat_id  OR NEW.check_in_time != OLD.check_in_time THEN
+        RAISE EXCEPTION '使用者只能更新 begin_time 欄位';
+    END IF;
+
+    -- 確保更新操作由用戶本人發起
+    IF auth.uid() != OLD.id THEN
+        RAISE EXCEPTION '用戶只能更新自己的記錄';
+    END IF;
+
+    RETURN NEW;
+END;
+$$
+LANGUAGE plpgsql STABLE
+SECURITY INVOKER;
+
+-- 在更新前檢查用戶個人資料更新條件
+DROP TRIGGER IF EXISTS trigger_cls_reservations_update ON reservations;
+CREATE TRIGGER trigger_cls_reservations_update
+BEFORE UPDATE ON reservations
+FOR EACH ROW EXECUTE FUNCTION cls_reservations_update();
+
+-- 確認提早離開是否合法
+CREATE OR REPLACE FUNCTION check_terminate_reservation_validity()
+RETURNS TRIGGER AS
+$$
+BEGIN
+    -- 確認使用者是否已經報到
+    IF NEW.check_in_time == NULL THEN
+        RAISE EXCEPTION '尚未報到';
+    END IF;
+
+    RETURN NEW;
+END;
+$$
+LANGUAGE plpgsql STABLE
+SECURITY INVOKER;
+
+-- 在提早結束前檢查是否已經報到
+DROP TRIGGER IF EXISTS trigger_check_terminate_reservation_validity ON reservations;
+CREATE TRIGGER trigger_check_terminate_reservation_validity
+BEFORE UPDATE ON reservations
+FOR EACH ROW EXECUTE FUNCTION check_terminate_reservation_validity();
 
 -- 檢查預約的合法性
 CREATE OR REPLACE FUNCTION check_reservation_validity()
@@ -243,8 +301,8 @@ DECLARE
     next_half_hour TIMESTAMP;
     end_of_day TIMESTAMP;
 BEGIN
-    -- 計算下一個30分鐘的時間點，基於 NEW.begin_time 的日期部分
-    next_half_hour := DATE_TRUNC('hour', NEW.begin_time) + 
+    -- 計算當前時間點的下一個30分鐘
+    next_half_hour := DATE_TRUNC('hour', current_time) + 
                       CASE
                           WHEN EXTRACT(minute FROM NEW.begin_time) >= 30 THEN INTERVAL '1 hour'
                           ELSE INTERVAL '30 minutes'
@@ -260,7 +318,7 @@ BEGIN
         WHERE user_id = NEW.user_id
         AND CAST(begin_time AS DATE) = CAST(NEW.begin_time AS DATE)  -- 確保是同一天
         AND end_time <= end_of_day
-        AND end_time > next_half_hour
+        AND end_time > next_half_hour -- 如果結束時間在下一個時間段之後，則視為未完成
     ) THEN
         RAISE EXCEPTION '用戶在預約當天有未完成的預約';
     END IF;
