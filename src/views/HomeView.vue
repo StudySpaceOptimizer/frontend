@@ -20,18 +20,23 @@ const drawStageConfig = reactive({
   // TODO: compute center
   scaleX: 0.55,
   scaleY: 0.55,
-  offsetX: -600,
-  offsetY: -310
+  offsetX: 0,
+  offsetY: 0
 })
 // TODO: move to composable
 const drawStage = new DrawStage()
+let isInitedDrawStage = false
 
 useResizeObserver(mapRef, (entries) => {
   const { width, height } = entries[0].contentRect
-
+  
   drawStageConfig.width = width
   drawStageConfig.height = height
+  drawStageConfig.offsetX = -width / 2 + 80
+  drawStageConfig.offsetY = -height / 2 
+  if (isInitedDrawStage) return
   drawStage.draw(width, height)
+  isInitedDrawStage = true
 })
 
 function UpdateDrawStagePosition(x: number, y: number): void {
@@ -50,7 +55,7 @@ watchEffect(() => {
 
 <template>
   <SeatIllustration />
-  <div style="width: 80%">
+  <div style="width: 80%; height: 100%;">
     <TheFilter />
     <el-container class="map-container" ref="mapRef">
       <BookingModel />
@@ -67,7 +72,7 @@ watchEffect(() => {
 .map-container {
   position: relative;
   margin-top: 16px;
-  height: 600px;
+  height: 80%;
   width: 100%;
   border-radius: 6px;
   background-color: #e8e8e8;
