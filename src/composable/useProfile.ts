@@ -11,8 +11,7 @@ export function useProfile() {
 
   const getUserProfile = async (): Promise<Type.UserData | undefined> => {
     try {
-      const data = await userApi.getUsers(false)
-      return data[0]
+      return await userApi.getMyUser(accountStore.userId)
     } catch (error) {
       ElMessage.error('取得使用者資料失敗')
     }

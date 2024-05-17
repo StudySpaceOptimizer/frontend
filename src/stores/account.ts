@@ -16,6 +16,8 @@ export const useAccountStore = defineStore(
     const userRole = ref('student')
     const adminRole = ref('non-admin')
 
+    const userId = ref('')
+
     const dialogStatus = reactive({
       signIn: false,
       signUp: false
@@ -29,7 +31,7 @@ export const useAccountStore = defineStore(
 
     async function signIn({ email, password }: { email: string; password: string }): Promise<void> {
       try {
-        await api.signIn(email, password)
+        userId.value = await api.signIn(email, password)
         isSignIn.value = true
         toggleDialog()
         ElMessage.success('登入成功')
@@ -48,9 +50,13 @@ export const useAccountStore = defineStore(
       email: string
       password: string
     }): Promise<void> {
-      await api.studentSignUp(name, email, password)
-      toggleDialog()
-      ElMessage.success('註冊成功')
+      try {
+        await api.studentSignUp(name, email, password)
+        toggleDialog()
+        ElMessage.success('註冊成功')
+      } catch (error: any) {
+        ElMessage.error(`註冊失敗: ${error.message}`)
+      }
     }
 
     async function outsiderSignUp({
@@ -65,9 +71,6 @@ export const useAccountStore = defineStore(
       email: string
     }): Promise<void> {
       throw new Error('尚未開放註冊校外人士')
-      await api.outsiderSignUp(name, phone, idCard, email)
-      toggleDialog()
-      ElMessage.success('註冊成功')
     }
 
     function signOut(): void {
@@ -96,11 +99,11 @@ export const useAccountStore = defineStore(
 
     async function getUserProfile(): Promise<void> {
       try {
-        const userData = await api.getUsers(false)
-        userDisplayName.value = userData[0].name ?? 'guest'
-        userRole.value = userData[0].userRole ?? 'student'
-        adminRole.value = userData[0].adminRole ?? 'non-admin'
-        if (userData[0].name == undefined) {
+        const userData = await api.getMyUser(userId.value)
+        userDisplayName.value = userData.name ?? 'guest'
+        userRole.value = userData.userRole ?? 'student'
+        adminRole.value = userData.adminRole ?? 'non-admin'
+        if (userData.name == undefined) {
           ElMessage.warning('可以到個人資料修改名稱')
         }
 
@@ -123,6 +126,7 @@ export const useAccountStore = defineStore(
       userRole,
       adminRole,
       dialogStatus,
+      userId,
 
       signIn,
       signOut,
