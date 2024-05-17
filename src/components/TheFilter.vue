@@ -5,6 +5,7 @@ import { ElMessage } from 'element-plus'
 import type { Filter } from '@/types'
 import { useFilterStore } from '@/stores/filter'
 import { useRoute } from 'vue-router'
+import { off } from 'process'
 
 const filterStore = useFilterStore()
 const route = useRoute()
@@ -31,7 +32,7 @@ const DateTimePicker = ref({
   // TODO: if nowtime > endTime, date must be tomorrow
   date: new Date(),
   beginTime: '08:30',
-  endTime: '20:30'
+  endTime: '21:30'
 })
 
 const filter = reactive<Filter>({
@@ -59,13 +60,22 @@ watchEffect(() => {
   filter.endTime = new Date(`${date} ${DateTimePicker.value.endTime}`)
   doFilter()
 })
+
+function checkDisabledDate(time: Date): boolean {
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+  // TODO: use setting set
+  const offset = 14 * 24 * 60 * 60 * 1000
+  return time.getTime() < now.getTime() || time.getTime() > now.getTime() + offset
+}
 </script>
 
 <template>
   <form @submit.prevent="doFilter">
     <template v-if="show.time">
       <div class="date-filter-item">
-        <el-date-picker v-model="DateTimePicker.date" type="date" size="default" />
+        <el-date-picker v-model="DateTimePicker.date" type="date" size="default" :disabled-date="checkDisabledDate">
+        </el-date-picker>
       </div>
       <div class="date-filter-item">
         <el-time-select
@@ -76,7 +86,7 @@ watchEffect(() => {
           placeholder="開始時間"
           start="08:30"
           step="00:30"
-          end="20:30"
+          end="21:30"
         />
       </div>
       <div class="date-filter-item">
@@ -87,7 +97,7 @@ watchEffect(() => {
           placeholder="結束時間"
           start="08:30"
           step="00:30"
-          end="20:30"
+          end="21:30"
         />
       </div>
     </template>
@@ -109,7 +119,7 @@ watchEffect(() => {
       <label for="username">使用者</label>
       <input v-model="filter.username" type="text" name="username" />
     </template>
-    <el-button type="primary" style="margin: 0 10px;">開始篩選</el-button>
+    <el-button type="primary" style="margin: 0 10px">開始篩選</el-button>
   </form>
 </template>
 
