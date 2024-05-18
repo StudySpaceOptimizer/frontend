@@ -302,7 +302,7 @@ DECLARE
     end_of_day TIMESTAMP;
 BEGIN
     -- 計算當前時間點的下一個30分鐘
-    next_half_hour := DATE_TRUNC('hour', current_time) + 
+    next_half_hour := DATE_TRUNC('hour', NOW()) + 
                       CASE
                           WHEN EXTRACT(minute FROM NEW.begin_time) >= 30 THEN INTERVAL '1 hour'
                           ELSE INTERVAL '30 minutes'
