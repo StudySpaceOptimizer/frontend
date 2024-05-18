@@ -293,7 +293,7 @@ BEFORE INSERT OR UPDATE ON reservations
 FOR EACH ROW EXECUTE FUNCTION check_closed_periods_overlap();
 
 
--- 檢查用戶當天是否有未完成的預約
+-- 檢查用戶當天是否有未完成的預約(30分鐘內結束的預約不算在內)
 CREATE OR REPLACE FUNCTION check_for_unfinished_reservation()
 RETURNS TRIGGER
 AS $$
@@ -304,7 +304,7 @@ BEGIN
     -- 計算當前時間點的下一個30分鐘
     next_half_hour := DATE_TRUNC('hour', NOW()) + 
                       CASE
-                          WHEN EXTRACT(minute FROM NEW.begin_time) >= 30 THEN INTERVAL '1 hour'
+                          WHEN EXTRACT(minute FROM NOW()) >= 30 THEN INTERVAL '1 hour'
                           ELSE INTERVAL '30 minutes'
                       END;
     
