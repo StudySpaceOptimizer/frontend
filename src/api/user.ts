@@ -91,14 +91,25 @@ export class SupabaseUser implements User {
   /**
    * 使用郵箱註冊外部用戶，註冊成功後會在 Cookie 中存儲一個 token
    * @url POST /api/signup
-   * @param name 用戶名
-   * @param phone 電話號碼
-   * @param idcard 身份證號
-   * @param email 電子郵件地址
+   * @param email 用戶的郵件地址
+   * @param password 用戶的密碼
    * @returns 返回操作成功的結果
    */
-  outsiderSignUp(name: string, phone: string, idcard: string, email: string): Promise<void> {
-    throw new Error('Method not implemented.')
+  async outsiderSignUp(email: string, password: string): Promise<void> {
+    const { error } = await supabase.auth.signUp({
+      email: email,
+      password: password
+    })
+
+    if (error) {
+      switch (error.status) {
+        case 422:
+          throw new Error('密碼應至少包含 6 個字元')
+        default:
+          console.log(error.message)
+          throw new Error('遇到未知錯誤，請稍後再試')
+      }
+    }
   }
 
   /**
@@ -139,20 +150,23 @@ export class SupabaseUser implements User {
 
   /**
    * 更新用戶個人資料
-   * @param data 包含用戶id、姓名、電話和身份證號的數據對象
+   * @param id
+   * @param name
+   * @param phone
+   * @param idCard
    * @returns 無返回值，操作失敗將拋出錯誤
    */
-  async updateProfile(data: any): Promise<void> {
+  async updateProfile(id: string, name: string, phone: string, idCard: string): Promise<void> {
     const { error } = await supabase
       .from('user_profiles')
       .update([
         {
-          name: data.name,
-          phone: data.phone,
-          id_card: data.idcard
+          name: name,
+          phone: phone,
+          id_card: idCard
         }
       ])
-      .eq('id', data.id)
+      .eq('id', id)
 
     if (error) {
       throw new Error(error.message)

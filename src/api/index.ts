@@ -8,14 +8,13 @@ export interface User {
   signIn(username: string, password: string): Promise<any>
   signOut(): Promise<any>
   checkIsSignIn(): Promise<any>
-  updateProfile(data: any): Promise<any>
   studentSignUp(name: string, username: string, password: string): Promise<any>
   outsiderSignUp(name: string, phone: string, idcard: string, email: string): Promise<any>
   getUsers(config: any): Promise<any>
   banUser(id: string, reason: string, end_at: Date): Promise<any>
   unbanUser(id: string): Promise<any>
   addPointUser(id: string, point: number): Promise<any>
-  updateSettings(newSettings: any): Promise<any>
+  updateProfile(id: string, name: string, phone: string, idCard: string): Promise<any>
   getSettings(): Promise<any>
 }
 

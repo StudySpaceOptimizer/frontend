@@ -39,6 +39,51 @@ export class SupabaseReserve implements Reserve {
     }
   }
 
+  /**
+   * 為指定的用戶預約座位，若座位已被預約或發生其他錯誤，將拋出錯誤
+   * @url POST /api/seats/
+   * @param idCard 用戶的身份證號碼
+   * @param seatID 座位ID
+   * @param beginTime 預約開始時間
+   * @param endTime 預約結束時間
+   * @returns 無返回值，操作失敗將拋出錯誤
+   */
+  async reserveForUser(
+    idCard: string,
+    seatID: string,
+    beginTime: Date,
+    endTime: Date
+  ): Promise<void> {
+    // 根據 id_card 查找用戶
+    const { data: userData, error: getUserDataError } = await supabase
+      .from('user_profiles')
+      .select('id')
+      .eq('id_card', idCard)
+      .single()
+
+    if (getUserDataError || !userData) {
+      throw new Error('Failed to get user data by id_card:' + getUserDataError?.message)
+    }
+
+    const userID = userData.id
+
+    const seatIDNumber = seatConverterToDB(seatID)
+
+    // 插入預約
+    const { error } = await supabase.from('reservations').insert([
+      {
+        begin_time: beginTime,
+        end_time: endTime,
+        user_id: userID,
+        seat_id: seatIDNumber
+      }
+    ])
+
+    if (error) {
+      throw new Error(error.message)
+    }
+  }
+
   async getPersonalReservations(config: Config): Promise<Type.Reservation[]> {
     let { pageSize, pageOffset } = config
     const { data: reservations } = await supabase.rpc('get_my_reservations', {

@@ -29,7 +29,7 @@ BEGIN
       return false; -- jwt expired
     END IF;
 
-    -- 判断 service_role
+    -- 判断 service_role(SERVICE_KEY)
     If current_setting('request.jwt.claims', true)::jsonb->>'role' = 'service_role' THEN
       RETURN true; -- service role users have admin rights
     END IF;
@@ -40,12 +40,7 @@ BEGIN
     END IF;
 
     RETURN false;
-    -- 判断 claims_admin 是否设置为 true
-    -- IF coalesce((current_setting('request.jwt.claims', true)::jsonb)->'app_metadata'->'claims_admin', 'false')::bool THEN
-    --   return true; -- user has claims_admin set to true
-    -- ELSE
-    --   return false; -- user does NOT have claims_admin set to true
-    -- END IF;
+
     --------------------------------------------
     -- End of block 
     --------------------------------------------
