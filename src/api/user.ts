@@ -216,11 +216,30 @@ export class SupabaseUser implements User {
    * @returns 無返回值，操作失敗將拋出錯誤
    */
   async addPointUser(id: string, point: number): Promise<void> {
-    // TODO:get point
-    const { error } = await supabase.from('user_profiles').update({ point: point }).eq('id', id)
+    const { data, error: getError } = await supabase
+      .from('user_profiles')
+      .select('point')
+      .eq('id', id)
+      .single()
 
-    if (error) {
-      throw new Error(error.message)
+    if (getError) {
+      throw new Error(`取得用戶點數時發生錯誤: ${getError.message}`)
+    }
+
+    if (!data) {
+      throw new Error('找不到用戶資料')
+    }
+
+    // 計算新的點數
+    const newPoint = data.point + point
+
+    const { error: updateError } = await supabase
+      .from('user_profiles')
+      .update({ point: newPoint })
+      .eq('id', id)
+
+    if (updateError) {
+      throw new Error(updateError.message)
     }
   }
 

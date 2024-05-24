@@ -58,26 +58,31 @@ DROP POLICY IF EXISTS user_update_own ON reservations;
 CREATE POLICY user_update_own ON reservations
 AS PERMISSIVE
 FOR UPDATE
-USING (auth.uid() = id)
-WITH CHECK (auth.uid() = id);
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
 
 -- 更新cls
 CREATE OR REPLACE FUNCTION cls_reservations_update()
 RETURNS TRIGGER AS
 $$
 BEGIN
+    -- 使用 supabase UI 或 service_key 不受限制
+    IF is_supabase_ui_or_service_key() THEN
+        RETURN NEW;
+    END IF;
+
     -- 若為管理員，允許任何更新
     IF is_claims_admin() THEN
         RETURN NEW;
     END IF;
 
-    -- 對於非管理員，確保只能更新 begin_time
+    -- 對於非管理員，確保只能更新 end_time
     IF NEW.id != OLD.id OR NEW.begin_time != OLD.begin_time OR NEW.user_id != OLD.user_id OR NEW.seat_id != OLD.seat_id  OR NEW.check_in_time != OLD.check_in_time THEN
-        RAISE EXCEPTION '使用者只能更新 begin_time 欄位';
+        RAISE EXCEPTION '使用者只能更新 end_time 欄位';
     END IF;
 
     -- 確保更新操作由用戶本人發起
-    IF auth.uid() != OLD.id THEN
+    IF auth.uid() != OLD.user_id THEN
         RAISE EXCEPTION '用戶只能更新自己的記錄';
     END IF;
 
@@ -98,8 +103,13 @@ CREATE OR REPLACE FUNCTION check_terminate_reservation_validity()
 RETURNS TRIGGER AS
 $$
 BEGIN
+    -- 使用 supabase UI 或 service_key 不受限制
+    IF is_supabase_ui_or_service_key() THEN
+        RETURN NEW;
+    END IF;
+
     -- 確認使用者是否已經報到
-    IF NEW.check_in_time == NULL THEN
+    IF NEW.check_in_time = NULL THEN
         RAISE EXCEPTION '尚未報到';
     END IF;
 
@@ -120,6 +130,11 @@ CREATE OR REPLACE FUNCTION check_reservation_validity()
 RETURNS TRIGGER 
 AS $$
 BEGIN
+    -- 使用 supabase UI 或 service_key 不受限制
+    IF is_supabase_ui_or_service_key() THEN
+        RETURN NEW;
+    END IF;
+
     -- 檢查 begin_time 和 end_time 是否在同一天
     IF DATE(NEW.begin_time) != DATE(NEW.end_time) THEN
         RAISE EXCEPTION '開始和結束時間必須在同一天';
@@ -130,20 +145,19 @@ BEGIN
         RAISE EXCEPTION '結束時間必須晚於開始時間';
     END IF;
 
-    -- 確保預約的開始和結束時間都是每小時的 00 分或 30 分
     -- 只在插入操作時進行檢查
     IF TG_OP = 'INSERT' THEN
+        -- 確保預約的開始和結束時間都是每小時的 00 分或 30 分
         IF (EXTRACT(MINUTE FROM NEW.begin_time) NOT IN (0, 30)) OR (EXTRACT(MINUTE FROM NEW.end_time) NOT IN (0, 30)) THEN
             RAISE EXCEPTION '預約時間必須以30分鐘為單位';
         END IF;
+
+        -- 確保預約開始時間大於當前時間
+        IF NEW.begin_time <= current_timestamp THEN
+            RAISE EXCEPTION '預約開始時間必須大於當前時間';
+        END IF;
     END IF;
     
-
-    -- 確保預約開始時間大於當前時間
-    IF NEW.begin_time <= current_timestamp THEN
-        RAISE EXCEPTION '預約開始時間必須大於當前時間';
-    END IF;
-
     RETURN NEW;
 END;
 $$
@@ -162,6 +176,11 @@ CREATE OR REPLACE FUNCTION check_seat_availability_and_seat_reservations_overlap
 RETURNS TRIGGER 
 AS $$
 BEGIN
+    -- 使用 supabase UI 或 service_key 不受限制
+    IF is_supabase_ui_or_service_key() THEN
+        RETURN NEW;
+    END IF;
+
     -- 檢查選定座位是否可用
     IF (SELECT NOT available FROM seats WHERE id = NEW.seat_id) THEN
         RAISE EXCEPTION '所選座位不可用';
@@ -171,7 +190,8 @@ BEGIN
     IF EXISTS (
         SELECT 1 FROM active_seat_reservations
         WHERE seat_id = NEW.seat_id
-        AND   (NEW.begin_time, NEW.end_time) OVERLAPS (begin_time, end_time)
+        AND reservation_id <> NEW.id  -- 確保不檢查當前行
+        AND (NEW.begin_time, NEW.end_time) OVERLAPS (begin_time, end_time)
     ) THEN
         RAISE EXCEPTION '預約時間與現有預約重疊';
     END IF;
@@ -207,6 +227,10 @@ DECLARE
 
     user_role user_role;
 BEGIN
+    -- 使用 supabase UI 或 service_key 不受限制
+    IF is_supabase_ui_or_service_key() THEN
+        RETURN NEW;
+    END IF;
 
     -- 從設定中提取時間和限制
     SELECT (value::jsonb)->>'begin_time', (value::jsonb)->>'end_time' INTO weekday_opening, weekday_closing FROM settings WHERE key_name = 'weekday_opening_hours';
@@ -273,6 +297,11 @@ CREATE OR REPLACE FUNCTION check_closed_periods_overlap()
 RETURNS TRIGGER 
 AS $$
 BEGIN
+    -- 使用 supabase UI 或 service_key 不受限制
+    IF is_supabase_ui_or_service_key() THEN
+        RETURN NEW;
+    END IF;
+
     IF EXISTS (
         SELECT 1
         FROM active_closed_periods
@@ -280,6 +309,7 @@ BEGIN
     ) THEN
         RAISE EXCEPTION '預約時間與關閉時段重疊';
     END IF;
+    
     RETURN NEW;
 END;
 $$
@@ -301,6 +331,11 @@ DECLARE
     next_half_hour TIMESTAMP;
     end_of_day TIMESTAMP;
 BEGIN
+    -- 使用 supabase UI 或 service_key 不受限制
+    IF is_supabase_ui_or_service_key() THEN
+        RETURN NEW;
+    END IF;
+
     -- 計算當前時間點的下一個30分鐘
     next_half_hour := DATE_TRUNC('hour', NOW()) + 
                       CASE
@@ -340,10 +375,16 @@ FOR EACH ROW EXECUTE FUNCTION check_for_unfinished_reservation();
 CREATE OR REPLACE FUNCTION check_reservation_delete_time()
 RETURNS TRIGGER AS $$
 BEGIN
+    -- 使用 supabase UI 或 service_key 不受限制
+    IF is_supabase_ui_or_service_key() THEN
+        RETURN OLD;
+    END IF;
+
     -- 檢查是否嘗試刪除的預約的開始時間在當前時間後
     IF (OLD.begin_time <= current_timestamp) THEN
         RAISE EXCEPTION '只能刪除尚未開始的預約';
     END IF;
+
     RETURN OLD;
 END;
 $$
@@ -356,67 +397,3 @@ CREATE TRIGGER trigger_check_reservation_delete
 BEFORE DELETE ON reservations
 FOR EACH ROW
 EXECUTE FUNCTION check_reservation_delete_time();
-
-
-
--- 創建座位預約表
-CREATE TABLE IF NOT EXISTS seat_reservations (
-    seat_id int8 NOT NULL,
-    begin_time timestamp with time zone NOT NULL,
-    end_time timestamp with time zone NOT NULL,
-    reservation_id UUID NOT NULL,
-    CONSTRAINT fk_reservation FOREIGN KEY(reservation_id) REFERENCES reservations(id) ON DELETE CASCADE,
-    CONSTRAINT fk_seat_id FOREIGN KEY(seat_id) REFERENCES seats(id) ON DELETE CASCADE,
-    PRIMARY KEY (seat_id, begin_time, end_time)
-);
-
--- 創建索引
-CREATE INDEX IF NOT EXISTS idx_seat_reservations_end_time ON seat_reservations (end_time);
-
--- 創建視圖以篩選活躍的座位預約時段
-CREATE OR REPLACE VIEW active_seat_reservations
-WITH (security_invoker = on) AS
-SELECT *
-FROM public.seat_reservations
-WHERE end_time > NOW();
-
--- 啟用RLS
-ALTER TABLE seat_reservations ENABLE ROW LEVEL SECURITY;
-
--- 允許管理員所有權限
-DROP POLICY IF EXISTS admin_all_access ON seat_reservations;
-CREATE POLICY admin_all_access ON seat_reservations
-AS PERMISSIVE
-FOR ALL
-USING (is_claims_admin())
-WITH CHECK (is_claims_admin());
-
--- 允許所有用戶查詢座位預約時段
-DROP POLICY IF EXISTS select_policy ON seat_reservations;
-CREATE POLICY select_policy ON seat_reservations 
-AS PERMISSIVE
-FOR SELECT 
-USING (true);
-
--- 當 reservations 表有新的插入或更新時，將相應數據插入至 seat_reservations 表
-CREATE OR REPLACE FUNCTION update_seat_reservations()
-RETURNS TRIGGER
-AS $$
-BEGIN
-    INSERT INTO seat_reservations (seat_id, begin_time, end_time, reservation_id)
-    SELECT NEW.seat_id, NEW.begin_time, NEW.end_time, NEW.id
-    FROM reservations
-    WHERE id = NEW.id
-    ON CONFLICT (seat_id, begin_time, end_time) DO UPDATE
-        SET reservation_id = EXCLUDED.reservation_id;
-    RETURN NEW;
-END;
-$$
-LANGUAGE plpgsql
-SECURITY DEFINER;
-
-DROP TRIGGER IF EXISTS trigger_update_seat_reservations ON reservations;
-CREATE TRIGGER trigger_update_seat_reservations
-AFTER INSERT OR UPDATE ON reservations
-FOR EACH ROW
-EXECUTE FUNCTION update_seat_reservations();

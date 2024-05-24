@@ -14,7 +14,6 @@ BEGIN
 END
 $$;
 
-
 -- 創建用戶個人資料表
 CREATE TABLE IF NOT EXISTS user_profiles (
     -- 用戶本人可以選擇
@@ -60,6 +59,11 @@ CREATE OR REPLACE FUNCTION cls_user_profiles_update()
 RETURNS TRIGGER AS
 $$
 BEGIN
+    -- 使用 supabase UI 或 service_key 不受限制
+    IF is_supabase_ui_or_service_key() THEN
+        RETURN NEW;
+    END IF;
+
     -- 若為管理員，允許任何更新
     IF is_claims_admin() THEN
         RETURN NEW;
@@ -89,12 +93,12 @@ FOR EACH ROW EXECUTE FUNCTION cls_user_profiles_update();
 
 
 -- 根據用戶的email後綴來設置用戶角色及管理員角色，並儲存於 meta_data
-CREATE OR REPLACE FUNCTION auth.handle_new_user_metadata()
+CREATE OR REPLACE FUNCTION handle_new_user_metadata()
 RETURNS TRIGGER
 AS $$
 DECLARE
-    user_role public.user_role;
-    admin_role public.admin_role;
+    user_role user_role;
+    admin_role admin_role;
 BEGIN
     -- 根據email後綴確定用戶角色(userrole)
     IF NEW.email LIKE '%@mail.ntou.edu.tw' THEN
@@ -117,14 +121,13 @@ BEGIN
 END;
 $$
 LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = auth;
+SECURITY DEFINER;
 
 -- 在新增用戶記錄前執行 raw_app_meta_data 設置
 DROP TRIGGER IF EXISTS trigger_handle_new_user_metadata ON auth.users;
 CREATE TRIGGER trigger_handle_new_user_metadata
 BEFORE INSERT ON auth.users
-FOR EACH ROW EXECUTE FUNCTION auth.handle_new_user_metadata();
+FOR EACH ROW EXECUTE FUNCTION handle_new_user_metadata();
 
 -- 在用戶註冊時自動新增 user_profile
 CREATE OR REPLACE FUNCTION handle_new_user_profile()
@@ -146,8 +149,8 @@ CREATE TRIGGER trigger_handle_new_user_profile
 AFTER INSERT ON auth.users
 FOR EACH ROW EXECUTE FUNCTION handle_new_user_profile();
 
--- 檢查違規點數是否到達上限
-CREATE OR REPLACE FUNCTION check_points_and_blacklist()
+-- 處理違規點數到達上限
+CREATE OR REPLACE FUNCTION ban_user_if_points_exceed_limit()
 RETURNS TRIGGER 
 AS $$
 DECLARE
@@ -177,12 +180,12 @@ LANGUAGE plpgsql
 SECURITY DEFINER;
 
 -- 當user_profiles表的point欄位被更新時檢查違規點數是否到達上限
-DROP TRIGGER IF EXISTS trigger_check_points_and_blacklist ON user_profiles;
-CREATE TRIGGER trigger_check_points_and_blacklist
+DROP TRIGGER IF EXISTS trigger_ban_user_if_points_exceed_limit ON user_profiles;
+CREATE TRIGGER trigger_ban_user_if_points_exceed_limit
 AFTER UPDATE OF point ON user_profiles
 FOR EACH ROW
 WHEN (OLD.point <> NEW.point)
-EXECUTE FUNCTION check_points_and_blacklist();
+EXECUTE FUNCTION ban_user_if_points_exceed_limit();
 
 
 

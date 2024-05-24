@@ -102,11 +102,18 @@ async function testGetSettingData() {
 // await testGrantAdminRoleSuccess()
 // await testGetSettingData()
 
-// let { data, error } = await supabase.rpc('is_claims_admin')
-// if (error) console.error(error)
-// else console.log(data)
-// await signIn(student, password)
-
+// await signIn(admin, password)
+await supabase.auth.signOut()
+{
+  let { data, error } = await supabase.rpc('is_supabase_ui_or_service_key')
+  if (error) console.error(error)
+  else console.log(data)
+}
+{
+  let { data, error } = await supabase.rpc('is_claims_admin')
+  if (error) console.error(error)
+  else console.log(data)
+}
 // let { data, error } = await supabase.rpc('get_my_claims')
 // if (error) console.error(error)
 // else console.log(data)
@@ -116,13 +123,12 @@ async function testGetSettingData() {
 使用service_key: current_setting('request.jwt.claims', true)::jsonb->>'role' = 'service_role'
 */
 
-let { data, error } = await supabase.auth.signUp({
-  phone: '+13334445555',
-  password: 'some-password'
-})
-
-// let { data, error } = await supabase.auth.signInWithOtp({
-//   phone: '+13334445555'
+// const { data, error } = await supabase.auth.admin.createUser({
+//   email: 'user@email.com',
+//   password: 'password',
+//   user_metadata: { name: 'Yoda' },
+//   email_confirm: true
 // })
-if (error) console.error(error)
-else console.log(data)
+
+// if (error) console.error(error)
+// else console.log(data)

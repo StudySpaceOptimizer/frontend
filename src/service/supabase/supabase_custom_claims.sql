@@ -192,3 +192,23 @@ LANGUAGE plpgsql
 SECURITY DEFINER;
 
 NOTIFY pgrst, 'reload schema';
+
+CREATE OR REPLACE FUNCTION is_supabase_ui_or_service_key() RETURNS BOOLEAN
+AS $$
+BEGIN
+  IF current_user = 'supabase_admin' THEN
+    RETURN TRUE;
+  END IF;
+  
+  IF session_user = 'authenticator' THEN
+    If current_setting('request.jwt.claims', true)::jsonb->>'role' = 'service_role' THEN
+      RETURN true; -- service role users have admin rights
+    END IF;
+  END IF;
+
+  RETURN FALSE;
+END;
+$$
+LANGUAGE plpgsql 
+SECURITY INVOKER;
+
