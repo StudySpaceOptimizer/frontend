@@ -10,6 +10,7 @@ import DependencyContainer from '@/DependencyContainer'
 import { createTimeRange } from '@/utils'
 
 const reserveApi = DependencyContainer.inject<api.Reserve>(api.API_SERVICE.RESERVE)
+const seatApi = DependencyContainer.inject<api.Seat>(api.API_SERVICE.SEAT)
 const seatStore = useSeatStore()
 const filterStore = useFilterStore()
 const route = useRoute()
@@ -57,6 +58,8 @@ function handleBooking(): void {
 
   const beginTimeValue = new Date(`${nowFilterDate.value} ${beginTime.value}`)
   const endTimeValue = new Date(`${nowFilterDate.value} ${endTime.value}`)
+
+  // TODO: use async/await
   reserveApi
     .reserve(seatName.value, beginTimeValue, endTimeValue)
     .then(() => {
@@ -64,6 +67,8 @@ function handleBooking(): void {
       dialogVisible.value = false
       seatStore.unselectSeat()
       clearTimeSetting()
+      // TODO: should be abstracted
+      seatStore.fetchSeatsStatus(filterStore.getFilter(route.name?.toString() || 'default'))
     })
     .catch((e) => {
       ElMessage.error('預約失敗:' + e.message)
@@ -122,6 +127,34 @@ function handleCheckboxChange(value: string[]): void {
 
 const isCompleteSelectTime = computed(() => {
   return beginTime.value !== undefined && endTime.value !== undefined
+})
+
+function getTime(time: string) {
+  const dateTime = new Date(time)
+  return (
+    (dateTime.getHours() + 8).toString().padStart(2, '0') +
+    ':' +
+    dateTime.getMinutes().toString().padStart(2, '0')
+  )
+}
+
+watchEffect(async () => {
+  if (dialogVisible.value) {
+    const data = await seatApi.getSeatStatus(seatName.value)
+    const reservationsTime = data.reservations
+
+    reservationsTime.forEach((reservation: any) => {
+      const beginTime = getTime(reservation.beginTime)
+      const endTime = getTime(reservation.endTime)
+
+      const beginIndex = timeRange.findIndex((time) => time.value === beginTime)
+      const endIndex = timeRange.findIndex((time) => time.value === endTime)
+
+      timeRange.forEach((time, index) => {
+        time.disabled = index >= beginIndex && index <= endIndex
+      })
+    })
+  }
 })
 </script>
 <template>

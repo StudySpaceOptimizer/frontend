@@ -30,7 +30,9 @@ watchEffect(async () => {
     return
   }
 
-  const seatStatus = await seatStore.getSeatStatus(components.value[1].config.text)
+  const seatStatus = seatStore.seatsStatus.find(
+    (seat) => seat.id === components.value[1].config.text
+  )
   if (!seatStatus) {
     components.value[0].config.fill = '#808080'
     isSeat = false
@@ -39,12 +41,8 @@ watchEffect(async () => {
 
   isSeat = true
 
-  if (components.value[1].config.text === 'B101') {
-    console.log(seatStatus)
-  }
-
   // TODO: optimize, refactor
-  const status = seatStatus.status
+  const status = seatStatus?.status
   switch (status) {
     case 'available':
       components.value[0].config.fill = '#00bd7e'

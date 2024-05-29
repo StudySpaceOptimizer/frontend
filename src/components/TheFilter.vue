@@ -28,10 +28,28 @@ const show = defineProps({
   }
 })
 
+// TODO: rename this
+// 現在時間要調整到後面的半小時
+function nowTimeToCanBookingTime() {
+  const nowTime = new Date()
+  const nowHour = nowTime.getHours()
+  const nowMinute = nowTime.getMinutes()
+
+  if (nowMinute < 30) {
+    nowTime.setMinutes(30)
+  } else {
+    nowTime.setHours(nowHour + 1, 0)
+  }
+
+  return `${nowTime.getHours()}:${nowTime.getMinutes()}`
+}
+
 const DateTimePicker = ref({
   // TODO: if nowtime > endTime, date must be tomorrow
   date: new Date(),
-  beginTime: '08:30',
+
+  // TODO: [1] use now time
+  beginTime: nowTimeToCanBookingTime(),
   endTime: '21:30'
 })
 

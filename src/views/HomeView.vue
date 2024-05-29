@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, watchEffect } from 'vue'
+import { ref, reactive, watchEffect, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useResizeObserver } from '@vueuse/core'
 
@@ -10,6 +10,9 @@ import DrawStage from '@/components/seats/stage'
 import SeatIllustration from '@/components/SeatIllustration.vue'
 import SeatMap from '@/components/SeatMap.vue'
 import TheFilter from '@/components/TheFilter.vue'
+
+// TODO: optimize this
+import { useSettingStore } from '@/stores/setting'
 
 const mapRef = ref(null)
 const drawStageConfig = reactive({
@@ -50,6 +53,13 @@ const seatStore = useSeatStore()
 watchEffect(() => {
   const filter = filterStore.getFilter(route.name?.toString() || 'default')
   seatStore.fetchSeatsStatus(filter)
+})
+
+// TODO: optimize this
+const { getSettings } = useSettingStore()
+
+onMounted(() => {
+  getSettings()
 })
 </script>
 

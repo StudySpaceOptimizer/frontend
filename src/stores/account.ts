@@ -51,7 +51,7 @@ export const useAccountStore = defineStore(
       password: string
     }): Promise<void> {
       try {
-        await api.studentSignUp(name, email, password)
+        await api.studentSignUp(email, password)
         toggleDialog()
         ElMessage.success('註冊成功')
       } catch (error: any) {

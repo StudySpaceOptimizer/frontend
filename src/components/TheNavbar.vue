@@ -22,6 +22,7 @@ const activeIndex = ref('/')
       <el-menu-item index="" @click="accountStore.signOut()">登出</el-menu-item>
       <el-menu-item index="/profile?tabs=person">個人資料</el-menu-item>
       <el-menu-item index="/profile?tabs=reservation">預約紀錄</el-menu-item>
+      {{ accountStore }}
       <el-menu-item index="/admin" v-if="accountStore.adminRole !== 'non-admin'">
         管理員介面
       </el-menu-item>

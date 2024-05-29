@@ -49,6 +49,28 @@ watch(
   },
   { deep: true }
 )
+
+// TODO: optimize this
+interface PasswordForm {
+  password: string
+  repeatPassword: string
+}
+
+import DependencyContainer from '@/DependencyContainer'
+import * as API from '@/api'
+import { ElMessage } from 'element-plus';
+const userApi = DependencyContainer.inject<API.User>(API.API_SERVICE.USER)
+
+const passwordForm = ref<PasswordForm>({ password: '', repeatPassword: '' })
+async function onFormSavePassword() {
+  try {
+    await userApi.updateUserPassword(passwordForm.value.password)
+    ElMessage.success('密碼修改成功')
+  } catch (error: any) {
+    console.error(error)
+    ElMessage.error(`密碼修改失敗: ${error}`)
+  }
+}
 </script>
 
 <template>
@@ -82,6 +104,32 @@ watch(
         <el-button
           type="primary"
           @click="onFormSaveProfile(updateProfileForm)"
+          :disabled="!isUserProfileChange"
+          >儲存變更</el-button
+        >
+      </el-form-item>
+    </el-form>
+  </el-container>
+  <el-divider> 修改密碼 </el-divider>
+  <el-container class="profile-container">
+    <el-form
+      v-if="passwordForm"
+      :model="passwordForm"
+      label-width="auto"
+      style="width: 600px"
+      :rules="rules"
+    >
+      <el-form-item label="密碼" prop="password">
+        <el-input v-model="passwordForm.password" type="password" />
+      </el-form-item>
+      <el-form-item label="重複密碼" prop="repeastPassword">
+        <el-input v-model="passwordForm.repeatPassword" type="password" />
+      </el-form-item>
+      <el-form-item>
+        <el-button text @click="onFormCanceled">取消變更</el-button>
+        <el-button
+          type="primary"
+          @click="onFormSavePassword()"
           :disabled="!isUserProfileChange"
           >儲存變更</el-button
         >

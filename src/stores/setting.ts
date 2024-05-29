@@ -23,4 +23,6 @@ export const useSettingStore = defineStore('settings', () => {
     settings,
     getSettings
   }
+}, {
+  persist: true
 })

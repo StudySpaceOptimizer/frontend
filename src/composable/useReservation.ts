@@ -1,20 +1,21 @@
+import { ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 import * as Api from '@/api'
 import DependencyContainer from '@/DependencyContainer'
-import * as Type from '@/types'
 
 export function useReservation() {
   const reserveApi = DependencyContainer.inject<Api.Reserve>(Api.API_SERVICE.RESERVE)
-  let cacheFilterCondition: Type.Filter | undefined
 
-  // TODO: 
+  const reservations = ref<any[]>([])
+
   const transformReservations = (res: any[]) => {
     return res.map(item => {
-      item.user = null  // 移除個人信息
+      delete item.user
 
-      const nowTime = new Date().getTime()
-      const beginTime = new Date(item.beginTime).getTime()
+      const nowTime = new Date()
+      const beginTime = new Date(item.beginTime)
+      const endTime = new Date(item.endTime)
 
       if (beginTime > nowTime) {
         item.actions = [
@@ -23,7 +24,7 @@ export function useReservation() {
             handler: () => cancelBooking(item.id)
           }
         ]
-      } else if (beginTime < nowTime && item.end > nowTime && !item.exit) {
+      } else if (beginTime < nowTime && nowTime < endTime && !item.exit) {
         item.actions = [
           {
             text: '提前離開',
@@ -31,6 +32,10 @@ export function useReservation() {
           }
         ]
       }
+
+      item.date = beginTime.toLocaleDateString()
+      item.beginTime = beginTime.toLocaleTimeString()
+      item.endTime = endTime.toLocaleTimeString()
       return item
     })
   }
@@ -44,7 +49,7 @@ export function useReservation() {
       try {
         await reserveApi.deleteReservation(id)
         ElMessage.success('取消預約成功')
-        updateReservationData()
+        updateReservationData(1)
       } catch (error: any) {
         ElMessage.error(error.message)
       }
@@ -59,28 +64,36 @@ export function useReservation() {
     }).then(async () => {
       try {
         await reserveApi.terminateReservation(id)
-        updateReservationData()
+        updateReservationData(1)
+        ElMessage.success('提前離開成功')
       } catch (error: any) {
         ElMessage.error(error.message)
       }
     })
   }
 
-  const getReservationData = async (filterCondition?: Type.Filter) => {
-    // if filterCondition is not provided, use the last filter condition
-    if (filterCondition !== undefined) {
-      cacheFilterCondition = filterCondition
-    } else {
-      filterCondition = cacheFilterCondition
-    }
-
-    const data = await reserveApi.getPersonalReservations(filterCondition)
+  // TODO: optimzie this, handle filter condition namely.
+  const getReservationData = async (filterCondition?: any) => {
+    const data = await reserveApi.getPersonalReservations({
+      pageSize: filterCondition?.pageSize || 10,
+      pageOffset: filterCondition?.pageOffset,
+    })
     return transformReservations(data)
   }
 
-  const updateReservationData = async (): Promise<void> => {
-    await getReservationData()
+  const updateReservationData = async (data: number): Promise<void> => {
+    console.log('updateReservationData', data)
+    reservations.value = await getReservationData({
+      pageSize: 10,
+      // TODO: don't minus 1 here, should be handled in the view.
+      pageOffset: Math.max(0, (data - 1) * 10)
+    })
   }
 
-  return { getReservationData }
+  // TODO: maybe change method name or implement better way to get count.
+  const getCount = async () => {
+    return (await reserveApi.getPersonalReservationsCount())
+  }
+
+  return { reservations, getReservationData, updateReservationData, getCount }
 }

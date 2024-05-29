@@ -1,19 +1,13 @@
 <script setup lang="ts">
-import { onMounted, watch, ref, computed } from 'vue'
+import { onMounted, watch, ref, computed, watchEffect } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
 import * as Type from '@/types'
 import { useReservation } from '@/composable/useReservation'
 import { useProfile } from '@/composable/useProfile'
-import ListView from '@/components/ListView.vue'
 import UserProfileForm from '@/components/UserProfileForm.vue'
 
-const { getReservationData } = useReservation()
-const reservationViewData = ref<any[]>([])
-
-async function getUserReservationData(): Promise<void> {
-  reservationViewData.value = await getReservationData()
-}
+const { updateReservationData, reservations, getCount } = useReservation()
 
 const { getUserProfile, updateUserProfile } = useProfile()
 const userProfile = ref<Type.UserData>()
@@ -58,7 +52,8 @@ function loadProfileData() {
   if (activeTabs.value === 'person') {
     onGetUserProfile()
   } else if (activeTabs.value === 'reservation') {
-    getUserReservationData()
+    // TODO: check page number
+    updateReservationData(1)
   }
 }
 
@@ -74,9 +69,17 @@ watch(
   { immediate: true }
 )
 
-onMounted(() => {
+const count = ref<any>(1)
+onMounted(async () => {
   loadProfileData()
+  // TODO: need check count when reservation data update
+  count.value = await getCount()
 })
+
+function handleCurrentChange(val: number) {
+  console.log('handleCurrentChange', val)
+  updateReservationData(val)
+}
 </script>
 
 <template>
@@ -89,8 +92,24 @@ onMounted(() => {
         :onSaveProfile="onUpdateUserProfile"
       />
     </el-tab-pane>
-    <el-tab-pane label="預約紀錄" name="reservation">
-      <ListView :data="reservationViewData" />
+    <el-tab-pane label="預約紀錄" name="reservation" style="padding: 10px">
+      <el-table :data="reservations" stripe style="width: 100%; height: 100%;">
+        <el-table-column prop="date" label="日期" width="120"/>
+        <el-table-column prop="beginTime" label="開始時間" width="120" />
+        <el-table-column prop="endTime" label="結束時間" width="120"/>
+        <el-table-column prop="seatID" label="座位" />
+        <el-table-column fixed="right" label="操作">
+          <template #default="scope">
+            <div v-for="action in reservations[scope.$index].actions" :key="action">
+              <el-button link type="primary" size="small" @click="action.handler" >{{ action.text }}</el-button>
+            </div>
+          </template>
+        </el-table-column>
+      </el-table>
+      <!-- TODO: justify content center -->
+      <el-pagination layout="prev, pager, next" :total="count" :page-size="10"
+        @current-change="handleCurrentChange" style="margin-top: 10px"
+      />
     </el-tab-pane>
   </el-tabs>
 </template>
