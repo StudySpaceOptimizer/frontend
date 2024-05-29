@@ -68,6 +68,7 @@ export class SupabaseUser implements User {
    * @returns 無返回值，註冊失敗將拋出錯誤
    */
   async studentSignUp(email: string, password: string): Promise<void> {
+    console.log(`email: ${email}, password: ${password}`)
     if (email.split('@')[1] !== 'mail.ntou.edu.tw') {
       throw new Error('請使用學校信箱註冊')
     }
@@ -118,8 +119,10 @@ export class SupabaseUser implements User {
    * @param getAllUser 是否獲取所有用戶
    * @returns 返回用戶數據列表
    */
-  async getUsers(config: any): Promise<Type.UserData[]> {
-    const { data: userProfiles, error } = await supabase.rpc('get_user_datas')
+  async getUsers(config: any, userId?: string): Promise<Type.UserData[]> {
+    const { data: userProfiles, error } = await supabase.rpc('get_user_data', {
+      p_user_id: userId
+    })
 
     if (error) {
       throw new Error(error.message)
@@ -146,6 +149,19 @@ export class SupabaseUser implements User {
         })
       ) || []
     )
+  }
+
+  async getMyUser(userId: string): Promise<Type.UserData> {
+    const data = await this.getUsers({}, userId)
+    return data[0]
+  }
+
+  async updateUserPassword(password: string): Promise<void> {
+    const { error } = await supabase.auth.updateUser({ password: password })
+
+    if (error) {
+      throw new Error('請重新檢查密碼')
+    }
   }
 
   /**

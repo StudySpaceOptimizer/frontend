@@ -1,6 +1,6 @@
 import type * as Type from '../types'
 import { supabase } from '../service/supabase/supabase'
-import { seatConverterFromDB } from '../utils'
+import { seatConverterFromDB, seatConverterToDB } from '../utils'
 import { toLocalDateTime, parseTimeString } from './common'
 import type { Seat } from './index'
 import { useSettingStore } from '../stores/setting'
@@ -48,7 +48,7 @@ export class SupabaseSeat implements Seat {
       if (now >= endTime) {
         unavailable = true
       } else if (now >= beginTime && now < endTime) {
-        let nextPeriod = new Date(now)
+        const nextPeriod = new Date(now)
         const minutes = nextPeriod.getMinutes()
         const hours = nextPeriod.getHours()
 
@@ -153,11 +153,12 @@ export class SupabaseSeat implements Seat {
    * @param id 要查詢的座位ID
    * @returns 返回座位詳細資訊的 Promise
    */
-  async getSeatStatus(seatID: number): Promise<Type.SeatDetail> {
+  async getSeatStatus(seatID: string): Promise<Type.SeatDetail> {
+    const id = seatConverterToDB(seatID)
     const { data: active_seat_reservations, error } = await supabase.rpc(
       'get_seat_active_reservations',
       {
-        seatID
+        p_seat_id: id
       }
     )
 
@@ -166,7 +167,7 @@ export class SupabaseSeat implements Seat {
     }
 
     const seatDetail: Type.SeatDetail = {
-      id: seatConverterFromDB(seatID),
+      id: seatID,
       reservations:
         active_seat_reservations?.map((reservation: any) => ({
           beginTime: toLocalDateTime(reservation.begin_time),

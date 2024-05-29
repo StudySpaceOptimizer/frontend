@@ -85,7 +85,7 @@ export class SupabaseReserve implements Reserve {
   }
 
   async getPersonalReservations(config: Config): Promise<Type.Reservation[]> {
-    let { pageSize, pageOffset } = config
+    const { pageSize, pageOffset } = config
     const { data: reservations } = await supabase.rpc('get_my_reservations', {
       page_size: pageSize,
       page_offset: pageOffset
@@ -120,6 +120,19 @@ export class SupabaseReserve implements Reserve {
         })
       ) || []
     )
+  }
+
+  async getPersonalReservationsCount(): Promise<number> { 
+    const { data: data, error } = await supabase
+    .from('reservations')
+    .select('count', { count: 'exact' })
+    .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    return data?.at(0)?.count || 0
   }
 
   /**
