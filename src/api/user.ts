@@ -152,8 +152,7 @@ export class SupabaseUser implements User {
   }
 
   async getMyUser(userId: string): Promise<Type.UserData> {
-    const data = await this.getUsers({}, userId)
-    return data[0]
+    return (await this.getUsers({}, userId))[0]
   }
 
   async updateUserPassword(password: string): Promise<void> {
@@ -289,14 +288,23 @@ export class SupabaseUser implements User {
     if (error) throw new Error(error.message)
 
     const settings: Partial<Type.SettingsData> = {}
+    let _tmp_data: any
 
     data?.forEach((item: any) => {
       switch (item.key_name) {
         case 'weekday_opening_hours':
-          settings.weekdayOpeningHours = JSON.parse(item.value)
+          _tmp_data = JSON.parse(item.value)
+          settings.weekdayOpeningHours = {
+            beginTime: _tmp_data.begin_time,
+            endTime: _tmp_data.end_time
+          }
           break
         case 'weekend_opening_hours':
-          settings.weekendOpeningHours = JSON.parse(item.value)
+          _tmp_data = JSON.parse(item.value)
+          settings.weekendOpeningHours = {
+            beginTime: _tmp_data.begin_time,
+            endTime: _tmp_data.end_time
+          }
           break
         case 'minimum_reservation_duration':
           settings.minimumReservationDuration = parseFloat(item.value)
