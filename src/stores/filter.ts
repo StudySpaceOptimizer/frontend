@@ -5,7 +5,7 @@ import { reactive } from 'vue'
 export const useFilterStore = defineStore('filter', () => {
   const filterMap = reactive(new Map<string, Filter>())
 
-  function getFilter(page: string): Filter {
+  function getFilter(page: string='home'): Filter {
     return filterMap.get(page) || reactive<Filter>({})
   }
 
