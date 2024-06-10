@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, watchEffect } from 'vue'
 import { useSeatStore } from '@/stores/seat'
+import { ElMessage } from 'element-plus';
 
 const seatStore = useSeatStore()
 
@@ -49,6 +50,7 @@ watchEffect(async () => {
       break
     case 'reserved':
       components.value[0].config.fill = '#bd0000'
+      isSeat = false
       break
     case 'partiallyReserved':
       components.value[0].config.fill = '#bda700'
@@ -61,6 +63,7 @@ watchEffect(async () => {
 
 function seatHandler(): void {
   if (!isSeat) {
+    ElMessage.warning('請選擇其他座位')
     return
   }
 
