@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watchEffect } from 'vue'
+import { computed, reactive, ref, watch, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 
@@ -8,6 +8,7 @@ import { useFilterStore } from '@/stores/filter'
 import * as api from '@/api'
 import DependencyContainer from '@/DependencyContainer'
 import { createTimeRange } from '@/utils'
+import TimeSelect from './TimeSelect.vue'
 
 const reserveApi = DependencyContainer.inject<api.Reserve>(api.API_SERVICE.RESERVE)
 const seatApi = DependencyContainer.inject<api.Seat>(api.API_SERVICE.SEAT)
@@ -30,7 +31,6 @@ watchEffect(() => {
 function clearTimeSetting(): void {
   beginTime.value = undefined
   endTime.value = undefined
-  oldCheckboxGroup1 = []
   timeSelectRange.value = []
   timeRange.forEach((time) => (time.disabled = false))
 }
@@ -49,7 +49,6 @@ const nowFilterDate = computed(() => {
 
 const beginTime = ref<string | undefined>(undefined)
 const endTime = ref<string | undefined>(undefined)
-let oldCheckboxGroup1: string[] = []
 function handleBooking(): void {
   if (beginTime.value === undefined || endTime.value === undefined) {
     ElMessage.warning('請選擇預約時間')
@@ -75,87 +74,43 @@ function handleBooking(): void {
     })
 }
 
-function findSelectedTime({
-  oldValue,
-  newValue
-}: {
-  oldValue: string[]
-  newValue: string[]
-}): string | undefined {
-  if (oldValue.length < newValue.length) {
-    return newValue.find((value) => !oldValue.includes(value))
-  } else if (oldValue.length > newValue.length) {
-    return oldValue.find((value) => !newValue.includes(value))
-  }
-  return undefined
-}
-
-function handleCheckboxChange(value: string[]): void {
-  const nowSelectedTime = findSelectedTime({ oldValue: oldCheckboxGroup1, newValue: value })
-
-  if (beginTime.value === nowSelectedTime) {
-    beginTime.value = undefined
-  } else if (endTime.value === nowSelectedTime) {
-    endTime.value = undefined
-  } else if (beginTime.value === undefined) {
-    beginTime.value = nowSelectedTime
-  } else if (endTime.value === undefined) {
-    endTime.value = nowSelectedTime
-  } else {
-    ElMessage.warning('你ㄧ次只能選擇一個連續區間')
-  }
-
-  const beginIndex = timeRange.findIndex((time) => time.value === beginTime.value)
-  const endIndex = timeRange.findIndex((time) => time.value === endTime.value)
-  timeRange.forEach((time, index) => {
-    if (endIndex === -1) {
-      time.disabled = index < beginIndex
-    } else {
-      time.disabled = index < beginIndex || index > endIndex
-    }
-  })
-
-  if (beginTime.value != undefined && endTime.value != undefined) {
-    timeSelectRange.value = timeRange.slice(beginIndex, endIndex + 1).map((time) => time.value)
-  } else {
-    timeSelectRange.value = [beginTime.value, endTime.value].filter(
-      (time) => time != undefined
-    ) as string[]
-  }
-  oldCheckboxGroup1 = timeSelectRange.value
-}
-
 const isCompleteSelectTime = computed(() => {
   return beginTime.value !== undefined && endTime.value !== undefined
 })
 
 function getTime(time: string) {
   const dateTime = new Date(time)
-  return (
-    (dateTime.getHours() + 8).toString().padStart(2, '0') +
-    ':' +
-    dateTime.getMinutes().toString().padStart(2, '0')
-  )
+  dateTime.setHours(dateTime.getHours() - 8)
+  return dateTime.toLocaleTimeString('en', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  })
 }
 
-watchEffect(async () => {
-  if (dialogVisible.value) {
+const disabledTimes = ref<string[]>([])
+watch(dialogVisible, async (value) => {
+  if (value) {
     const data = await seatApi.getSeatStatus(seatName.value)
     const reservationsTime = data.reservations
 
+    disabledTimes.value = []
     reservationsTime.forEach((reservation: any) => {
       const beginTime = getTime(reservation.beginTime)
       const endTime = getTime(reservation.endTime)
 
-      const beginIndex = timeRange.findIndex((time) => time.value === beginTime)
-      const endIndex = timeRange.findIndex((time) => time.value === endTime)
-
-      timeRange.forEach((time, index) => {
-        time.disabled = index >= beginIndex && index <= endIndex
-      })
+      disabledTimes.value.push(`${beginTime}-${endTime}`)
     })
   }
 })
+
+function selectTimeRange(timeRange: {
+  beginTime: string | undefined
+  endTime: string | undefined
+}): void {
+  beginTime.value = timeRange.beginTime
+  endTime.value = timeRange.endTime
+}
 </script>
 <template>
   <el-dialog
@@ -163,22 +118,17 @@ watchEffect(async () => {
     :title="`預約座位 ${seatName}`"
     width="500"
     :before-close="handleClose"
+    destroy-on-close
   >
     <div class="date">預約日期：{{ nowFilterDate }}</div>
-
-    <div class="time-selector">
-      <el-checkbox-group v-model="timeSelectRange" size="large" @change="handleCheckboxChange">
-        <el-checkbox-button
-          v-for="time in timeRange"
-          :key="time.value"
-          :value="time.value"
-          :disabled="time.disabled"
-        >
-          {{ time.value }}
-        </el-checkbox-button>
-      </el-checkbox-group>
-    </div>
-
+    <p>
+      預約時間：
+      <template v-if="beginTime && endTime">
+        {{ beginTime }} ~ {{ endTime }}
+      </template>
+      <template v-else>未選擇時間</template>
+    </p>
+    <TimeSelect @selectTimeRange="selectTimeRange" :disabledTimes="disabledTimes" />
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="handleClose">取消</el-button>
