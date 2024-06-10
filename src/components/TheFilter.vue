@@ -4,9 +4,10 @@ import { ElMessage } from 'element-plus'
 
 import type { Filter } from '@/types'
 import { useFilterStore } from '@/stores/filter'
+import { useSettingStore } from '@/stores/setting'
 import { useRoute } from 'vue-router'
-import { off } from 'process'
 
+const settingStore = useSettingStore()
 const filterStore = useFilterStore()
 const route = useRoute()
 const show = defineProps({
@@ -28,29 +29,72 @@ const show = defineProps({
   }
 })
 
+function getTodayOpeningHours(): {
+  beginTime: string
+  endTime: string
+} {
+  const day = new Date().getDay()
+
+  if (day === 0 || day === 6) {
+    return settingStore.settings!.weekendOpeningHours
+  }
+  return settingStore.settings!.weekdayOpeningHours
+}
+
+const earliestStartTime = getTodayOpeningHours().beginTime
+const latestEndTime = getTodayOpeningHours().endTime
+
 // TODO: rename this
 // 現在時間要調整到後面的半小時
 function nowTimeToCanBookingTime() {
-  const nowTime = new Date()
-  const nowHour = nowTime.getHours()
-  const nowMinute = nowTime.getMinutes()
+  const now = new Date()
+  const nowHour = now.getHours()
+  const nowMinute = now.getMinutes()
 
-  if (nowMinute < 30) {
-    nowTime.setMinutes(30)
-  } else {
-    nowTime.setHours(nowHour + 1, 0)
+  if (now.getHours().toString() >= latestEndTime.split(':')[0]) {
+    return earliestStartTime
   }
 
-  return `${nowTime.getHours()}:${nowTime.getMinutes()}`
+  if (nowMinute < 30) {
+    now.setMinutes(30)
+  } else {
+    now.setHours(nowHour + 1, 0)
+  }
+
+  const formattedHour = now.getHours().toString().padStart(2, '0')
+  const formattedMinute = now.getMinutes().toString().padStart(2, '0')
+
+  return `${formattedHour}:${formattedMinute}`
+}
+
+function getNowCanBookingDay(): Date {
+  const now = new Date()
+  // TODO: optimize, don't use string compare, use Date compare
+  if (now.getHours().toString() >= latestEndTime.split(':')[0]) {
+    now.setDate(now.getDate() + 1)
+  }
+
+  return now
+}
+
+function getMinimumReservationDuration(): string {
+  const duration = settingStore.settings?.minimumReservationDuration
+  if (duration) {
+    const hours = Math.floor(duration)
+    const minutes = (duration - hours) * 60
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+  }
+
+  return '00:30'
 }
 
 const DateTimePicker = ref({
   // TODO: if nowtime > endTime, date must be tomorrow
-  date: new Date(),
+  date: getNowCanBookingDay(),
 
   // TODO: [1] use now time
   beginTime: nowTimeToCanBookingTime(),
-  endTime: '21:30'
+  endTime: latestEndTime
 })
 
 const filter = reactive<Filter>({
@@ -92,7 +136,12 @@ function checkDisabledDate(time: Date): boolean {
   <form @submit.prevent="doFilter">
     <template v-if="show.time">
       <div class="date-filter-item">
-        <el-date-picker v-model="DateTimePicker.date" type="date" size="default" :disabled-date="checkDisabledDate">
+        <el-date-picker
+          v-model="DateTimePicker.date"
+          type="date"
+          size="default"
+          :disabled-date="checkDisabledDate"
+        >
         </el-date-picker>
       </div>
       <div class="date-filter-item">
@@ -102,9 +151,9 @@ function checkDisabledDate(time: Date): boolean {
           :max-time="DateTimePicker.endTime"
           class="mr-4"
           placeholder="開始時間"
-          start="08:30"
-          step="00:30"
-          end="21:30"
+          :start="nowTimeToCanBookingTime()"
+          :step="getMinimumReservationDuration()"
+          :end="latestEndTime"
         />
       </div>
       <div class="date-filter-item">
@@ -113,9 +162,9 @@ function checkDisabledDate(time: Date): boolean {
           style="width: 240px"
           :min-time="DateTimePicker.beginTime"
           placeholder="結束時間"
-          start="08:30"
-          step="00:30"
-          end="21:30"
+          :start="nowTimeToCanBookingTime()"
+          :step="getMinimumReservationDuration()"
+          :end="latestEndTime"
         />
       </div>
     </template>
