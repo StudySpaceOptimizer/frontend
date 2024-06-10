@@ -21,7 +21,7 @@ export function useProfile() {
 
   const updateUserProfile = async (data: any): Promise<void> => {
     try {
-      await userApi.updateProfile(data)
+      await userApi.updateProfile(data.id, data.name, data.phone, data.idCard)
       await accountStore.getUserProfile()
       ElMessage.success('更新使用者資料成功')
     } catch (error) {
