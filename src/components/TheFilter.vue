@@ -51,7 +51,10 @@ function nowTimeToCanBookingTime() {
   const nowHour = now.getHours()
   const nowMinute = now.getMinutes()
 
-  if (now.getHours().toString() >= latestEndTime.split(':')[0]) {
+  if (
+    now < new Date(`${now.toLocaleDateString()} ${earliestStartTime}`) ||
+    now > new Date(`${now.toLocaleDateString()} ${latestEndTime}`)
+  ) {
     return earliestStartTime
   }
 
@@ -151,7 +154,7 @@ function checkDisabledDate(time: Date): boolean {
           :max-time="DateTimePicker.endTime"
           class="mr-4"
           placeholder="開始時間"
-          :start="nowTimeToCanBookingTime()"
+          :start="DateTimePicker.beginTime"
           :step="getMinimumReservationDuration()"
           :end="latestEndTime"
         />
@@ -162,7 +165,7 @@ function checkDisabledDate(time: Date): boolean {
           style="width: 240px"
           :min-time="DateTimePicker.beginTime"
           placeholder="結束時間"
-          :start="nowTimeToCanBookingTime()"
+          :start="DateTimePicker.beginTime"
           :step="getMinimumReservationDuration()"
           :end="latestEndTime"
         />
