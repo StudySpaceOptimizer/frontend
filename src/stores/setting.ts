@@ -19,9 +19,30 @@ export const useSettingStore = defineStore('settings', () => {
     }
   }
 
+  function getTodayOpeningHours(): {
+    beginTime: string
+    endTime: string
+  } | undefined {
+    const today = new Date().getDay()
+    return today === 0 || today === 6
+      ? settings.value?.weekendOpeningHours
+      : settings.value?.weekdayOpeningHours
+  }
+
+  function getMinimumReservationDuration(): number {
+    return settings.value?.minimumReservationDuration ?? 0
+  }
+
+  function getMaximumReservationDuration(): number {
+    return settings.value?.maximumReservationDuration ?? 0
+  }
+
   return {
     settings,
-    getSettings
+    getSettings,
+    getTodayOpeningHours,
+    getMinimumReservationDuration,
+    getMaximumReservationDuration
   }
 }, {
   persist: true
