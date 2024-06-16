@@ -1,33 +1,113 @@
 <script setup lang="ts">
-import ListView from '@/components/ListView.vue'
-import TheFilter from '@/components/TheFilter.vue'
+import { ref, onMounted } from 'vue'
 
-const data: any[] = [
-  {
-    id: 1,
-    range: {
-      date: '2024-01-01',
-      start: '09:00',
-      end: '10:00'
-    },
-    seat: 'A1',
-    user: {
-      id: 1,
-      name: 'user1',
-      identity: 'student',
-      email: '123@com',
-      ban: {
-        points: 0,
-        banned: '2024-01-15',
-        until: '2024-01-18'
-      }
-    },
-    actions: ['刪除預約', '更多資訊']
-  }
-]
+import * as Api from '@/api'
+import DependencyContainer from '@/DependencyContainer'
+import { ElMessage, ElMessageBox } from 'element-plus'
+
+const reserveApi = DependencyContainer.inject<Api.Reserve>(Api.API_SERVICE.RESERVE)
+const reservations = ref<any[]>([])
+
+function transformReservations(res: any[]) {
+  return res.map((item) => {
+    const nowTime = new Date()
+    const beginTime = new Date(item.beginTime)
+    const endTime = new Date(item.endTime)
+
+    if (beginTime > nowTime) {
+      item.actions = [
+        {
+          text: '刪除預約',
+          handler: () => cancelBooking(item.id)
+        }
+      ]
+    }
+
+    item.date = beginTime.toLocaleDateString()
+    item.beginTime = beginTime.toLocaleTimeString()
+    item.endTime = endTime.toLocaleTimeString()
+    return item
+  })
+}
+
+async function cancelBooking(id: string) {
+  const reservation = reservations.value.find((item) => item.id === id)
+
+  const confirmText = `確定要取消 ${reservation.seatID} 預約嗎？<br />
+    預約時間：${reservation.date} ${reservation.beginTime} - ${reservation.endTime}`
+
+  await ElMessageBox.confirm(confirmText, '提示', {
+    confirmButtonText: '確定',
+    cancelButtonText: '取消',
+    type: 'warning',
+    dangerouslyUseHTMLString: true
+  }).then(async () => {
+    try {
+      await reserveApi.deleteReservation(id)
+      ElMessage.success('取消預約成功')
+      updateReservationData(1)
+    } catch (error: any) {
+      ElMessage.error(error.message)
+    }
+  })
+}
+
+async function getReservationData(filterCondition?: any) {
+  const data = await reserveApi.getAllReservations({
+    pageSize: filterCondition?.pageSize || 10,
+    pageOffset: filterCondition?.pageOffset
+  })
+  return transformReservations(data)
+}
+
+async function updateReservationData(data: number): Promise<void> {
+  reservations.value = await getReservationData({
+    pageSize: 10,
+    pageOffset: Math.max(0, (data - 1) * 10)
+  })
+}
+
+async function getCount() {
+  return await reserveApi.getAllReservationsCount()
+}
+
+const count = ref(0)
+function handleCurrentChange(val: number) {
+  updateReservationData(val)
+}
+
+onMounted(() => {
+  updateReservationData(1)
+  getCount().then((res) => {
+    count.value = res
+  })
+})
 </script>
 
 <template>
-  <TheFilter />
-  <ListView :data="data" />
+  <el-table :data="reservations" stripe style="width: 100%; height: 460px">
+    <el-table-column prop="date" label="日期" width="120" />
+    <el-table-column prop="beginTime" label="開始時間" width="120" />
+    <el-table-column prop="endTime" label="結束時間" width="120" />
+    <el-table-column prop="seatID" label="座位" width="60" />
+    <el-table-column prop="user.email" label="Email" width="360" />
+    <el-table-column prop="user.name" label="名字" />
+    <el-table-column fixed="right" label="操作">
+      <template #default="scope">
+        <div v-for="action in reservations[scope.$index].actions" :key="action">
+          <el-button link type="primary" size="small" @click="action.handler">{{
+            action.text
+          }}</el-button>
+        </div>
+      </template>
+    </el-table-column>
+  </el-table>
+  <!-- TODO: justify content center -->
+  <el-pagination
+    layout="prev, pager, next"
+    :total="count"
+    :page-size="10"
+    @current-change="handleCurrentChange"
+    style="margin-top: 10px; justify-content: center"
+  />
 </template>
