@@ -10,7 +10,7 @@ export function useReservation() {
   const reservations = ref<any[]>([])
 
   const transformReservations = (res: any[]) => {
-    return res.map(item => {
+    return res.map((item) => {
       delete item.user
 
       const nowTime = new Date()
@@ -41,10 +41,16 @@ export function useReservation() {
   }
 
   const cancelBooking = async (id: string) => {
-    await ElMessageBox.confirm('確定要取消預約嗎？' + id, '提示', {
+    const reservation = reservations.value.find((item) => item.id === id)
+
+    const confirmText = `確定要取消 ${reservation.seatID} 預約嗎？<br />
+    預約時間：${reservation.date} ${reservation.beginTime} - ${reservation.endTime}`
+
+    await ElMessageBox.confirm(confirmText, '提示', {
       confirmButtonText: '確定',
       cancelButtonText: '取消',
-      type: 'warning'
+      type: 'warning',
+      dangerouslyUseHTMLString: true
     }).then(async () => {
       try {
         await reserveApi.deleteReservation(id)
@@ -76,7 +82,7 @@ export function useReservation() {
   const getReservationData = async (filterCondition?: any) => {
     const data = await reserveApi.getPersonalReservations({
       pageSize: filterCondition?.pageSize || 10,
-      pageOffset: filterCondition?.pageOffset,
+      pageOffset: filterCondition?.pageOffset
     })
     return transformReservations(data)
   }
@@ -91,7 +97,7 @@ export function useReservation() {
 
   // TODO: maybe change method name or implement better way to get count.
   const getCount = async () => {
-    return (await reserveApi.getPersonalReservationsCount())
+    return await reserveApi.getPersonalReservationsCount()
   }
 
   return { reservations, getReservationData, updateReservationData, getCount }
