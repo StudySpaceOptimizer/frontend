@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref, watchEffect } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 
 import type { Filter } from '@/types'
@@ -29,11 +29,15 @@ const show = defineProps({
   }
 })
 
-function getTodayOpeningHours(): {
+function getOpeningHours(date: Date | string): {
   beginTime: string
   endTime: string
 } {
-  const day = new Date().getDay()
+  if (typeof date === 'string') {
+    date = new Date(date)
+  }
+
+  const day = date.getDay()
 
   if (day === 0 || day === 6) {
     return settingStore.settings!.weekendOpeningHours
@@ -41,8 +45,8 @@ function getTodayOpeningHours(): {
   return settingStore.settings!.weekdayOpeningHours
 }
 
-const earliestStartTime = getTodayOpeningHours().beginTime
-const latestEndTime = getTodayOpeningHours().endTime
+const earliestStartTime = ref(getOpeningHours(new Date()).beginTime)
+const latestEndTime = ref(getOpeningHours(new Date()).endTime)
 
 // TODO: rename this
 // 現在時間要調整到後面的半小時
@@ -52,10 +56,10 @@ function nowTimeToCanBookingTime() {
   const nowMinute = now.getMinutes()
 
   if (
-    now < new Date(`${now.toLocaleDateString()} ${earliestStartTime}`) ||
-    now > new Date(`${now.toLocaleDateString()} ${latestEndTime}`)
+    now < new Date(`${now.toLocaleDateString()} ${earliestStartTime.value}`) ||
+    now > new Date(`${now.toLocaleDateString()} ${latestEndTime.value}`)
   ) {
-    return earliestStartTime
+    return earliestStartTime.value
   }
 
   if (nowMinute < 30) {
@@ -73,7 +77,7 @@ function nowTimeToCanBookingTime() {
 function getNowCanBookingDay(): Date {
   const now = new Date()
   // TODO: optimize, don't use string compare, use Date compare
-  if (now.getHours().toString() >= latestEndTime.split(':')[0]) {
+  if (now.getHours().toString() >= latestEndTime.value.split(':')[0]) {
     now.setDate(now.getDate() + 1)
   }
 
@@ -119,11 +123,31 @@ function doFilter(): void {
   })
 }
 
-watchEffect(() => {
+function isSelectToday(date: string | Date) {
+  if (typeof date === 'string') {
+    date = new Date(date)
+  }
+
+  return new Date().toLocaleDateString() === date.toLocaleDateString()
+}
+
+function pickingDateChangeHandler() {
   const date: string = DateTimePicker.value.date.toLocaleDateString().split('T')[0]
+  earliestStartTime.value = getOpeningHours(DateTimePicker.value.date).beginTime
+  latestEndTime.value = getOpeningHours(DateTimePicker.value.date).endTime
+  if (!isSelectToday(date)) {
+    DateTimePicker.value.beginTime = earliestStartTime.value
+  } else {
+    DateTimePicker.value.beginTime = nowTimeToCanBookingTime()
+  }
+
   filter.beginTime = new Date(`${date} ${DateTimePicker.value.beginTime}`)
   filter.endTime = new Date(`${date} ${DateTimePicker.value.endTime}`)
   doFilter()
+}
+
+watch(() => DateTimePicker.value.date, () => {
+  pickingDateChangeHandler()
 })
 
 function checkDisabledDate(time: Date): boolean {
@@ -133,6 +157,14 @@ function checkDisabledDate(time: Date): boolean {
   const offset = 14 * 24 * 60 * 60 * 1000
   return time.getTime() < now.getTime() || time.getTime() > now.getTime() + offset
 }
+
+const timeSelectBeginTime = computed(() => {
+  return isSelectToday(DateTimePicker.value.date) ? nowTimeToCanBookingTime() : earliestStartTime.value
+})
+
+onMounted(() => {
+  pickingDateChangeHandler()
+})
 </script>
 
 <template>
@@ -154,7 +186,7 @@ function checkDisabledDate(time: Date): boolean {
           :max-time="DateTimePicker.endTime"
           class="mr-4"
           placeholder="開始時間"
-          :start="earliestStartTime"
+          :start="timeSelectBeginTime"
           :step="getMinimumReservationDuration()"
           :end="latestEndTime"
         />
@@ -165,7 +197,7 @@ function checkDisabledDate(time: Date): boolean {
           style="width: 240px"
           :min-time="DateTimePicker.beginTime"
           placeholder="結束時間"
-          :start="earliestStartTime"
+          :start="timeSelectBeginTime"
           :step="getMinimumReservationDuration()"
           :end="latestEndTime"
         />
