@@ -174,7 +174,7 @@ watch(
 <template>
   <el-container class="select-container">
     <div class="select-group">
-      <el-row v-for="time in timeRange" :key="time.begin">
+      <el-row v-for="time in timeRange" :key="time.begin" style="padding: 2px;">
         <el-col :span="12" class="time-label">{{ time.begin }} ~ {{ time.end }}</el-col>
         <el-col :span="12">
           <el-button
