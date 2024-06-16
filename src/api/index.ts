@@ -33,6 +33,8 @@ export interface Reserve {
   getPersonalReservationsCount(): Promise<any>
   deleteReservation(id: string): Promise<any>
   terminateReservation(id: string): Promise<any>
+  getAllReservations(config: any): Promise<any>
+  getAllReservationsCount(): Promise<any>
 }
 
 export const API_SERVICE = {

@@ -122,11 +122,11 @@ export class SupabaseReserve implements Reserve {
     )
   }
 
-  async getPersonalReservationsCount(): Promise<number> { 
+  async getPersonalReservationsCount(): Promise<number> {
     const { data: data, error } = await supabase
-    .from('reservations')
-    .select('count', { count: 'exact' })
-    .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+      .from('reservations')
+      .select('count', { count: 'exact' })
+      .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
 
     if (error) {
       throw new Error(error.message)
@@ -170,5 +170,58 @@ export class SupabaseReserve implements Reserve {
     if (error) {
       throw new Error(error.message)
     }
+  }
+
+  async getAllReservations(config: Config): Promise<Type.Reservation[]> {
+    const { pageSize = 10, pageOffset = 0 } = config
+    const { data: reservations } = await supabase
+      .from('reservations')
+      .select(`*, user_profiles (*)`)
+      .range(pageOffset, pageOffset + pageSize - 1)
+      .order('begin_time', {
+        ascending: false
+      })
+
+    return (
+      reservations?.map(
+        (reservation: any): Type.Reservation => ({
+          id: reservation.id,
+          beginTime: reservation.begin_time,
+          endTime: reservation.end_time,
+          user: {
+            id: reservation.user_profiles.user_id,
+            userRole: reservation.user_role,
+            email: reservation.user_profiles.email,
+            adminRole: reservation.user_profiles.admin_role,
+            isIn: reservation.user_profiles.is_in,
+            name: reservation.user_profiles.name,
+            phone: reservation.user_profiles.phone,
+            idCard: reservation.user_profiles.id_card,
+            point: reservation.user_profiles.point,
+            ban: reservation.user_profiles.blacklist
+              ? {
+                  reason: reservation.blacklist[0].reason,
+                  endAt: new Date(reservation.blacklist[0].end_at)
+                }
+              : undefined
+          },
+          seatID: seatConverterFromDB(reservation.seat_id),
+          checkInTime: reservation.check_in_time,
+          temporaryLeaveTime: reservation.temporary_leave_time
+        })
+      ) || []
+    )
+  }
+
+  async getAllReservationsCount(): Promise<number> {
+    const { data: data, error } = await supabase
+      .from('reservations')
+      .select('count', { count: 'exact' })
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    return data?.at(0)?.count || 0
   }
 }
