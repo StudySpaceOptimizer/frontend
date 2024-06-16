@@ -153,8 +153,7 @@ watch(() => DateTimePicker.value.date, () => {
 function checkDisabledDate(time: Date): boolean {
   const now = new Date()
   now.setHours(0, 0, 0, 0)
-  // TODO: use setting set
-  const offset = 14 * 24 * 60 * 60 * 1000
+  const offset = (settingStore.settings?.studentReservationLimit || 7) * 24 * 60 * 60 * 1000
   return time.getTime() < now.getTime() || time.getTime() > now.getTime() + offset
 }
 
