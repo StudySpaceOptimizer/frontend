@@ -37,13 +37,13 @@ function getHourAndMinute(time?: Date): string | undefined {
 
 const earliestBeginTime = getHourAndMinute(getFilter().beginTime) || '08:00'
 const latestEndTime = getHourAndMinute(getFilter().endTime) || '22:00'
-console.log(getHourAndMinute(getFilter().beginTime), latestEndTime)
 const stepTime = getMinimumReservationDuration() * 60
 function theNextTime(time: string): string {
-  const [hour, minute] = time.split(':').map(Number)
-  const nextMinute = minute + stepTime
+  let [hour, minute] = time.split(':').map(Number)
+  let nextMinute = minute + stepTime
   if (nextMinute >= 60) {
-    return `${(hour + 1).toString().padStart(2, '0')}:00`
+    hour += Math.floor(nextMinute / 60)
+    nextMinute %= 60
   }
   return `${hour.toString().padStart(2, '0')}:${nextMinute.toString().padStart(2, '0')}`
 }
