@@ -19,6 +19,16 @@ export const useSettingStore = defineStore('settings', () => {
     }
   }
 
+  async function updateSettings(newSettings: Type.SettingsData): Promise<void> {
+    try {
+      await api.updateSettings(newSettings)
+      settings.value = newSettings
+      ElMessage.success('更新設定成功')
+    } catch (error: any) {
+      ElMessage.error(`更新設定失敗: ${error.message}`)
+    }
+  }
+
   function getTodayOpeningHours(): {
     beginTime: string
     endTime: string
@@ -40,6 +50,7 @@ export const useSettingStore = defineStore('settings', () => {
   return {
     settings,
     getSettings,
+    updateSettings,
     getTodayOpeningHours,
     getMinimumReservationDuration,
     getMaximumReservationDuration

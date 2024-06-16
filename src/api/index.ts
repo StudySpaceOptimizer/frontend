@@ -17,6 +17,7 @@ export interface User {
   addPointUser(id: string, point: number): Promise<any>
   updateProfile(id: string, name: string, phone: string, idCard: string): Promise<any>
   getSettings(): Promise<any>
+  updateSettings(settings: any): Promise<any>
 
   updateUserPassword(newPassword: string): Promise<any>
 }

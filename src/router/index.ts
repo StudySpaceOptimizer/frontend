@@ -37,9 +37,9 @@ const router = createRouter({
           component: () => import('@/views/admin/SeatView.vue')
         },
         {
-          path: 'book',
-          name: 'admin-book',
-          component: () => import('@/views/admin/BookView.vue')
+          path: 'setting',
+          name: 'admin-setting',
+          component: () => import('@/views/admin/SettingView.vue')
         },
         {
           path: '',

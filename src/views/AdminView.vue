@@ -17,9 +17,8 @@ const handleClick = (tab: TabsPaneContext) => {
   <el-tabs v-model="activeName" class="demo-tabs" @tab-click="handleClick">
     <el-tab-pane label="所有預約列表" name="booking"></el-tab-pane>
     <el-tab-pane label="所有使用者列表" name="user"></el-tab-pane>
-    <el-tab-pane label="校外人士註冊" name="visitor"></el-tab-pane>
     <el-tab-pane label="座位設定" name="seat"></el-tab-pane>
-    <el-tab-pane label="預約設定" name="book"></el-tab-pane>
+    <el-tab-pane label="預約設定" name="setting"></el-tab-pane>
   </el-tabs>
   <div class="container">
     <RouterView v-slot="{ Component }">
