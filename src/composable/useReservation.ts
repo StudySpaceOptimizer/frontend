@@ -82,7 +82,6 @@ export function useReservation() {
   }
 
   const updateReservationData = async (data: number): Promise<void> => {
-    console.log('updateReservationData', data)
     reservations.value = await getReservationData({
       pageSize: 10,
       // TODO: don't minus 1 here, should be handled in the view.
