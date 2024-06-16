@@ -1,38 +1,32 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import type { TabsPaneContext } from 'element-plus'
+import { ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
-const activeRoute = computed(() => route.path.split('/')[2])
+const router = useRouter()
+const activeName = ref(route.name?.toString().split('-')[1])
+
+const handleClick = (tab: TabsPaneContext) => {
+  const routerName = tab.props.name
+  router.push(`/admin/${routerName}`)
+}
 </script>
 
 <template>
-  <p>Admin</p>
+  <el-tabs v-model="activeName" class="demo-tabs" @tab-click="handleClick">
+    <el-tab-pane label="所有預約列表" name="booking"></el-tab-pane>
+    <el-tab-pane label="所有使用者列表" name="user"></el-tab-pane>
+    <el-tab-pane label="校外人士註冊" name="visitor"></el-tab-pane>
+    <el-tab-pane label="座位設定" name="seat"></el-tab-pane>
+    <el-tab-pane label="預約設定" name="book"></el-tab-pane>
+  </el-tabs>
   <div class="container">
-    <div class="row">
-      <div class="col-2">
-        <RouterLink
-          to="/admin/booking"
-          :class="activeRoute == 'booking' || activeRoute == null ? 'active' : ''"
-          >所有預約列表</RouterLink
-        >
-        <RouterLink to="/admin/user" :class="activeRoute == 'user' ? 'active' : ''"
-          >所有使用者列表</RouterLink
-        >
-        <RouterLink to="/admin/visitor" :class="activeRoute == 'visitor' ? 'active' : ''"
-          >校外人士註冊</RouterLink
-        >
-        <RouterLink to="/admin/seat" :class="activeRoute == 'seat' ? 'active' : ''"
-          >座位設定</RouterLink
-        >
-        <RouterLink to="/admin/book" :class="activeRoute == 'book' ? 'active' : ''"
-          >預約設定</RouterLink
-        >
-      </div>
-      <div class="col-10 child-view">
-        <RouterView />
-      </div>
-    </div>
+    <RouterView v-slot="{ Component }">
+      <KeepAlive>
+        <component :is="Component" />
+      </KeepAlive>
+    </RouterView>
   </div>
 </template>
 
@@ -43,53 +37,5 @@ const activeRoute = computed(() => route.path.split('/')[2])
   height: 600px;
   width: 90%;
   border-radius: 6px;
-  background-color: #e8e8e8;
-}
-
-.row {
-  display: flex;
-  flex-direction: row;
-  height: 100%;
-  width: 100%;
-
-  .col-2 {
-    display: flex;
-    flex-direction: column;
-    width: calc(100% * 2 / 12);
-    height: 100%;
-    padding: 1rem;
-    border-right: 1px solid #ccc;
-
-    a {
-      padding: 1rem;
-      border-bottom: 1px solid #ccc;
-      text-decoration: none;
-
-      &.active {
-        background-color: #474747;
-        color: #ccc !important;
-      }
-
-      &:hover:not(.active) {
-        background-color: #ccc;
-      }
-
-      &:active {
-        background-color: #aaa;
-      }
-
-      &:visited {
-        color: #000;
-      }
-    }
-  }
-
-  .col-10 {
-    display: flex;
-    flex-direction: column;
-    width: calc(100% * 10 / 12);
-    height: 100%;
-    padding: 1rem;
-  }
 }
 </style>
