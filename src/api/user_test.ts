@@ -35,6 +35,19 @@ async function signIn(email: string, password: string): Promise<any> {
   return user
 }
 
+
+async function testSignUpSuccess(email: string, password: string): Promise<any> {
+  const { error } = await supabase.auth.signUp({
+    email: email,
+    password: password
+  })
+  if (error) {
+      console.log(error)
+  }
+  
+}
+
+
 async function testGrantAdminRoleSuccess() {
   //   let user = await signIn(admin, password)
 
@@ -134,4 +147,5 @@ async function testGetUserByAdmin() {
 // if (error) console.error(error)
 // else console.log(data)
 
-await testGetUserByAdmin()
+// await testGetUserByAdmin()
+await testSignUpSuccess('daasadadds@asd', 'daqwewqes')

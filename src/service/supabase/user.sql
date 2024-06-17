@@ -97,25 +97,26 @@ CREATE OR REPLACE FUNCTION handle_new_user_metadata()
 RETURNS TRIGGER
 AS $$
 DECLARE
-    user_role user_role;
-    admin_role admin_role;
+    userrole public.user_role;
+    adminrole public.admin_role;
 BEGIN
     -- 根據email後綴確定用戶角色(userrole)
     IF NEW.email LIKE '%@mail.ntou.edu.tw' THEN
         -- 學生
-        user_role := 'student';
+        userrole := 'student';
     ELSE
         -- 校外人士
-        user_role := 'outsider';
+        userrole := 'outsider';
     END IF;
 
-    admin_role := 'non-admin';
+    adminrole := 'non-admin';
+
 
     -- 更新 raw_app_meta_data
     -- 設置 userrole
-    NEW.raw_app_meta_data := NEW.raw_app_meta_data || jsonb_build_object('user_role', user_role);
+    NEW.raw_app_meta_data := NEW.raw_app_meta_data || jsonb_build_object('user_role', userrole);
     -- 設置 claims_admin
-    NEW.raw_app_meta_data := NEW.raw_app_meta_data || jsonb_build_object('admin_role', admin_role);
+    NEW.raw_app_meta_data := NEW.raw_app_meta_data || jsonb_build_object('admin_role', adminrole);
 
     RETURN NEW;
 END;
