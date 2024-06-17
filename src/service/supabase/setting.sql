@@ -38,7 +38,7 @@ VALUES
     ('minimum_reservation_duration', '0', '單次預約時間下限(小時)'),
     ('maximum_reservation_duration', '6', '單次預約時間上限(小時)'),
     ('student_reservation_limit', '14', '學生提前預約期限(天)'),
-    ('outsider_reservation_limit', '0', '校外人士提前預約期限(天)'),
+    ('outsider_reservation_limit', '-1', '校外人士提前預約期限(天)'),
     ('points_to_ban_user', '7', '達到一定的點數就自動封禁使用者'),
     ('checkin_deadline_minutes', '15', 'checkin時間(分鐘)'),
     ('temporary_leave_deadline_minutes', '60', '暫時中離時間(分鐘)'),

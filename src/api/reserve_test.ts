@@ -255,7 +255,7 @@ function parseTimeString(timeStr: string): { hours: number; minutes: number } {
 
 // await testGetSeatsStatus()
 
-var user = await signIn(student, password)
+var user = await signIn(outsider, password)
 {
   let { data, error } = await supabase.rpc('get_my_claim', {
     claim:'user_role'
