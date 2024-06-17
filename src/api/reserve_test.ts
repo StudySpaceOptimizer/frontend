@@ -3,6 +3,7 @@ import { toLocalDateTime } from './common'
 import { supabase } from '../service/supabase/supabase'
 import type * as model from '../types/seat.ts'
 import { seatConverterFromDB } from '../utils/index'
+import {SupabaseUser} from './user.ts'
 
 const student = 'student@mail.ntou.edu.tw'
 const bannedstudent = 'bannedstudent@mail.ntou.edu.tw'
@@ -44,6 +45,31 @@ async function testReserveSuccess() {
   const reservation = {
     beginTime: new Date('2024-04-26T10:00:00'),
     endTime: new Date('2024-04-26T12:00:00'),
+    userID: user!.id,
+    seatID: 1
+  }
+
+  const { data, error } = await supabase
+    .from('reservations')
+    .insert([
+      {
+        begin_time: reservation.beginTime,
+        end_time: reservation.endTime,
+        user_id: reservation.userID,
+        seat_id: reservation.seatID
+      }
+    ])
+    .select('id')
+
+  if (error) console.log(error)
+  if (data) console.log(data[0].id)
+}
+
+async function testReserveOverTwoWeeks(user) {
+  // 生成預訂資料
+  const reservation = {
+    beginTime: new Date('2024-07-26T10:00:00'),
+    endTime: new Date('2024-07-26T12:00:00'),
     userID: user!.id,
     seatID: 1
   }
@@ -227,4 +253,19 @@ function parseTimeString(timeStr: string): { hours: number; minutes: number } {
   return { hours: parseInt(parts[0], 10), minutes: parseInt(parts[1], 10) }
 }
 
-await testGetSeatsStatus()
+// await testGetSeatsStatus()
+
+var user = await signIn(student, password)
+{
+  let { data, error } = await supabase.rpc('get_my_claim', {
+    claim:'user_role'
+  })
+  if (error) console.error(error)
+  else console.log(data)
+}
+// const user = new SupabaseUser()
+// var settings = await user.getSettings()
+
+// console.log(settings)
+
+await testReserveOverTwoWeeks(user)

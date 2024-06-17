@@ -16,7 +16,7 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.8",
+    "@supabase/supabase-js": "^2.43.5",
     "@vueuse/core": "^10.9.0",
     "element-plus": "^2.6.3",
     "konva": "^9.3.0",

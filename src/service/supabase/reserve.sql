@@ -147,6 +147,7 @@ BEGIN
 
     -- 只在插入操作時進行檢查
     IF TG_OP = 'INSERT' THEN
+        -- 開始、結束能被整除
         -- 確保預約的開始和結束時間都是每小時的 00 分或 30 分
         IF (EXTRACT(MINUTE FROM NEW.begin_time) NOT IN (0, 30)) OR (EXTRACT(MINUTE FROM NEW.end_time) NOT IN (0, 30)) THEN
             RAISE EXCEPTION '預約時間必須以30分鐘為單位';
@@ -264,7 +265,7 @@ BEGIN
        END IF; 
     END IF;
 
-    user_role := get_my_claim('user_role')->> '';
+    SELECT trim(both '"' from (get_my_claims() ->> 'user_role')) INTO user_role;
 
     -- 若不是管理員
     IF NOT is_claims_admin() THEN
@@ -283,7 +284,7 @@ BEGIN
 END;
 $$
 LANGUAGE plpgsql
-SECURITY DEFINER;
+SECURITY INVOKER;
 
 -- 在新增或修改之前檢查預約設定限制
 DROP TRIGGER IF EXISTS trigger_check_reservation_limits ON reservations;
@@ -342,7 +343,8 @@ BEGIN
                           WHEN EXTRACT(minute FROM NOW()) >= 30 THEN INTERVAL '1 hour'
                           ELSE INTERVAL '30 minutes'
                       END;
-    
+    -- mod 時間
+
     -- 計算該預約開始日期的當天結束時間點，即當天的 23:59:59
     end_of_day := CAST(NEW.begin_time AS DATE) + INTERVAL '23 hours 59 minutes 59 seconds';
 
