@@ -29,8 +29,8 @@ BEGIN
             SELECT
                 up.id,
                 up.email,
-                claims ->> 'userrole' as user_role,
-                claims ->> 'adminrole' as admin_role,
+                claims ->> 'user_role' as user_role,
+                claims ->> 'admin_role' as admin_role,
                 up.is_in,
                 up.name,
                 up.phone,
@@ -40,8 +40,18 @@ BEGIN
                 bl.end_at
             FROM
                 user_profiles up
-            LEFT JOIN
-                blacklist bl ON up.id = bl.user_id
+            LEFT JOIN LATERAL (
+                SELECT
+                    bl.reason,
+                    bl.end_at
+                FROM
+                    blacklist bl
+                WHERE
+                    bl.user_id = up.id
+                ORDER BY
+                    bl.end_at DESC
+                LIMIT 1
+            ) bl ON TRUE
             CROSS JOIN LATERAL
                 get_claims(up.id) as claims;
         ELSE
@@ -56,8 +66,8 @@ BEGIN
             SELECT
                 up.id,
                 up.email,
-                claims ->> 'userrole' as user_role,
-                claims ->> 'adminrole' as admin_role,
+                claims ->> 'user_role' as user_role,
+                claims ->> 'admin_role' as admin_role,
                 up.is_in,
                 up.name,
                 up.phone,
@@ -67,8 +77,18 @@ BEGIN
                 bl.end_at
             FROM
                 user_profiles up
-            LEFT JOIN
-                blacklist bl ON up.id = bl.user_id
+            LEFT JOIN LATERAL (
+                SELECT
+                    bl.reason,
+                    bl.end_at
+                FROM
+                    blacklist bl
+                WHERE
+                    bl.user_id = up.id
+                ORDER BY
+                    bl.end_at DESC
+                LIMIT 1
+            ) bl ON TRUE
             CROSS JOIN LATERAL
                 get_claims(up.id) as claims
             WHERE

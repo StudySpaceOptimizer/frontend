@@ -140,10 +140,10 @@ export class SupabaseUser implements User {
           phone: profile.phone,
           idCard: profile.id_card,
           point: profile.point,
-          ban: profile.blacklist
+          ban: profile.reason
             ? {
-                reason: profile.blacklist[0].reason,
-                endAt: new Date(profile.blacklist[0].end_at)
+                reason: profile.reason,
+                endAt: new Date(profile.end_at)
               }
             : undefined
         })

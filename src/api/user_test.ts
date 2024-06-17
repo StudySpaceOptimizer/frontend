@@ -1,5 +1,4 @@
-// @ts-nocheck
-import type { User } from './index'
+import { SupabaseUser } from './user'
 import { supabase } from '../service/supabase/supabase'
 import type * as Type from '@/types'
 
@@ -99,21 +98,23 @@ async function testGetSettingData() {
   console.log('Settings loaded:', settings)
 }
 
+async function testGetUserByAdmin() {
+  const user = await signIn(admin, password)
+
+  const supabaseUser = new SupabaseUser()
+  try {
+    const users = await supabaseUser.getUsers({})
+    console.log(users)
+  } catch (error) {
+    console.error('Error fetching users:', error)
+  }
+}
+
 // await testGrantAdminRoleSuccess()
 // await testGetSettingData()
 
 // await signIn(admin, password)
-await supabase.auth.signOut()
-{
-  let { data, error } = await supabase.rpc('is_supabase_ui_or_service_key')
-  if (error) console.error(error)
-  else console.log(data)
-}
-{
-  let { data, error } = await supabase.rpc('is_claims_admin')
-  if (error) console.error(error)
-  else console.log(data)
-}
+
 // let { data, error } = await supabase.rpc('get_my_claims')
 // if (error) console.error(error)
 // else console.log(data)
@@ -132,3 +133,5 @@ await supabase.auth.signOut()
 
 // if (error) console.error(error)
 // else console.log(data)
+
+await testGetUserByAdmin()
