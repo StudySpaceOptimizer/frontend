@@ -3,7 +3,8 @@ import { toLocalDateTime } from './common'
 import { supabase } from '../service/supabase/supabase'
 import type * as model from '../types/seat.ts'
 import { seatConverterFromDB } from '../utils/index'
-import {SupabaseUser} from './user.ts'
+import { SupabaseUser } from './user'
+import { SupabaseReserve } from './reserve'
 
 const student = 'student@mail.ntou.edu.tw'
 const bannedstudent = 'bannedstudent@mail.ntou.edu.tw'
@@ -63,6 +64,44 @@ async function testReserveSuccess() {
 
   if (error) console.log(error)
   if (data) console.log(data[0].id)
+}
+
+async function testBannedUserReserve() {
+  const supabaseUser = new SupabaseUser()
+  const supabaseReserve = new SupabaseReserve()
+
+  var user = await signIn(student, password)
+  const userId = user.id
+
+  user = await signIn(admin, password)
+
+  try {
+    await supabaseUser.banUser(userId, 'testBannedUserReserve', new Date('2025-05-01T05:00:00'))
+  } catch (error) {
+    console.error('Error ban user:', error)
+  }
+
+  await signIn(student, password)
+
+  try {
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    tomorrow.setHours(13, 0, 0, 0)
+
+    const seatID = 'A1'
+    const beginTime = new Date(tomorrow.setHours(13, 0, 0, 0))
+    const endTime = new Date(tomorrow.setHours(14, 0, 0, 0))
+
+    const result = await supabaseReserve.reserve(seatID, beginTime, endTime)
+
+    console.log(result)
+  } catch (error) {
+    console.error('Error reserving:', error)
+  } finally {
+    await signIn(admin, password)
+
+    await supabaseUser.unbanUser(userId)
+  }
 }
 
 async function testReserveOverTwoWeeks(user) {
@@ -255,17 +294,10 @@ function parseTimeString(timeStr: string): { hours: number; minutes: number } {
 
 // await testGetSeatsStatus()
 
-var user = await signIn(outsider, password)
-{
-  let { data, error } = await supabase.rpc('get_my_claim', {
-    claim:'user_role'
-  })
-  if (error) console.error(error)
-  else console.log(data)
-}
 // const user = new SupabaseUser()
 // var settings = await user.getSettings()
 
 // console.log(settings)
 
-await testReserveOverTwoWeeks(user)
+// await testReserveOverTwoWeeks(user)
+await testBannedUserReserve()

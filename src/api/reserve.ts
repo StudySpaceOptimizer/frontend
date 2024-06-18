@@ -35,7 +35,13 @@ export class SupabaseReserve implements Reserve {
     ])
 
     if (error) {
-      throw new Error(error.message)
+      switch (error.code) {
+        case '42501':
+          throw new Error('權限不足')
+        default:
+          console.log(error.message)
+          throw new Error('遇到未知錯誤，請稍後再試')
+      }
     }
   }
 
