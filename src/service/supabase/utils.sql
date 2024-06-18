@@ -36,22 +36,22 @@ BEGIN
                 up.phone,
                 up.id_card,
                 up.point,
-                bl.reason,
-                bl.end_at
+                ab.reason,
+                ab.end_at
             FROM
                 user_profiles up
             LEFT JOIN LATERAL (
                 SELECT
-                    bl.reason,
-                    bl.end_at
+                    ab.reason,
+                    ab.end_at
                 FROM
-                    blacklist bl
+                    active_blacklist ab
                 WHERE
-                    bl.user_id = up.id
+                    ab.user_id = up.id
                 ORDER BY
-                    bl.end_at DESC
+                    ab.end_at DESC
                 LIMIT 1
-            ) bl ON TRUE
+            ) ab ON TRUE
             CROSS JOIN LATERAL
                 get_claims(up.id) as claims;
         ELSE
@@ -73,22 +73,22 @@ BEGIN
                 up.phone,
                 up.id_card,
                 up.point,
-                bl.reason,
-                bl.end_at
+                ab.reason,
+                ab.end_at
             FROM
                 user_profiles up
             LEFT JOIN LATERAL (
                 SELECT
-                    bl.reason,
-                    bl.end_at
+                    ab.reason,
+                    ab.end_at
                 FROM
-                    blacklist bl
+                    active_blacklist ab
                 WHERE
-                    bl.user_id = up.id
+                    ab.user_id = up.id
                 ORDER BY
-                    bl.end_at DESC
+                    ab.end_at DESC
                 LIMIT 1
-            ) bl ON TRUE
+            ) ab ON TRUE
             CROSS JOIN LATERAL
                 get_claims(up.id) as claims
             WHERE
