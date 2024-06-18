@@ -129,6 +129,8 @@ FOR EACH ROW EXECUTE FUNCTION check_terminate_reservation_validity();
 CREATE OR REPLACE FUNCTION check_reservation_validity()
 RETURNS TRIGGER 
 AS $$
+DECLARE
+    reservation_time_unit INT;
 BEGIN
     -- 使用 supabase UI 或 service_key 不受限制
     IF is_supabase_ui_or_service_key() THEN
@@ -145,14 +147,16 @@ BEGIN
         RAISE EXCEPTION '結束時間必須晚於開始時間';
     END IF;
 
+
     -- 只在插入操作時進行檢查
     IF TG_OP = 'INSERT' THEN
+        SELECT value::INT INTO reservation_time_unit FROM settings WHERE key_name = 'reservation_time_unit';
         -- 開始、結束能被整除
-        -- 確保預約的開始和結束時間都是每小時的 00 分或 30 分
-        IF (EXTRACT(MINUTE FROM NEW.begin_time) NOT IN (0, 30)) OR (EXTRACT(MINUTE FROM NEW.end_time) NOT IN (0, 30)) THEN
-            RAISE EXCEPTION '預約時間必須以30分鐘為單位';
+        IF (EXTRACT(EPOCH FROM NEW.begin_time) / 60) % reservation_time_unit != 0 OR 
+           (EXTRACT(EPOCH FROM NEW.end_time) / 60) % reservation_time_unit != 0 THEN
+            RAISE EXCEPTION '預約時間必須以 % 分鐘為單位', reservation_time_unit;
         END IF;
-
+        
         -- 確保預約開始時間大於當前時間
         IF NEW.begin_time <= current_timestamp THEN
             RAISE EXCEPTION '預約開始時間必須大於當前時間';
@@ -223,7 +227,6 @@ DECLARE
     maximum_duration INT;
     student_limit INT;
     outsider_limit INT;
-
     reservation_duration INT;
 
     user_role user_role;
@@ -331,19 +334,22 @@ AS $$
 DECLARE
     next_half_hour TIMESTAMP;
     end_of_day TIMESTAMP;
+    next_time_unit TIMESTAMP;
+
+    reservation_time_unit INT;
 BEGIN
     -- 使用 supabase UI 或 service_key 不受限制
     IF is_supabase_ui_or_service_key() THEN
         RETURN NEW;
     END IF;
 
-    -- 計算當前時間點的下一個30分鐘
-    next_half_hour := DATE_TRUNC('hour', NOW()) + 
-                      CASE
-                          WHEN EXTRACT(minute FROM NOW()) >= 30 THEN INTERVAL '1 hour'
-                          ELSE INTERVAL '30 minutes'
-                      END;
-    -- mod 時間
+    -- 從 settings 表中獲取預約時間單位
+    SELECT value::INT INTO reservation_time_unit
+    FROM settings
+    WHERE key_name = 'reservation_time_unit';
+
+    -- 計算當前時間點的下一個時間單位
+    next_time_unit := NOW() + reservation_time_unit * INTERVAL '1 minute';
 
     -- 計算該預約開始日期的當天結束時間點，即當天的 23:59:59
     end_of_day := CAST(NEW.begin_time AS DATE) + INTERVAL '23 hours 59 minutes 59 seconds';

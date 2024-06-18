@@ -42,7 +42,8 @@ VALUES
     ('points_to_ban_user', '7', '達到一定的點數就自動封禁使用者'),
     ('checkin_deadline_minutes', '15', 'checkin時間(分鐘)'),
     ('temporary_leave_deadline_minutes', '60', '暫時中離時間(分鐘)'),
-    ('check_in_violation_points', '1', '違反checkin截止時間時增加的點數')
+    ('check_in_violation_points', '1', '違反checkin截止時間時增加的點數'),
+    ('reservation_time_unit', '30', '預約時間單位（分鐘）')
 ON CONFLICT (key_name) DO UPDATE 
 SET value = EXCLUDED.value, description = EXCLUDED.description;
 
