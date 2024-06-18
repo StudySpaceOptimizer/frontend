@@ -1,17 +1,18 @@
 /*
-- github: https://github.com/supabase-community/supabase-custom-claims/blob/main/README.md
+  * github: https://github.com/supabase-community/supabase-custom-claims/blob/main/README.md
 */
 
 
 /*
-- 檢查使用者是是管理員
-- 如果會話使用者是 authenticator，則進一步檢查 JWT 中的 claims
-- 首先檢查 JWT 是否已過期
-- 如果 JWT 中的角色是 service_role，則認為使用者有管理員權限
-- 如果使用者的 app_metadata 中的 claims_admin 屬性為 true，則認為使用者有管理員權限
-- 其他情況下，使用者沒有管理員權限
-- example:
-    select is_claims_admin();
+  檢查使用者是是管理員
+  - 如果會話使用者是 authenticator，則進一步檢查 JWT 中的 claims
+  - 首先檢查 JWT 是否已過期
+  - 如果 JWT 中的角色是 service_role，則認為使用者有管理員權限
+  - 如果使用者的 app_metadata 中的 claims_admin 屬性為 true，則認為使用者有管理員權限
+  - 其他情況下，使用者沒有管理員權限
+
+  example:
+    SELECT is_claims_admin();
 */
 CREATE OR REPLACE FUNCTION is_claims_admin() RETURNS BOOLEAN
 AS $$
@@ -53,13 +54,14 @@ LANGUAGE plpgsql
 SECURITY DEFINER;
 
 
-
 /*
-- 傳回目前會話使用者的所有 claims
-- 從目前會話的 JWT 中提取 app_metadata 欄位
-- example:
-    select get_my_claims();
-- return:
+  傳回目前會話使用者的所有 claims:
+  - 從目前會話的 JWT 中提取 app_metadata 欄位
+
+  Example:
+    SELECT get_my_claims();
+  
+  Return:
     {"provider": "email", "userrole": "MANAGER", "providers": ["email"], "userlevel": 100, "useractive": true, "userjoined": "2022-05-20T14:07:27.742Z", "claims_admin": true}
 */
 CREATE OR REPLACE FUNCTION get_my_claims() RETURNS jsonb
@@ -76,11 +78,12 @@ SECURITY INVOKER;
 
 
 /*
-- 回當前會話使用者的特定 claim
-- 參數: 
-    - claim: 使用者想要查詢的特定 claim 名稱
-- example:
-    select get_my_claim('userlevel');
+  傳回當前會話使用者的特定 claim:
+  - 參數: 
+      - claim: 使用者想要查詢的特定 claim 名稱
+
+  Example:
+    SELECT get_my_claim('userlevel');
 */
 CREATE OR REPLACE FUNCTION get_my_claim(claim TEXT) RETURNS jsonb
 AS $$
@@ -96,11 +99,11 @@ SECURITY INVOKER;
 
 
 /*
-- 傳回指定使用者的所有 claims
-- 參數: 
-    - uid: 目標使用者的 UUID
-- 首先檢查執行操作的使用者是否為管理員，如果是，從 auth.users 表中查詢並傳回指定使用者的 raw_app_meta_data 欄位
-- 如果不是管理員，回傳錯誤訊息
+  傳回指定使用者的所有 claims:
+  - 參數: 
+      - uid: 目標使用者的 UUID
+  - 首先檢查執行操作的使用者是否為管理員，如果是，從 auth.users 表中查詢並傳回指定使用者的 raw_app_meta_data 欄位
+  - 如果不是管理員，回傳錯誤訊息
 */
 CREATE OR REPLACE FUNCTION get_claims(uid uuid) RETURNS jsonb
 AS $$
@@ -120,10 +123,10 @@ SECURITY DEFINER;
 
 
 /*
-- 傳回指定使用者的特定 claim
-- 參數:
-    - uid: 目標使用者的 UUID
-    - claim: 想要查詢的特定 claim 名稱
+  傳回指定使用者的特定 claim:
+  - 參數:
+      - uid: 目標使用者的 UUID
+      - claim: 想要查詢的特定 claim 名稱
 */
 CREATE OR REPLACE FUNCTION get_claim(uid uuid, claim text) RETURNS jsonb
 AS $$
@@ -141,19 +144,20 @@ $$
 LANGUAGE plpgsql 
 SECURITY DEFINER;
 
+
 /*
-- 為指定使用者設定一個新的 claim
-- 參數:
-    - uid: 目標使用者的 UUID
-    - claim: 要設定的 claim 名稱
-    - value: claim 的值
-- 檢查執行操作的使用者是否為管理員，如果是，更新 auth.users 表中指定使用者的 raw_app_meta_data 字段
-- 如果不是管理員，回傳錯誤訊息
-- example:
-    select set_claim('72e699aa-d50c-4ee3-9eb6-e29c169b5eff', 'userrole', '"webadmin"');
-    // 注意單引號裡面的雙引號
-    
-    select set_claim('72e699aa-d50c-4ee3-9eb6-e29c169b5eff', 'claims_admin', 'true');
+  為指定使用者設定一個新的 claim:
+  - 參數:
+      - uid: 目標使用者的 UUID
+      - claim: 要設定的 claim 名稱
+      - value: claim 的值
+  - 檢查執行操作的使用者是否為管理員，如果是，更新 auth.users 表中指定使用者的 raw_app_meta_data 欄位
+  - 如果不是管理員，回傳錯誤訊息
+
+  Example:
+    SELECT set_claim('72e699aa-d50c-4ee3-9eb6-e29c169b5eff', 'userrole', '"webadmin"');
+    -- 注意單引號裡面的雙引號
+    SELECT set_claim('72e699aa-d50c-4ee3-9eb6-e29c169b5eff', 'claims_admin', 'true');
 */
 CREATE OR REPLACE FUNCTION set_claim(uid uuid, claim text, value jsonb) RETURNS TEXT
 AS $$
@@ -169,13 +173,14 @@ $$
 LANGUAGE plpgsql 
 SECURITY DEFINER;
 
+
 /*
-- 刪除指定使用者的特定 claim
-- 參數:
-    - uid: 目標使用者的 UUID
-    - claim: 要刪除的 claim 名稱
-- 檢查執行操作的使用者是否為管理員，如果是，更新 auth.users 表中指定使用者的 raw_app_meta_data 字段，移除指定的 claim
-- 如果不是管理員，回傳錯誤訊息
+  刪除指定使用者的特定 claim:
+  - 參數:
+      - uid: 目標使用者的 UUID
+      - claim: 要刪除的 claim 名稱
+  - 檢查執行操作的使用者是否為管理員，如果是，更新 auth.users 表中指定使用者的 raw_app_meta_data 欄位，移除指定的 claim
+  - 如果不是管理員，回傳錯誤訊息
 */
 CREATE OR REPLACE FUNCTION delete_claim(uid uuid, claim text) RETURNS TEXT
 AS $$
@@ -193,6 +198,10 @@ SECURITY DEFINER;
 
 NOTIFY pgrst, 'reload schema';
 
+
+/*
+  檢查是否為 supabase UI 或 service key
+*/
 CREATE OR REPLACE FUNCTION is_supabase_ui_or_service_key() RETURNS BOOLEAN
 AS $$
 BEGIN

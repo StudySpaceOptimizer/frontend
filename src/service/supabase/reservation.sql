@@ -21,6 +21,11 @@ SELECT *
 FROM public.reservations
 WHERE end_time > NOW();
 
+/* ==========================
+ * RLS
+ * ==========================
+ */
+
 -- 啟用 RLS
 ALTER TABLE reservations ENABLE ROW LEVEL SECURITY;
 
@@ -61,7 +66,13 @@ FOR UPDATE
 USING (auth.uid() = user_id)
 WITH CHECK (auth.uid() = user_id);
 
--- 更新cls
+
+/* ==========================
+ * CLS
+ * ==========================
+ */
+
+-- 限制非管理員的更新範圍
 CREATE OR REPLACE FUNCTION cls_reservations_update()
 RETURNS TRIGGER AS
 $$
@@ -98,8 +109,14 @@ CREATE TRIGGER trigger_cls_reservations_update
 BEFORE UPDATE ON reservations
 FOR EACH ROW EXECUTE FUNCTION cls_reservations_update();
 
+
+/* ==========================
+ * 檢查預約限制
+ * ==========================
+ */
+
 -- 確認提早離開是否合法
-CREATE OR REPLACE FUNCTION check_terminate_reservation_validity()
+CREATE OR REPLACE FUNCTION check_early_termination_validity()
 RETURNS TRIGGER AS
 $$
 BEGIN
@@ -109,7 +126,7 @@ BEGIN
     END IF;
 
     -- 確認使用者是否已經報到
-    IF NEW.check_in_time = NULL THEN
+    IF NEW.check_in_time IS NULL THEN
         RAISE EXCEPTION '尚未報到';
     END IF;
 
@@ -120,10 +137,11 @@ LANGUAGE plpgsql STABLE
 SECURITY INVOKER;
 
 -- 在提早結束前檢查是否已經報到
-DROP TRIGGER IF EXISTS trigger_check_terminate_reservation_validity ON reservations;
-CREATE TRIGGER trigger_check_terminate_reservation_validity
+DROP TRIGGER IF EXISTS trigger_check_early_termination_validity ON reservations;
+CREATE TRIGGER trigger_check_early_termination_validity
 BEFORE UPDATE ON reservations
-FOR EACH ROW EXECUTE FUNCTION check_terminate_reservation_validity();
+FOR EACH ROW EXECUTE FUNCTION check_early_termination_validity();
+
 
 -- 檢查預約的合法性
 CREATE OR REPLACE FUNCTION check_reservation_validity()
@@ -177,7 +195,7 @@ FOR EACH ROW EXECUTE FUNCTION check_reservation_validity();
 
 
 -- 檢查所選座位的可用性以及預約時間是否與現有預約時間重疊
-CREATE OR REPLACE FUNCTION check_seat_availability_and_seat_reservations_overlap()
+CREATE OR REPLACE FUNCTION check_seat_availability_and_reservation_conflict()
 RETURNS TRIGGER 
 AS $$
 BEGIN
@@ -208,10 +226,10 @@ LANGUAGE plpgsql
 SECURITY DEFINER;
 
 -- 在新增或修改之前檢查座位可用性和預約時間重疊
-DROP TRIGGER IF EXISTS trigger_check_seat_availability_and_seat_reservations_overlap ON reservations;
-CREATE TRIGGER trigger_check_seat_availability_and_seat_reservations_overlap
+DROP TRIGGER IF EXISTS trigger_check_seat_availability_and_reservation_conflict ON reservations;
+CREATE TRIGGER trigger_check_seat_availability_and_reservation_conflict
 BEFORE INSERT OR UPDATE ON reservations
-FOR EACH ROW EXECUTE FUNCTION check_seat_availability_and_seat_reservations_overlap();
+FOR EACH ROW EXECUTE FUNCTION check_seat_availability_and_reservation_conflict();
 
 
 -- 檢查預約設定限制
@@ -297,7 +315,7 @@ FOR EACH ROW EXECUTE FUNCTION check_reservation_limits();
 
 
 -- 檢查新的預約時間是否與任何已存在的關閉時段重疊，確保預約在開放時間內
-CREATE OR REPLACE FUNCTION check_closed_periods_overlap()
+CREATE OR REPLACE FUNCTION check_reservation_overlap_with_closed_periods()
 RETURNS TRIGGER 
 AS $$
 BEGIN
@@ -321,14 +339,14 @@ LANGUAGE plpgsql
 SECURITY DEFINER;
 
 -- 在新增或修改之前檢查是否與關閉時間重疊
-DROP TRIGGER IF EXISTS trigger_check_closed_periods_overlap ON reservations;
-CREATE TRIGGER trigger_check_closed_periods_overlap
+DROP TRIGGER IF EXISTS trigger_check_reservation_overlap_with_closed_periods ON reservations;
+CREATE TRIGGER trigger_check_reservation_overlap_with_closed_periods
 BEFORE INSERT OR UPDATE ON reservations
-FOR EACH ROW EXECUTE FUNCTION check_closed_periods_overlap();
+FOR EACH ROW EXECUTE FUNCTION check_reservation_overlap_with_closed_periods();
 
 
--- 檢查用戶當天是否有未完成的預約(30分鐘內結束的預約不算在內)
-CREATE OR REPLACE FUNCTION check_for_unfinished_reservation()
+-- 檢查用戶當天是否有未完成的預約
+CREATE OR REPLACE FUNCTION check_unfinished_reservation()
 RETURNS TRIGGER
 AS $$
 DECLARE
@@ -373,14 +391,14 @@ LANGUAGE plpgsql
 SECURITY INVOKER;
 
 -- 在新增或修改之前檢查用戶當天是否有未完成的預約
-DROP TRIGGER IF EXISTS trigger_check_for_unfinished_reservation ON reservations;
-CREATE TRIGGER trigger_check_for_unfinished_reservation
+DROP TRIGGER IF EXISTS trigger_check_unfinished_reservation ON reservations;
+CREATE TRIGGER trigger_check_unfinished_reservation
 BEFORE INSERT ON reservations
-FOR EACH ROW EXECUTE FUNCTION check_for_unfinished_reservation();
+FOR EACH ROW EXECUTE FUNCTION check_unfinished_reservation();
 
 
 -- 檢查是否可以刪除預約
-CREATE OR REPLACE FUNCTION check_reservation_delete_time()
+CREATE OR REPLACE FUNCTION check_if_reservation_can_be_deleted()
 RETURNS TRIGGER AS $$
 BEGIN
     -- 使用 supabase UI 或 service_key 不受限制
@@ -400,8 +418,80 @@ LANGUAGE plpgsql
 SECURITY INVOKER;
 
 -- 在新增或修改之前檢查是否可以刪除預約
-DROP TRIGGER IF EXISTS trigger_check_reservation_delete ON reservations;
-CREATE TRIGGER trigger_check_reservation_delete
+DROP TRIGGER IF EXISTS trigger_check_if_reservation_can_be_deleted ON reservations;
+CREATE TRIGGER trigger_check_if_reservation_can_be_deleted
 BEFORE DELETE ON reservations
 FOR EACH ROW
-EXECUTE FUNCTION check_reservation_delete_time();
+EXECUTE FUNCTION check_if_reservation_can_be_deleted();
+
+
+/* ==========================
+ * UTILS FUNCTION
+ * ==========================
+ */
+ 
+/*
+  取得當前用戶的預約資料及個人資訊
+  - 參數:
+      - page_size: 每頁的大小 (默認為 10)
+      - page_offset: 頁偏移量 (默認為 0)
+
+  Example:
+    SELECT * FROM get_my_reservations();
+    SELECT * FROM get_my_reservations(5, 10);
+*/
+CREATE OR REPLACE FUNCTION get_my_reservations(page_size INT DEFAULT 10, page_offset INT DEFAULT 0)
+RETURNS TABLE(
+    -- reservation
+    id UUID,
+    begin_time TIMESTAMP WITH TIME ZONE,
+    end_time TIMESTAMP WITH TIME ZONE,
+    seat_id int8,
+    check_in_time timestamp with time zone,
+    temporary_leave_time timestamp with time zone,
+
+    -- user_data
+    user_id UUID,
+    email TEXT,
+    user_role TEXT,
+    admin_role TEXT,
+    is_in BOOLEAN,
+    name TEXT,
+    phone TEXT,
+    id_card TEXT,
+    point INT,
+    reason TEXT,
+    end_at TIMESTAMP WITH TIME ZONE
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        res.id,
+        res.begin_time,
+        res.end_time,
+        res.seat_id,
+        res.check_in_time,
+        res.temporary_leave_time,
+        user_data.id,
+        user_data.email,
+        user_data.user_role,
+        user_data.admin_role,
+        user_data.is_in,
+        user_data.name,
+        user_data.phone,
+        user_data.id_card,
+        user_data.point,
+        user_data.reason,
+        user_data.end_at
+    FROM
+        Reservations res
+    CROSS JOIN LATERAL
+        get_user_data(auth.uid()) as user_data
+    WHERE
+        auth.uid() = res.user_id
+    ORDER BY res.begin_time DESC  -- 確保結果有一致的排序
+    LIMIT page_size OFFSET page_offset;
+END;
+$$
+LANGUAGE plpgsql STABLE
+SECURITY INVOKER;

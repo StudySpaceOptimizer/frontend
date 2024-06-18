@@ -1,19 +1,3 @@
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
-        CREATE TYPE user_role AS ENUM('student', 'outsider');
-    END IF;
-END
-$$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'admin_role') THEN
-        CREATE TYPE admin_role AS ENUM('admin', 'assistant', 'non-admin');
-    END IF;
-END
-$$;
-
 -- 創建用戶個人資料表
 CREATE TABLE IF NOT EXISTS user_profiles (
     -- 用戶本人可以選擇
@@ -27,6 +11,12 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     phone TEXT,
     id_card TEXT
 );
+
+
+/* ==========================
+ * RLS
+ * ==========================
+ */
 
 -- 啟用 RLS
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
@@ -53,6 +43,12 @@ AS PERMISSIVE
 FOR UPDATE
 USING (auth.uid() = id)
 WITH CHECK (auth.uid() = id);
+
+
+/* ==========================
+ * CLS
+ * ==========================
+ */
 
 -- 限制非管理員的更新範圍
 CREATE OR REPLACE FUNCTION cls_user_profiles_update()
@@ -92,15 +88,20 @@ BEFORE UPDATE ON user_profiles
 FOR EACH ROW EXECUTE FUNCTION cls_user_profiles_update();
 
 
--- 根據用戶的email後綴來設置用戶角色及管理員角色，並儲存於 meta_data
-CREATE OR REPLACE FUNCTION handle_new_user_metadata()
+/* ==========================
+ * TRIGGER
+ * ==========================
+ */
+
+-- 根據用戶的 email 來設置用戶角色及管理員角色，並儲存於 meta_data
+CREATE OR REPLACE FUNCTION set_user_metadata()
 RETURNS TRIGGER
 AS $$
 DECLARE
     userrole public.user_role;
     adminrole public.admin_role;
 BEGIN
-    -- 根據email後綴確定用戶角色(userrole)
+    -- 根據 email 確定用戶角色(userrole)
     IF NEW.email LIKE '%@mail.ntou.edu.tw' THEN
         -- 學生
         userrole := 'student';
@@ -110,7 +111,6 @@ BEGIN
     END IF;
 
     adminrole := 'non-admin';
-
 
     -- 更新 raw_app_meta_data
     -- 設置 userrole
@@ -125,13 +125,13 @@ LANGUAGE plpgsql
 SECURITY DEFINER;
 
 -- 在新增用戶記錄前執行 raw_app_meta_data 設置
-DROP TRIGGER IF EXISTS trigger_handle_new_user_metadata ON auth.users;
-CREATE TRIGGER trigger_handle_new_user_metadata
+DROP TRIGGER IF EXISTS trigger_set_user_metadata ON auth.users;
+CREATE TRIGGER trigger_set_user_metadata
 BEFORE INSERT ON auth.users
-FOR EACH ROW EXECUTE FUNCTION handle_new_user_metadata();
+FOR EACH ROW EXECUTE FUNCTION set_user_metadata();
 
 -- 在用戶註冊時自動新增 user_profile
-CREATE OR REPLACE FUNCTION handle_new_user_profile()
+CREATE OR REPLACE FUNCTION create_user_profile()
 RETURNS TRIGGER
 AS $$
 BEGIN
@@ -145,13 +145,13 @@ LANGUAGE plpgsql
 SECURITY DEFINER;
 
 -- 在新增用戶記錄後執行 user_profile 記錄的新增
-DROP TRIGGER IF EXISTS trigger_handle_new_user_profile ON auth.users;
-CREATE TRIGGER trigger_handle_new_user_profile
+DROP TRIGGER IF EXISTS trigger_create_user_profile ON auth.users;
+CREATE TRIGGER trigger_create_user_profile
 AFTER INSERT ON auth.users
-FOR EACH ROW EXECUTE FUNCTION handle_new_user_profile();
+FOR EACH ROW EXECUTE FUNCTION create_user_profile();
 
 -- 處理違規點數到達上限
-CREATE OR REPLACE FUNCTION ban_user_if_points_exceed_limit()
+CREATE OR REPLACE FUNCTION ban_user_on_points_limit()
 RETURNS TRIGGER 
 AS $$
 DECLARE
@@ -180,93 +180,126 @@ $$
 LANGUAGE plpgsql
 SECURITY DEFINER;
 
--- 當user_profiles表的point欄位被更新時檢查違規點數是否到達上限
-DROP TRIGGER IF EXISTS trigger_ban_user_if_points_exceed_limit ON user_profiles;
-CREATE TRIGGER trigger_ban_user_if_points_exceed_limit
+-- 當 user_profiles 表的 point 欄位被更新時檢查違規點數是否到達上限
+DROP TRIGGER IF EXISTS trigger_ban_user_on_points_limit ON user_profiles;
+CREATE TRIGGER trigger_ban_user_on_points_limit
 AFTER UPDATE OF point ON user_profiles
 FOR EACH ROW
 WHEN (OLD.point <> NEW.point)
-EXECUTE FUNCTION ban_user_if_points_exceed_limit();
+EXECUTE FUNCTION ban_user_on_points_limit();
 
 
+/* ==========================
+ * UTILS FUNCTION
+ * ==========================
+ */
 
+/*
+  根據用戶ID獲取用戶數據，如果沒有提供用戶ID，則檢查管理員權限
+  - 如果沒有提供 user_id，則檢查是否有管理權限 (is_claims_admin())，如果有，返回所有用戶數據
+  - 如果提供了 user_id：
+      - 如果 user_id 等於 auth.uid()（當前認證用戶ID），則返回該用戶的數據
+      - 如果 user_id 不等於 auth.uid()，則再次檢查是否有管理權限，如果有，返回指定 user_id 的用戶數據
 
--- 創建黑名單表
-CREATE TABLE IF NOT EXISTS blacklist (
-    id SERIAL PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
-    reason TEXT NOT NULL,
-    end_at TIMESTAMP WITH TIME ZONE NOT NULL
-);
-
--- 為黑名單結束時間創建索引
-CREATE INDEX IF NOT EXISTS idx_blacklist_end_at ON blacklist (end_at);
-
--- 創建視圖以篩選當前有效的黑名單記錄
-CREATE OR REPLACE VIEW active_blacklist
-WITH (security_invoker = on) AS
-SELECT *
-FROM public.blacklist
-WHERE end_at > NOW();
-
--- 啟用 RLS
-ALTER TABLE blacklist ENABLE ROW LEVEL SECURITY;
-
--- 允許管理員所有權限
-DROP POLICY IF EXISTS admin_all_access ON blacklist;
-CREATE POLICY admin_all_access ON blacklist
-AS PERMISSIVE
-FOR ALL
-USING (is_claims_admin())
-WITH CHECK (is_claims_admin());
-
--- 允許用戶查詢自己的黑名單記錄
-DROP POLICY IF EXISTS user_select_own ON blacklist;
-CREATE POLICY user_select_own ON blacklist
-AS PERMISSIVE
-FOR SELECT
-USING (auth.uid() = user_id);
-
-
-/**
-- 檢查使用者是否被ban
-- 如果會話使用者是 authenticator，則進一步檢查 JWT 中的 claims
-- 首先檢查 JWT 是否已過期
-- 如果 JWT 中的角色是 service_role，則回傳 false
-- 如果使用者的 app_metadata 中的 banned 屬性為 true，則回傳 true
-- 其他情況下，回傳 true
-- example:
-    select is_not_banned();
+  Example:
+    SELECT * FROM get_user_data();
+    SELECT * FROM get_user_data('72e699aa-d50c-4ee3-9eb6-e29c169b5eff');
 */
-CREATE OR REPLACE FUNCTION is_not_banned() 
-RETURNS BOOLEAN
+CREATE OR REPLACE FUNCTION get_user_data(p_user_id UUID DEFAULT NULL)
+RETURNS TABLE(
+    id UUID,
+    email TEXT,
+    user_role TEXT,
+    admin_role TEXT,
+    is_in BOOLEAN,
+    name TEXT,
+    phone TEXT,
+    id_card TEXT,
+    point INT,
+    reason TEXT,
+    end_at TIMESTAMP WITH TIME ZONE
+)
 AS $$
 DECLARE
-is_banned BOOLEAN;
+    current_user_id UUID := auth.uid();  -- 獲取當前認證用戶的ID
 BEGIN
-    IF session_user = 'authenticator' THEN
-        -- 判断 JWT 是否過期
-        IF extract(epoch from now()) > coalesce((current_setting('request.jwt.claims', true)::jsonb)->>'exp', '0')::numeric THEN
-        return false; -- jwt expired
+    IF p_user_id IS NULL THEN
+        IF is_claims_admin() THEN
+            -- 如果沒有提供 p_user_id 且用戶是管理員，返回所有用戶數據
+            RETURN QUERY
+            SELECT
+                up.id,
+                up.email,
+                claims ->> 'user_role' as user_role,
+                claims ->> 'admin_role' as admin_role,
+                up.is_in,
+                up.name,
+                up.phone,
+                up.id_card,
+                up.point,
+                ab.reason,
+                ab.end_at
+            FROM
+                user_profiles up
+            LEFT JOIN LATERAL (
+                SELECT
+                    ab.reason,
+                    ab.end_at
+                FROM
+                    active_blacklist ab
+                WHERE
+                    ab.user_id = up.id
+                ORDER BY
+                    ab.end_at DESC
+                LIMIT 1
+            ) ab ON TRUE
+            CROSS JOIN LATERAL
+                get_claims(up.id) as claims;
+        ELSE
+            -- 如果不是管理員且沒有提供 p_user_id，返回錯誤
+            RAISE EXCEPTION '需要提供用戶ID或有管理權限';
         END IF;
-
-        -- 判断 service_role
-        If current_setting('request.jwt.claims', true)::jsonb->>'role' = 'service_role' THEN
-        RETURN true;
+    ELSE
+        -- 檢查提供的 p_user_id 是否與當前用戶ID相同，或者用戶是否是管理員
+        IF p_user_id = current_user_id OR is_claims_admin() THEN
+            -- 返回指定用戶數據
+            RETURN QUERY
+            SELECT
+                up.id,
+                up.email,
+                claims ->> 'user_role' as user_role,
+                claims ->> 'admin_role' as admin_role,
+                up.is_in,
+                up.name,
+                up.phone,
+                up.id_card,
+                up.point,
+                ab.reason,
+                ab.end_at
+            FROM
+                user_profiles up
+            LEFT JOIN LATERAL (
+                SELECT
+                    ab.reason,
+                    ab.end_at
+                FROM
+                    active_blacklist ab
+                WHERE
+                    ab.user_id = up.id
+                ORDER BY
+                    ab.end_at DESC
+                LIMIT 1
+            ) ab ON TRUE
+            CROSS JOIN LATERAL
+                get_claims(up.id) as claims
+            WHERE
+                up.id = p_user_id;
+        ELSE
+            -- 如果不滿足身份檢查，返回錯誤
+            RAISE EXCEPTION '沒有足夠權限查看指定用戶資料';
         END IF;
-
-        -- 檢查該用戶是否目前在黑名單中
-        SELECT NOT EXISTS (
-        SELECT 1 FROM active_blacklist
-        WHERE auth.uid() = user_id
-        ) INTO is_banned;
-
-        RETURN is_banned;
-
-    ELSE -- not a user session, probably being called from a trigger or something
-        return true;
     END IF;
 END;
-$$ LANGUAGE plpgsql STABLE
+$$
+LANGUAGE plpgsql STABLE
 SECURITY INVOKER;
-

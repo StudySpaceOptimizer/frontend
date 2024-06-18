@@ -3,6 +3,12 @@ CREATE TABLE IF NOT EXISTS cronlog (
     log_msg TEXT
 );
 
+
+/* ==========================
+ * RLS
+ * ==========================
+ */
+
 -- 啟用 RLS
 ALTER TABLE cronlog ENABLE ROW LEVEL SECURITY;
 
@@ -13,6 +19,12 @@ AS PERMISSIVE
 FOR ALL
 USING (is_claims_admin())
 WITH CHECK (is_claims_admin());
+
+
+/* ==========================
+ * TIMMER FUNCTION
+ * ==========================
+ */
 
 -- 檢查是否有未 check in 的預約
 CREATE OR REPLACE FUNCTION process_reservation_time_violations()
@@ -36,18 +48,23 @@ BEGIN
     
     FOR rec IN SELECT * FROM active_reservations LOOP
         /*
-        - 每分鐘檢查是否未 check in (check_in is NULL)
-            - 是，判斷是否 is_in
-                - 是，表示使用者是續約 -> 設定 check_in = begin_time
-                - 否，判斷是否超過 check in 時間
-                    - 如果超過 check in 時間，刪除該預約
+            每分鐘檢查流程：
 
-        - 每分鐘檢查是否離開 (temporary_leave_time is not NULL)
-            - 否，判斷是否 is_in
-                - 是，表示使用者在館內，正常情況
-                - 否，表示使用者是續約，且在上一個預約離開 -> 設定 temporary_leave_time = begin_time
-            - 是，判斷是否離開時間過久
-                - 如果離開時間過久，終止預約 -> 將 end_time 設置為現在的時間
+            1. 檢查是否未 check in (check_in is NULL)
+                1.1. 是，判斷是否 is_in
+                    1.1.1. 是，表示使用者是續約
+                        - 設定 check_in = begin_time
+                    1.1.2. 否，判斷是否超過 check in 時間
+                        - 如果超過 check in 時間，刪除該預約
+
+            2. 檢查是否離開 (temporary_leave_time is not NULL)
+                2.1. 否，判斷是否 is_in
+                    2.1.1. 是，表示使用者在館內，正常情況
+                    2.1.2. 否，表示使用者是續約，且在上一個預約離開
+                        - 設定 temporary_leave_time = begin_time
+                2.2. 是，判斷是否離開時間過久
+                    - 如果離開時間過久，終止預約
+                        - 將 end_time 設置為現在的時間
         */
 
         -- 判斷是否未 check in
