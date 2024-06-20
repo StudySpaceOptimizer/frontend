@@ -205,7 +205,7 @@ EXECUTE FUNCTION ban_user_on_points_limit();
     SELECT * FROM get_user_data();
     SELECT * FROM get_user_data('72e699aa-d50c-4ee3-9eb6-e29c169b5eff');
 */
-CREATE OR REPLACE FUNCTION get_user_data(p_user_id UUID DEFAULT NULL)
+CREATE OR REPLACE FUNCTION get_user_data(p_user_id UUID DEFAULT NULL, page_size INT DEFAULT 10, page_offset INT DEFAULT 0)
 RETURNS TABLE(
     id UUID,
     email TEXT,
@@ -254,7 +254,9 @@ BEGIN
                 LIMIT 1
             ) ab ON TRUE
             CROSS JOIN LATERAL
-                get_claims(up.id) as claims;
+                get_claims(up.id) as claims
+            ORDER BY up.id  -- 添加排序以確保結果一致
+            LIMIT page_size OFFSET page_offset;
         ELSE
             -- 如果不是管理員且沒有提供 p_user_id，返回錯誤
             RAISE EXCEPTION '需要提供用戶ID或有管理權限';
@@ -293,7 +295,9 @@ BEGIN
             CROSS JOIN LATERAL
                 get_claims(up.id) as claims
             WHERE
-                up.id = p_user_id;
+                up.id = p_user_id
+            ORDER BY up.id  -- 添加排序以確保結果一致
+            LIMIT page_size OFFSET page_offset;
         ELSE
             -- 如果不滿足身份檢查，返回錯誤
             RAISE EXCEPTION '沒有足夠權限查看指定用戶資料';

@@ -120,8 +120,11 @@ export class SupabaseUser implements User {
    * @returns 返回用戶數據列表
    */
   async getUsers(config: any, userId?: string): Promise<Type.UserData[]> {
+    const { pageSize, pageOffset } = config
     const { data: userProfiles, error } = await supabase.rpc('get_user_data', {
-      p_user_id: userId
+      p_user_id: userId,
+      page_size: pageSize,
+      page_offset: pageOffset
     })
 
     if (error) {
