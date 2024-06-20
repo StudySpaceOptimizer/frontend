@@ -11,10 +11,11 @@ export interface User {
   studentSignUp(username: string, password: string): Promise<any>
   outsiderSignUp(name: string, phone: string, idcard: string, email: string): Promise<any>
   getUsers(config: any, userId?: string): Promise<any>
+  getUsersCount(): Promise<any>
   getMyUser(userId: string): Promise<any>
   banUser(id: string, reason: string, end_at: Date): Promise<any>
   unbanUser(id: string): Promise<any>
-  addPointUser(id: string, point: number): Promise<any>
+  updatePointUser(id: string, point: number): Promise<any>
   updateProfile(id: string, name: string, phone: string, idCard: string): Promise<any>
   getSettings(): Promise<any>
   updateSettings(settings: any): Promise<any>
