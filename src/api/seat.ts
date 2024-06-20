@@ -194,4 +194,29 @@ export class SupabaseSeat implements Seat {
 
     return seatDetail
   }
+
+  /**
+   * 更新座位信息
+   * @param seatId 座位 ID
+   * @param available 座位是否可用
+   * @param otherInfo 其他資訊
+   * @returns 更新結果
+   * 將座位轉變為不可使用(available = false)後，此座位將無法被預約，但是先前已經預約的不受影響
+   */
+  async updateSeat(seatID: string, available: boolean, otherInfo?: string): Promise<void> {
+    const id = seatConverterToDB(seatID)
+    const { data, error } = await supabase
+      .from('seats')
+      .update({
+        available: available,
+        other_info: otherInfo
+      })
+      .eq('id', id)
+
+    if (error) {
+      throw new Error(`更新座位失敗: ${error.message}`)
+    }
+
+    console.log('座位更新成功')
+  }
 }

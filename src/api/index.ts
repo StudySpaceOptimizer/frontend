@@ -26,6 +26,7 @@ export interface Seat {
   getSeatsStatus(config: any): Promise<any>
   getSeatsConfigurations(): Promise<any>
   getSeatStatus(id: string): Promise<any>
+  updateSeat(seatID: string, available: boolean, otherInfo?: string): Promise<any>
 }
 
 export interface Reserve {

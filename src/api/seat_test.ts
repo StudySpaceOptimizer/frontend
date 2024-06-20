@@ -3,6 +3,7 @@ import type * as Type from '@/types'
 import { toLocalDateTime } from './common'
 import type { Seat } from './index'
 import { supabase } from '../service/supabase/supabase'
+import { SupabaseSeat } from './seat'
 
 const student = 'student@mail.ntou.edu.tw'
 const bannedstudent = 'bannedstudent@mail.ntou.edu.tw'
@@ -148,7 +149,26 @@ async function testGetSeatsStatus() {
   console.log(seatData)
 }
 
+async function testUpdateSeatSuccess() {
+  const user = await signIn(admin, password)
+
+  const supabaseSeat = new SupabaseSeat()
+
+  const seatId = 'A1'
+  var available = false
+  var otherInfo = 'testing'
+  try {
+    await supabaseSeat.updateSeat(seatId, available, otherInfo)
+  } catch (e) {
+    console.log(e)
+  } finally {
+    var available = true
+    var otherInfo = ''
+    await supabaseSeat.updateSeat(seatId, available, otherInfo)
+  }
+}
 // await testGetSeatStatusUser()
 // await testGetSeatStatusAdmin()
 
-await testGetSeatsStatus()
+// await testGetSeatsStatus()
+await testUpdateSeatSuccess()
