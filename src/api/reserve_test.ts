@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { toLocalDateTime } from './common'
 import { supabase } from '../service/supabase/supabase'
 import type * as model from '../types/seat.ts'
@@ -104,7 +103,7 @@ async function testBannedUserReserve() {
   }
 }
 
-async function testReserveOverTwoWeeks(user) {
+async function testReserveOverTwoWeeks(user: any) {
   // 生成預訂資料
   const reservation = {
     beginTime: new Date('2024-07-26T10:00:00'),
@@ -292,6 +291,39 @@ function parseTimeString(timeStr: string): { hours: number; minutes: number } {
   return { hours: parseInt(parts[0], 10), minutes: parseInt(parts[1], 10) }
 }
 
+async function testRecordUserEntryExit() {
+  // 登入 student 並創建一個預約
+  const studentUser = await signIn(student, password)
+
+  const supabaseReserve = new SupabaseReserve()
+
+  // const seatID = 'A1'
+  // const beginTime = new Date(Date.now() + 3600 * 1000) // 1小時後
+  // const endTime = new Date(Date.now() + 7200 * 1000) // 2小時後
+
+  // try {
+  //   await supabaseReserve.reserve(seatID, beginTime, endTime)
+  // } catch (e) {
+  //   console.error('預約創建失敗:', e)
+  // }
+
+  // 切換到 admin
+  await signIn(admin, password)
+
+  // 使用 RPC 調用 record_user_entry_exit
+  const { error: rpcError } = await supabase.rpc('record_user_entry_exit', {
+    p_user_id: '20f04ee8-48b9-4f61-b1cb-356046a4f9a5'
+  })
+
+  if (rpcError) {
+    console.error('RPC 調用失敗:', rpcError)
+    return
+  }
+}
+
+// 運行測試函數
+await testRecordUserEntryExit().catch(console.error)
+
 // await testGetSeatsStatus()
 
 // const user = new SupabaseUser()
@@ -300,4 +332,4 @@ function parseTimeString(timeStr: string): { hours: number; minutes: number } {
 // console.log(settings)
 
 // await testReserveOverTwoWeeks(user)
-await testBannedUserReserve()
+// await testBannedUserReserve()

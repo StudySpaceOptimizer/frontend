@@ -91,7 +91,7 @@ export class SupabaseReserve implements Reserve {
   }
 
   async getPersonalReservations(config: Config): Promise<Type.Reservation[]> {
-    const { pageSize, pageOffset } = config
+    const { pageSize = 10, pageOffset = 0 } = config
     const { data: reservations } = await supabase.rpc('get_my_reservations', {
       page_size: pageSize,
       page_offset: pageOffset

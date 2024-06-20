@@ -37,6 +37,8 @@ export interface Reserve {
   terminateReservation(id: string): Promise<any>
   getAllReservations(config: any): Promise<any>
   getAllReservationsCount(): Promise<any>
+
+  // 報到、離開
 }
 
 export const API_SERVICE = {

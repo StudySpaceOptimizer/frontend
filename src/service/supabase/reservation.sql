@@ -1,12 +1,12 @@
 -- 創建預約表
 CREATE TABLE IF NOT EXISTS reservations(
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    begin_time timestamp with time zone NOT NULL,
-    end_time timestamp with time zone NOT NULL,
+    begin_time TIMESTAMP WITH TIME ZONE NOT NULL,
+    end_time TIMESTAMP WITH TIME ZONE NOT NULL,
     user_id uuid NOT NULL,
     seat_id int8 NOT NULL,
-    check_in_time timestamp with time zone,
-    temporary_leave_time timestamp with time zone,
+    check_in_time TIMESTAMP WITH TIME ZONE,
+    temporary_leave_time TIMESTAMP WITH TIME ZONE,
     CONSTRAINT fk_user FOREIGN KEY(user_id) REFERENCES auth.users(id) ON DELETE CASCADE,
     CONSTRAINT fk_seat FOREIGN KEY(seat_id) REFERENCES seats(id) ON DELETE CASCADE 
 );
@@ -492,4 +492,59 @@ BEGIN
 END;
 $$
 LANGUAGE plpgsql STABLE
+SECURITY INVOKER;
+
+CREATE OR REPLACE FUNCTION record_user_entry_exit(p_user_id UUID)
+RETURNS VOID
+AS $$
+DECLARE
+  cur_time  TIMESTAMP WITH TIME ZONE := current_timestamp;
+  reservation RECORD;
+  user_is_in BOOLEAN;
+BEGIN
+  -- 檢查是否為管理員
+  IF NOT is_claims_admin() THEN
+    RAISE EXCEPTION '只有管理員可以執行此操作';
+  END IF;
+
+  -- 獲取用戶當前是否在場
+  SELECT is_in INTO user_is_in FROM user_profiles WHERE id = p_user_id;
+  
+  -- 更改用戶 is_in 狀態
+  UPDATE user_profiles
+  SET is_in = NOT user_is_in
+  WHERE id = p_user_id;
+
+  
+  -- 查找用戶當前正在進行的預約
+  SELECT *
+  INTO reservation
+  FROM active_reservations
+  WHERE user_id = p_user_id
+    AND begin_time <= cur_time
+    AND end_time > cur_time
+  LIMIT 1;
+
+  IF NOT FOUND THEN
+    RAISE NOTICE '該用戶目前沒有正在進行的預約';
+    RETURN;
+  END IF;
+
+
+  -- 根據用戶當前狀態更新預約
+  IF user_is_in THEN
+    -- 用戶正在場內，更新 temporary_leave_time
+    UPDATE reservations
+    SET temporary_leave_time = cur_time
+    WHERE id = reservation.id;
+  ELSE
+    -- 用戶不在場內，更新 temporary_leave_time 和 check_in_time
+    UPDATE reservations
+    SET temporary_leave_time = NULL,
+        check_in_time = COALESCE(check_in_time, cur_time)
+    WHERE id = reservation.id;
+  END IF;
+END;
+$$
+LANGUAGE plpgsql VOLATILE
 SECURITY INVOKER;
