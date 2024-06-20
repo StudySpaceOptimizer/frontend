@@ -288,26 +288,23 @@ export class SupabaseUser implements User {
     if (error) throw new Error(error.message)
 
     const settings: Partial<Type.SettingsData> = {}
-    let _tmp_data: any
 
-    data?.forEach((item: any) => {
+    data?.forEach((item) => {
+      let parsedValue: any
       switch (item.key_name) {
         case 'weekday_opening_hours':
-          _tmp_data = JSON.parse(item.value)
+          parsedValue = JSON.parse(item.value)
           settings.weekdayOpeningHours = {
-            beginTime: _tmp_data.begin_time,
-            endTime: _tmp_data.end_time
+            beginTime: parsedValue.begin_time,
+            endTime: parsedValue.end_time
           }
           break
         case 'weekend_opening_hours':
-          _tmp_data = JSON.parse(item.value)
+          parsedValue = JSON.parse(item.value)
           settings.weekendOpeningHours = {
-            beginTime: _tmp_data.begin_time,
-            endTime: _tmp_data.end_time
+            beginTime: parsedValue.begin_time,
+            endTime: parsedValue.end_time
           }
-          break
-        case 'minimum_reservation_duration':
-          settings.minimumReservationDuration = parseFloat(item.value)
           break
         case 'maximum_reservation_duration':
           settings.maximumReservationDuration = parseInt(item.value, 10)
@@ -330,8 +327,11 @@ export class SupabaseUser implements User {
         case 'check_in_violation_points':
           settings.check_in_violation_points = parseInt(item.value, 10)
           break
+        case 'reservation_time_unit':
+          settings.reservation_time_unit = parseInt(item.value, 10)
+          break
         default:
-          throw new Error('設定名稱不匹配')
+          throw new Error(`設定名稱不匹配: ${item.key_name}`)
       }
     })
 

@@ -147,8 +147,6 @@ FOR EACH ROW EXECUTE FUNCTION check_early_termination_validity();
 CREATE OR REPLACE FUNCTION check_reservation_validity()
 RETURNS TRIGGER 
 AS $$
-DECLARE
-    reservation_time_unit INT;
 BEGIN
     -- 使用 supabase UI 或 service_key 不受限制
     IF is_supabase_ui_or_service_key() THEN
@@ -168,13 +166,6 @@ BEGIN
 
     -- 只在插入操作時進行檢查
     IF TG_OP = 'INSERT' THEN
-        SELECT value::INT INTO reservation_time_unit FROM settings WHERE key_name = 'reservation_time_unit';
-        -- 開始、結束能被整除
-        IF (EXTRACT(EPOCH FROM NEW.begin_time) / 60) % reservation_time_unit != 0 OR 
-           (EXTRACT(EPOCH FROM NEW.end_time) / 60) % reservation_time_unit != 0 THEN
-            RAISE EXCEPTION '預約時間必須以 % 分鐘為單位', reservation_time_unit;
-        END IF;
-        
         -- 確保預約開始時間大於當前時間
         IF NEW.begin_time <= current_timestamp THEN
             RAISE EXCEPTION '預約開始時間必須大於當前時間';
@@ -241,11 +232,11 @@ DECLARE
     weekday_closing TIME;
     weekend_opening TIME;
     weekend_closing TIME;
-    minimum_duration INT;
     maximum_duration INT;
     student_limit INT;
     outsider_limit INT;
     reservation_duration INT;
+    reservation_time_unit INT;
 
     user_role user_role;
 BEGIN
@@ -257,10 +248,11 @@ BEGIN
     -- 從設定中提取時間和限制
     SELECT (value::jsonb)->>'begin_time', (value::jsonb)->>'end_time' INTO weekday_opening, weekday_closing FROM settings WHERE key_name = 'weekday_opening_hours';
     SELECT (value::jsonb)->>'begin_time', (value::jsonb)->>'end_time' INTO weekend_opening, weekend_closing FROM settings WHERE key_name = 'weekend_opening_hours';
-    SELECT value::numeric INTO minimum_duration FROM settings WHERE key_name = 'minimum_reservation_duration';
     SELECT value::numeric INTO maximum_duration FROM settings WHERE key_name = 'maximum_reservation_duration';
     SELECT value::int INTO student_limit FROM settings WHERE key_name = 'student_reservation_limit';
     SELECT value::int INTO outsider_limit FROM settings WHERE key_name = 'outsider_reservation_limit';
+    SELECT value::INT INTO reservation_time_unit FROM settings WHERE key_name = 'reservation_time_unit';
+       
 
     -- 計算預約時長
     reservation_duration := EXTRACT(EPOCH FROM (NEW.end_time - NEW.begin_time)) / 3600;
@@ -281,8 +273,14 @@ BEGIN
     -- 檢查預約時長是否合法
     -- 只在插入操作時進行檢查
     IF TG_OP = 'INSERT' THEN
-        IF reservation_duration < minimum_duration OR reservation_duration > maximum_duration THEN
-            RAISE EXCEPTION '預約時長必須介於 % 和 % 小時之間', minimum_duration, maximum_duration;
+     -- 開始、結束能被整除
+        IF (EXTRACT(EPOCH FROM NEW.begin_time) / 60) % reservation_time_unit != 0 OR 
+           (EXTRACT(EPOCH FROM NEW.end_time) / 60) % reservation_time_unit != 0 THEN
+            RAISE EXCEPTION '預約時間必須以 % 分鐘為單位', reservation_time_unit;
+        END IF;
+
+        IF reservation_duration > maximum_duration THEN
+            RAISE EXCEPTION '預約時長必須少於 % 小時', maximum_duration;
        END IF; 
     END IF;
 
