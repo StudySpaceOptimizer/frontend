@@ -62,7 +62,7 @@ export class SupabaseSeat implements Seat {
       }
     }
 
-    const { data: seatInfo, error: getSeatsError } = await supabase.from('seats').select('*')
+    const { data: seatInfo, error: getSeatsError } = await supabase.from('seats').select('*').order('id', { ascending: true })
 
     if (getSeatsError) {
       throw new Error(getSeatsError.message)
