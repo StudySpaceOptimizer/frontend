@@ -1,51 +1,52 @@
 -- 創建黑名單表
-CREATE TABLE IF NOT EXISTS blacklist (
-    id SERIAL PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
-    reason TEXT NOT NULL,
-    end_at TIMESTAMP WITH TIME ZONE NOT NULL
-);
+CREATE TABLE IF NOT EXISTS
+    blacklist (
+        id SERIAL PRIMARY KEY,
+        user_id UUID NOT NULL REFERENCES user_profiles (id) ON DELETE CASCADE,
+        reason TEXT NOT NULL,
+        end_at TIMESTAMP WITH TIME ZONE NOT NULL
+    );
 
 -- 為黑名單結束時間創建索引
 CREATE INDEX IF NOT EXISTS idx_blacklist_end_at ON blacklist (end_at);
 
 -- 創建視圖以篩選當前有效的黑名單記錄
-CREATE OR REPLACE VIEW active_blacklist
-WITH (security_invoker = on) AS
-SELECT *
-FROM public.blacklist
-WHERE end_at > NOW();
-
+CREATE OR REPLACE VIEW
+    active_blacklist
+WITH
+    (security_invoker = on) AS
+SELECT
+    *
+FROM
+    public.blacklist
+WHERE
+    end_at > NOW();
 
 /* ==========================
  * RLS
  * ==========================
  */
-
 -- 啟用 RLS
 ALTER TABLE blacklist ENABLE ROW LEVEL SECURITY;
 
 -- 允許管理員所有權限
 DROP POLICY IF EXISTS admin_all_access ON blacklist;
-CREATE POLICY admin_all_access ON blacklist
-AS PERMISSIVE
-FOR ALL
-USING (is_claims_admin())
-WITH CHECK (is_claims_admin());
+
+CREATE POLICY admin_all_access ON blacklist AS PERMISSIVE FOR ALL USING (is_claims_admin ())
+WITH
+    CHECK (is_claims_admin ());
 
 -- 允許用戶查詢自己的黑名單記錄
 DROP POLICY IF EXISTS user_select_own ON blacklist;
-CREATE POLICY user_select_own ON blacklist
-AS PERMISSIVE
-FOR SELECT
-USING (auth.uid() = user_id);
 
+CREATE POLICY user_select_own ON blacklist AS PERMISSIVE FOR
+SELECT
+    USING (auth.uid () = user_id);
 
 /* ==========================
  * TIGGER
  * ==========================
  */
-
 /*
  * 檢查使用者是否被ban
  * 如果會話使用者是 authenticator，則進一步檢查 JWT 中的 claims
@@ -54,11 +55,10 @@ USING (auth.uid() = user_id);
  * 如果使用者的 app_metadata 中的 banned 屬性為 true，則回傳 true
  * 其他情況下，回傳 true
  * example:
-    select is_not_banned();
+select is_not_banned();
  */
-CREATE OR REPLACE FUNCTION is_not_banned() 
-RETURNS BOOLEAN
-AS $$
+CREATE
+OR REPLACE FUNCTION is_not_banned () RETURNS BOOLEAN AS $$
 DECLARE
 is_banned BOOLEAN;
 BEGIN
@@ -85,6 +85,4 @@ BEGIN
         return true;
     END IF;
 END;
-$$ LANGUAGE plpgsql STABLE
-SECURITY INVOKER;
-
+$$ LANGUAGE plpgsql STABLE SECURITY INVOKER;

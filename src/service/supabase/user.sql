@@ -1,59 +1,53 @@
 -- 創建用戶個人資料表
-CREATE TABLE IF NOT EXISTS user_profiles (
-    -- 用戶本人可以選擇
-    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    email TEXT NOT NULL UNIQUE,
-    is_in BOOLEAN NOT NULL, -- 表示是否在場內
-    point INTEGER DEFAULT 0 NOT NULL,
-
-    -- 用戶本人可以選擇、更新
-    name TEXT,
-    phone TEXT,
-    id_card TEXT
-);
-
+CREATE TABLE IF NOT EXISTS
+    user_profiles (
+        -- 用戶本人可以選擇
+        id UUID PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
+        email TEXT NOT NULL UNIQUE,
+        is_in BOOLEAN NOT NULL, -- 表示是否在場內
+        point INTEGER DEFAULT 0 NOT NULL,
+        -- 用戶本人可以選擇、更新
+        name TEXT,
+        phone TEXT,
+        id_card TEXT
+    );
 
 /* ==========================
  * RLS
  * ==========================
  */
-
 -- 啟用 RLS
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 
 -- 允許管理員所有權限
 DROP POLICY IF EXISTS admin_all_access ON user_profiles;
-CREATE POLICY admin_all_access ON user_profiles
-AS PERMISSIVE
-FOR ALL
-USING (is_claims_admin())
-WITH CHECK (is_claims_admin());
+
+CREATE POLICY admin_all_access ON user_profiles AS PERMISSIVE FOR ALL USING (is_claims_admin ())
+WITH
+    CHECK (is_claims_admin ());
 
 -- 允許用戶存取自己的資料
 DROP POLICY IF EXISTS user_select_own ON user_profiles;
-CREATE POLICY user_select_own ON user_profiles
-AS PERMISSIVE
-FOR SELECT
-USING (auth.uid() = id);
+
+CREATE POLICY user_select_own ON user_profiles AS PERMISSIVE FOR
+SELECT
+    USING (auth.uid () = id);
 
 -- 允許用戶更新自己的資料
 DROP POLICY IF EXISTS user_update_own ON user_profiles;
-CREATE POLICY user_update_own ON user_profiles
-AS PERMISSIVE
-FOR UPDATE
-USING (auth.uid() = id)
-WITH CHECK (auth.uid() = id);
 
+CREATE POLICY user_update_own ON user_profiles AS PERMISSIVE FOR
+UPDATE USING (auth.uid () = id)
+WITH
+    CHECK (auth.uid () = id);
 
 /* ==========================
  * CLS
  * ==========================
  */
-
 -- 限制非管理員的更新範圍
-CREATE OR REPLACE FUNCTION cls_user_profiles_update()
-RETURNS TRIGGER AS
-$$
+CREATE
+OR REPLACE FUNCTION cls_user_profiles_update () RETURNS TRIGGER AS $$
 BEGIN
     -- 使用 supabase UI 或 service_key 不受限制
     IF is_supabase_ui_or_service_key() THEN
@@ -77,26 +71,22 @@ BEGIN
 
     RETURN NEW;
 END;
-$$
-LANGUAGE plpgsql STABLE
-SECURITY INVOKER;
+$$ LANGUAGE plpgsql STABLE SECURITY INVOKER;
 
 -- 在更新前檢查用戶個人資料更新條件
 DROP TRIGGER IF EXISTS trigger_cls_user_profiles_update ON user_profiles;
-CREATE TRIGGER trigger_cls_user_profiles_update
-BEFORE UPDATE ON user_profiles
-FOR EACH ROW EXECUTE FUNCTION cls_user_profiles_update();
 
+CREATE TRIGGER trigger_cls_user_profiles_update BEFORE
+UPDATE ON user_profiles FOR EACH ROW
+EXECUTE FUNCTION cls_user_profiles_update ();
 
 /* ==========================
  * TRIGGER
  * ==========================
  */
-
 -- 根據用戶的 email 來設置用戶角色及管理員角色，並儲存於 meta_data
-CREATE OR REPLACE FUNCTION set_user_metadata()
-RETURNS TRIGGER
-AS $$
+CREATE
+OR REPLACE FUNCTION set_user_metadata () RETURNS TRIGGER AS $$
 DECLARE
     userrole public.user_role;
     adminrole public.admin_role;
@@ -120,40 +110,35 @@ BEGIN
 
     RETURN NEW;
 END;
-$$
-LANGUAGE plpgsql
-SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 在新增用戶記錄前執行 raw_app_meta_data 設置
 DROP TRIGGER IF EXISTS trigger_set_user_metadata ON auth.users;
-CREATE TRIGGER trigger_set_user_metadata
-BEFORE INSERT ON auth.users
-FOR EACH ROW EXECUTE FUNCTION set_user_metadata();
+
+CREATE TRIGGER trigger_set_user_metadata BEFORE INSERT ON auth.users FOR EACH ROW
+EXECUTE FUNCTION set_user_metadata ();
 
 -- 在用戶註冊時自動新增 user_profile
-CREATE OR REPLACE FUNCTION create_user_profile()
-RETURNS TRIGGER
-AS $$
+CREATE
+OR REPLACE FUNCTION create_user_profile () RETURNS TRIGGER AS $$
 BEGIN
     -- 插入新的 user_profile 記錄
     INSERT INTO user_profiles (id, email, is_in, point) VALUES (NEW.id, NEW.email, false, 0);
 
     RETURN NULL;
 END;
-$$
-LANGUAGE plpgsql
-SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 在新增用戶記錄後執行 user_profile 記錄的新增
 DROP TRIGGER IF EXISTS trigger_create_user_profile ON auth.users;
+
 CREATE TRIGGER trigger_create_user_profile
-AFTER INSERT ON auth.users
-FOR EACH ROW EXECUTE FUNCTION create_user_profile();
+AFTER INSERT ON auth.users FOR EACH ROW
+EXECUTE FUNCTION create_user_profile ();
 
 -- 處理違規點數到達上限
-CREATE OR REPLACE FUNCTION ban_user_on_points_limit()
-RETURNS TRIGGER 
-AS $$
+CREATE
+OR REPLACE FUNCTION ban_user_on_points_limit () RETURNS TRIGGER AS $$
 DECLARE
     points_to_ban_user INT;
 BEGIN
@@ -176,37 +161,37 @@ BEGIN
     -- 返回更新後的記錄
     RETURN NEW;
 END;
-$$ 
-LANGUAGE plpgsql
-SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 當 user_profiles 表的 point 欄位被更新時檢查違規點數是否到達上限
 DROP TRIGGER IF EXISTS trigger_ban_user_on_points_limit ON user_profiles;
-CREATE TRIGGER trigger_ban_user_on_points_limit
-AFTER UPDATE OF point ON user_profiles
-FOR EACH ROW
-WHEN (OLD.point <> NEW.point)
-EXECUTE FUNCTION ban_user_on_points_limit();
 
+CREATE TRIGGER trigger_ban_user_on_points_limit
+AFTER
+UPDATE OF point ON user_profiles FOR EACH ROW WHEN (OLD.point <> NEW.point)
+EXECUTE FUNCTION ban_user_on_points_limit ();
 
 /* ==========================
  * UTILS FUNCTION
  * ==========================
  */
-
 /*
-  根據用戶ID獲取用戶數據，如果沒有提供用戶ID，則檢查管理員權限
-  - 如果沒有提供 user_id，則檢查是否有管理權限 (is_claims_admin())，如果有，返回所有用戶數據
-  - 如果提供了 user_id：
-      - 如果 user_id 等於 auth.uid()（當前認證用戶ID），則返回該用戶的數據
-      - 如果 user_id 不等於 auth.uid()，則再次檢查是否有管理權限，如果有，返回指定 user_id 的用戶數據
+根據用戶ID獲取用戶數據，如果沒有提供用戶ID，則檢查管理員權限
+- 如果沒有提供 user_id，則檢查是否有管理權限 (is_claims_admin())，如果有，返回所有用戶數據
+- 如果提供了 user_id：
+- 如果 user_id 等於 auth.uid()（當前認證用戶ID），則返回該用戶的數據
+- 如果 user_id 不等於 auth.uid()，則再次檢查是否有管理權限，如果有，返回指定 user_id 的用戶數據
 
-  Example:
-    SELECT * FROM get_user_data();
-    SELECT * FROM get_user_data('72e699aa-d50c-4ee3-9eb6-e29c169b5eff');
-*/
-CREATE OR REPLACE FUNCTION get_user_data(p_user_id UUID DEFAULT NULL, page_size INT DEFAULT 10, page_offset INT DEFAULT 0)
-RETURNS TABLE(
+Example:
+SELECT * FROM get_user_data();
+SELECT * FROM get_user_data('72e699aa-d50c-4ee3-9eb6-e29c169b5eff');
+ */
+CREATE
+OR REPLACE FUNCTION get_user_data (
+    p_user_id UUID DEFAULT NULL,
+    page_size INT DEFAULT 10,
+    page_offset INT DEFAULT 0
+) RETURNS TABLE (
     id UUID,
     email TEXT,
     user_role TEXT,
@@ -218,8 +203,7 @@ RETURNS TABLE(
     point INT,
     reason TEXT,
     end_at TIMESTAMP WITH TIME ZONE
-)
-AS $$
+) AS $$
 DECLARE
     current_user_id UUID := auth.uid();  -- 獲取當前認證用戶的ID
 BEGIN
@@ -304,6 +288,4 @@ BEGIN
         END IF;
     END IF;
 END;
-$$
-LANGUAGE plpgsql STABLE
-SECURITY INVOKER;
+$$ LANGUAGE plpgsql STABLE SECURITY INVOKER;

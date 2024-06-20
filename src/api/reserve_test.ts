@@ -36,33 +36,26 @@ async function signIn(email: string, password: string): Promise<any> {
   }
 
   return user
+
+
 }
 
 async function testReserveSuccess() {
   const user = await signIn(student, password)
 
-  // 生成預訂資料
-  const reservation = {
-    beginTime: new Date('2024-04-26T10:00:00'),
-    endTime: new Date('2024-04-26T12:00:00'),
-    userID: user!.id,
-    seatID: 1
+  const supabaseReserve = new SupabaseReserve()
+  const tomorrow = new Date()
+  tomorrow.setDate(tomorrow.getDate() + 1)
+
+  const beginTime = new Date(tomorrow.setHours(13, 0, 0, 0))
+  const endTime = new Date(tomorrow.setHours(14, 0, 0, 0))
+  const seatID = 'A2'
+
+  try {
+    await supabaseReserve.reserve(seatID, beginTime, endTime)
+  } catch (e) {
+    console.log(e)
   }
-
-  const { data, error } = await supabase
-    .from('reservations')
-    .insert([
-      {
-        begin_time: reservation.beginTime,
-        end_time: reservation.endTime,
-        user_id: reservation.userID,
-        seat_id: reservation.seatID
-      }
-    ])
-    .select('id')
-
-  if (error) console.log(error)
-  if (data) console.log(data[0].id)
 }
 
 async function testBannedUserReserve() {
@@ -103,12 +96,14 @@ async function testBannedUserReserve() {
   }
 }
 
-async function testReserveOverTwoWeeks(user: any) {
+async function testReserveOverTwoWeeks() {
+  const user = await signIn(student, password)
   // 生成預訂資料
+
   const reservation = {
     beginTime: new Date('2024-07-26T10:00:00'),
     endTime: new Date('2024-07-26T12:00:00'),
-    userID: user!.id,
+    userID: user.id,
     seatID: 1
   }
 
@@ -322,7 +317,7 @@ async function testRecordUserEntryExit() {
 }
 
 // 運行測試函數
-await testRecordUserEntryExit().catch(console.error)
+// await testRecordUserEntryExit().catch(console.error)
 
 // await testGetSeatsStatus()
 
@@ -331,5 +326,7 @@ await testRecordUserEntryExit().catch(console.error)
 
 // console.log(settings)
 
-// await testReserveOverTwoWeeks(user)
+// await testReserveOverTwoWeeks()
 // await testBannedUserReserve()
+
+await testReserveSuccess()

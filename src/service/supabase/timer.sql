@@ -1,34 +1,27 @@
-CREATE TABLE IF NOT EXISTS cronlog (
-    log_time timestamp with time zone,
-    log_msg TEXT
-);
-
+CREATE TABLE IF NOT EXISTS
+    cronlog (log_time timestamp with time zone, log_msg TEXT);
 
 /* ==========================
  * RLS
  * ==========================
  */
-
 -- 啟用 RLS
 ALTER TABLE cronlog ENABLE ROW LEVEL SECURITY;
 
 -- 允許管理員所有權限
 DROP POLICY IF EXISTS admin_all_access ON cronlog;
-CREATE POLICY admin_all_access ON cronlog
-AS PERMISSIVE
-FOR ALL
-USING (is_claims_admin())
-WITH CHECK (is_claims_admin());
 
+CREATE POLICY admin_all_access ON cronlog AS PERMISSIVE FOR ALL USING (is_claims_admin ())
+WITH
+    CHECK (is_claims_admin ());
 
 /* ==========================
  * TIMMER FUNCTION
  * ==========================
  */
-
 -- 檢查是否有未 check in 的預約
-CREATE OR REPLACE FUNCTION process_reservation_time_violations()
-RETURNS VOID AS $$
+CREATE
+OR REPLACE FUNCTION process_reservation_time_violations () RETURNS VOID AS $$
 DECLARE
     checkin_deadline INTERVAL;
     leave_deadline INTERVAL;
@@ -106,9 +99,12 @@ BEGIN
         END IF;
     END LOOP;
 END;
-$$ 
-LANGUAGE plpgsql
-SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 安排一個 CRON 任務每分鐘檢查一次預約時間違規
-SELECT cron.schedule('預約檢查', '* * * * *', $$CALL process_reservation_time_violations()$$);
+SELECT
+    cron.schedule (
+        '預約檢查',
+        '* * * * *',
+        $$CALL process_reservation_time_violations()$$
+    );
