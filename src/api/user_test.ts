@@ -35,18 +35,15 @@ async function signIn(email: string, password: string): Promise<any> {
   return user
 }
 
-
 async function testSignUpSuccess(email: string, password: string): Promise<any> {
   const { error } = await supabase.auth.signUp({
     email: email,
     password: password
   })
   if (error) {
-      console.log(error)
+    console.log(error)
   }
-  
 }
-
 
 async function testGrantAdminRoleSuccess() {
   //   let user = await signIn(admin, password)
@@ -78,9 +75,6 @@ async function testGetSettingData() {
         break
       case 'weekend_opening_hours':
         settings.weekendOpeningHours = JSON.parse(item.value)
-        break
-      case 'minimum_reservation_duration':
-        settings.minimumReservationDuration = parseFloat(item.value)
         break
       case 'maximum_reservation_duration':
         settings.maximumReservationDuration = parseInt(item.value, 10)
@@ -123,6 +117,41 @@ async function testGetUserByAdmin() {
   }
 }
 
+async function getAllUserData() {
+  const pageSize = 10,
+    pageOffset = 0
+
+  const user = await signIn(admin, password)
+
+  // const userID = '9252cca4-d17e-46bd-bd8c-8f15492e082e'
+  const userID = undefined
+  const email = undefined
+  const userRole = 'student'
+  const adminRole = undefined
+  const isIn = undefined
+  const name = undefined
+
+  const supabaseUser = new SupabaseUser()
+
+  try {
+    const result = await supabaseUser.getUsers(
+      { pageSize, pageOffset },
+      userID,
+      email,
+      userRole,
+      adminRole,
+      isIn,
+      name
+    )
+
+    console.log(result)
+  } catch (e) {
+    console.log(e)
+  }
+}
+
+await getAllUserData()
+
 // await testGrantAdminRoleSuccess()
 // await testGetSettingData()
 
@@ -148,4 +177,4 @@ async function testGetUserByAdmin() {
 // else console.log(data)
 
 // await testGetUserByAdmin()
-await testSignUpSuccess('daasadadds@asd', 'daqwewqes')
+// await testSignUpSuccess('daasadadds@asd', 'daqwewqes')

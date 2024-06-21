@@ -178,42 +178,64 @@ export class SupabaseReserve implements Reserve {
     }
   }
 
-  async getAllReservations(config: Config): Promise<Type.Reservation[]> {
+  async getAllReservations(
+    config: Config,
+    userID?: string,
+    userRole?: string,
+    seatID?: string,
+    beginTimeStart?: Date,
+    beginTimeEnd?: Date,
+    endTimeStart?: Date,
+    endTimeEnd?: Date
+  ): Promise<Type.Reservation[]> {
     const { pageSize = 10, pageOffset = 0 } = config
-    const { data: reservations } = await supabase
-      .from('reservations')
-      .select(`*, user_profiles (*)`)
-      .range(pageOffset, pageOffset + pageSize - 1)
-      .order('begin_time', {
-        ascending: false
-      })
 
+    let query = supabase.rpc('test_get_reservations', {
+      page_size: pageSize,
+      page_offset: pageOffset
+    })
+
+    if (userID) query = query.eq('user_id', userID)
+    if (userRole) query = query.eq('user_role', userRole)
+    if (seatID) query = query.eq('seat_id', seatConverterToDB(seatID))
+
+    /// 時間會少 8 小時
+    if (beginTimeStart) query = query.gte('begin_time', beginTimeStart.toISOString())
+    if (beginTimeEnd) query = query.lte('begin_time', beginTimeEnd.toISOString())
+    if (endTimeStart) query = query.gte('end_time', endTimeStart.toISOString())
+    if (endTimeEnd) query = query.lte('end_time', endTimeEnd.toISOString())
+
+    const { data: reservations, error } = await query
+
+    if (error) {
+      throw new Error(error.message)
+    }
     return (
       reservations?.map(
         (reservation: any): Type.Reservation => ({
           id: reservation.id,
-          beginTime: reservation.begin_time,
-          endTime: reservation.end_time,
+          beginTime: new Date(reservation.begin_time),
+          endTime: new Date(reservation.end_time),
+          seatID: seatConverterFromDB(reservation.seat_id),
+          checkInTime: reservation.check_in_time,
+          temporaryLeaveTime: reservation.temporary_leave_time,
           user: {
-            id: reservation.user_profiles.user_id,
+            id: reservation.user_id,
             userRole: reservation.user_role,
-            email: reservation.user_profiles.email,
-            adminRole: reservation.user_profiles.admin_role,
-            isIn: reservation.user_profiles.is_in,
-            name: reservation.user_profiles.name,
-            phone: reservation.user_profiles.phone,
-            idCard: reservation.user_profiles.id_card,
-            point: reservation.user_profiles.point,
-            ban: reservation.user_profiles.blacklist
+            email: reservation.email,
+            adminRole: reservation.admin_role,
+            isIn: reservation.is_in,
+            name: reservation.name,
+            phone: reservation.phone,
+            idCard: reservation.id_card,
+            point: reservation.point,
+            ban: reservation.blacklist
               ? {
                   reason: reservation.blacklist[0].reason,
                   endAt: new Date(reservation.blacklist[0].end_at)
                 }
               : undefined
-          },
-          seatID: seatConverterFromDB(reservation.seat_id),
-          checkInTime: reservation.check_in_time,
-          temporaryLeaveTime: reservation.temporary_leave_time
+          }
         })
       ) || []
     )

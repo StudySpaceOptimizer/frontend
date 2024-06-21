@@ -4,6 +4,7 @@ import type * as model from '../types/seat.ts'
 import { seatConverterFromDB } from '../utils/index'
 import { SupabaseUser } from './user'
 import { SupabaseReserve } from './reserve'
+import type * as Type from '../types'
 
 const student = 'student@mail.ntou.edu.tw'
 const bannedstudent = 'bannedstudent@mail.ntou.edu.tw'
@@ -36,8 +37,6 @@ async function signIn(email: string, password: string): Promise<any> {
   }
 
   return user
-
-
 }
 
 async function testReserveSuccess() {
@@ -161,49 +160,9 @@ async function testTerminateReservationSuccess() {
 
 import { useSettingStore } from '../stores/setting'
 async function testGetSeatsStatus() {
-  // 如果沒有給定config : beginTime = Now 的下一個時間段 或是 營業開始時間, endTime = 營業結束時間
-  // 如果 now < 營業開始時間，beginTime = 營業開始時間
-  // 如果 now > 營業結束時間，返回 'unavailable'
-
-  /// get settings
-
-  // const settingStore = useSettingStore()
-  // if (!settingStore.settings) throw new Error('系統錯誤，找不到設定')
-
-  // const now = new Date()
-  // const isWeekend = now.getDay() === 0 || now.getDay() === 6
-  // const openingHours = isWeekend
-  //   ? settingStore.settings.weekendOpeningHours
-  //   : settingStore.settings.weekdayOpeningHours
-
   let beginTime = new Date('2024-04-25T14:00:00')
   let endTime = new Date('2024-04-25T18:00:00')
   let unavailable = false
-
-  // if (!beginTime || !endTime) {
-  //   const openingTime = parseTimeString(openingHours.beginTime)
-  //   const closingTime = parseTimeString(openingHours.endTime)
-
-  //   beginTime = new Date(now.setHours(openingTime.hours, openingTime.minutes, 0, 0))
-  //   endTime = new Date(now.setHours(closingTime.hours, closingTime.minutes, 0, 0))
-
-  //   // 如果当前时间小于开业时间或超过闭店时间，处理逻辑
-  //   if (now >= endTime) {
-  //     unavailable = true
-  //   } else if (now >= beginTime && now < endTime) {
-  //     let nextPeriod = new Date(now)
-  //     const minutes = nextPeriod.getMinutes()
-  //     const hours = nextPeriod.getHours()
-
-  //     if (minutes < 30 && minutes > 0) {
-  //       nextPeriod.setMinutes(30, 0, 0)
-  //     } else if (minutes > 30) {
-  //       nextPeriod.setHours(hours + 1, 0, 0, 0)
-  //     }
-
-  //     beginTime = nextPeriod
-  //   }
-  // }
 
   const { data: seatInfo, error: getSeatsError } = await supabase.from('seats').select('*')
 
@@ -329,4 +288,42 @@ async function testRecordUserEntryExit() {
 // await testReserveOverTwoWeeks()
 // await testBannedUserReserve()
 
-await testReserveSuccess()
+// await testReserveSuccess()
+
+async function getAllReservations() {
+  const pageSize = 10,
+    pageOffset = 0
+
+  const user = await signIn(admin, password)
+
+  const userID = undefined
+  const userRole = 'student'
+  const seatID = 'A2'
+  const beginTimeStart = new Date('2024-06-21T13:00:00')
+  // const beginTimeStart = undefined
+  // const beginTimeEnd = new Date('2024-06-21T07:00:00')
+  const beginTimeEnd = undefined
+  const endTimeStart = undefined
+  const endTimeEnd = undefined
+
+  const supabaseReserve = new SupabaseReserve()
+
+  try {
+    const result = await supabaseReserve.getAllReservations(
+      { pageSize, pageOffset },
+      userID,
+      userRole,
+      seatID,
+      beginTimeStart,
+      beginTimeEnd,
+      endTimeStart,
+      endTimeEnd
+    )
+
+    console.log(result)
+  } catch (e) {
+    console.log(e)
+  }
+}
+
+await getAllReservations()

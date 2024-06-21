@@ -289,3 +289,56 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE plpgsql STABLE SECURITY INVOKER;
+
+CREATE
+OR REPLACE FUNCTION test_get_user_data (
+    page_size INT DEFAULT 10,
+    page_offset INT DEFAULT 0
+) RETURNS TABLE (
+    id UUID,
+    email TEXT,
+    user_role TEXT,
+    admin_role TEXT,
+    is_in BOOLEAN,
+    name TEXT,
+    phone TEXT,
+    id_card TEXT,
+    point INT,
+    reason TEXT,
+    end_at TIMESTAMP WITH TIME ZONE
+) AS $$ 
+BEGIN
+    RETURN QUERY
+    SELECT
+        up.id,
+        up.email,
+        claims ->> 'user_role' as user_role,
+        claims ->> 'admin_role' as admin_role,
+        up.is_in,
+        up.name,
+        up.phone,
+        up.id_card,
+        up.point,
+        ab.reason,
+        ab.end_at
+    FROM
+        user_profiles up
+    LEFT JOIN LATERAL (
+        SELECT
+            ab.reason,
+            ab.end_at
+        FROM
+            active_blacklist ab
+        WHERE
+            ab.user_id = up.id
+        ORDER BY
+            ab.end_at DESC
+        LIMIT 1
+    ) ab ON TRUE
+    CROSS JOIN LATERAL
+        get_claims(up.id) as claims
+    ORDER BY up.id  -- 添加排序以確保結果一致
+    LIMIT page_size OFFSET page_offset;
+ 
+END;
+$$ LANGUAGE plpgsql STABLE SECURITY INVOKER;

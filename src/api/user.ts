@@ -1,6 +1,6 @@
 import type * as Type from '../types'
 import { supabase } from '../service/supabase/supabase'
-import type { User } from './index'
+import type { User, Config } from './index'
 
 export class SupabaseUser implements User {
   /**
@@ -119,13 +119,30 @@ export class SupabaseUser implements User {
    * @param getAllUser 是否獲取所有用戶
    * @returns 返回用戶數據列表
    */
-  async getUsers(config: any, userId?: string): Promise<Type.UserData[]> {
+  async getUsers(
+    config: Config,
+    userID?: string,
+    email?: string,
+    userRole?: string,
+    adminRole?: string,
+    isIn?: boolean,
+    name?: string
+  ): Promise<Type.UserData[]> {
     const { pageSize, pageOffset } = config
-    const { data: userProfiles, error } = await supabase.rpc('get_user_data', {
-      p_user_id: userId,
+
+    let query = supabase.rpc('test_get_user_data', {
       page_size: pageSize,
       page_offset: pageOffset
     })
+
+    if (userID) query = query.eq('id', userID)
+    if (email) query = query.eq('email', email)
+    if (userRole) query = query.eq('user_role', userRole)
+    if (adminRole) query = query.eq('admin_role', adminRole)
+    if (isIn) query = query.eq('isIn', isIn)
+    if (name) query = query.eq('name', name)
+
+    const { data: userProfiles, error } = await query
 
     if (error) {
       throw new Error(error.message)

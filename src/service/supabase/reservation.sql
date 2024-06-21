@@ -476,13 +476,13 @@ OR REPLACE FUNCTION check_unfinished_reservation () RETURNS TRIGGER AS $$
 DECLARE
     end_of_day TIMESTAMP WITH TIME ZONE;
 
-next_time_unit TIMESTAMP WITH TIME ZONE;
+    next_time_unit TIMESTAMP WITH TIME ZONE;
 
-reservation_time_unit INT;
+    reservation_time_unit INT;
 
-total_minutes INT;
+    total_minutes INT;
 
-next_minutes INT;
+    next_minutes INT;
 
 BEGIN
     -- 使用 supabase UI 或 service_key 不受限制
@@ -645,13 +645,125 @@ END;
 $$ LANGUAGE plpgsql STABLE SECURITY INVOKER;
 
 CREATE
+OR REPLACE FUNCTION test_get_reservations (
+    page_size INT DEFAULT 10,
+    page_offset INT DEFAULT 0
+) RETURNS TABLE (
+    -- reservation
+    id UUID,
+    begin_time TIMESTAMP WITH TIME ZONE,
+    end_time TIMESTAMP WITH TIME ZONE,
+    seat_id int8,
+    check_in_time TIMESTAMP WITH TIME ZONE,
+    temporary_leave_time TIMESTAMP WITH TIME ZONE,
+    -- user_data
+    user_id UUID,
+    email TEXT,
+    user_role TEXT,
+    admin_role TEXT,
+    is_in BOOLEAN,
+    name TEXT,
+    phone TEXT,
+    id_card TEXT,
+    point INT,
+    reason TEXT,
+    end_at TIMESTAMP WITH TIME ZONE
+) AS $$ BEGIN
+    RETURN QUERY
+    SELECT
+        res.id,
+        res.begin_time,
+        res.end_time,
+        res.seat_id,
+        res.check_in_time,
+        res.temporary_leave_time,
+        user_data.id,
+        user_data.email,
+        user_data.user_role,
+        user_data.admin_role,
+        user_data.is_in,
+        user_data.name,
+        user_data.phone,
+        user_data.id_card,
+        user_data.point,
+        user_data.reason,
+        user_data.end_at
+    FROM
+        reservations res
+        CROSS JOIN LATERAL test_get_user_data() AS user_data
+
+    ORDER BY
+        res.begin_time DESC -- 確保結果有一致的排序
+    LIMIT
+        page_size OFFSET page_offset;
+
+END;
+
+$$ LANGUAGE plpgsql STABLE SECURITY INVOKER;
+
+CREATE
+OR REPLACE FUNCTION test_get_active_reservations (
+    page_size INT DEFAULT 10,
+    page_offset INT DEFAULT 0
+) RETURNS TABLE (
+    -- reservation
+    id UUID,
+    begin_time TIMESTAMP WITH TIME ZONE,
+    end_time TIMESTAMP WITH TIME ZONE,
+    seat_id int8,
+    check_in_time TIMESTAMP WITH TIME ZONE,
+    temporary_leave_time TIMESTAMP WITH TIME ZONE,
+    -- user_data
+    user_id UUID,
+    email TEXT,
+    user_role TEXT,
+    admin_role TEXT,
+    is_in BOOLEAN,
+    name TEXT,
+    phone TEXT,
+    id_card TEXT,
+    point INT,
+    reason TEXT,
+    end_at TIMESTAMP WITH TIME ZONE
+) AS $$ BEGIN
+    RETURN QUERY
+    SELECT
+        res.id,
+        res.begin_time,
+        res.end_time,
+        res.seat_id,
+        res.check_in_time,
+        res.temporary_leave_time,
+        user_data.id,
+        user_data.email,
+        user_data.user_role,
+        user_data.admin_role,
+        user_data.is_in,
+        user_data.name,
+        user_data.phone,
+        user_data.id_card,
+        user_data.point,
+        user_data.reason,
+        user_data.end_at
+    FROM
+        active_reservations res
+        CROSS JOIN LATERAL test_get_user_data() AS user_data
+        
+    ORDER BY
+        res.begin_time DESC -- 確保結果有一致的排序
+    LIMIT
+        page_size OFFSET page_offset;
+
+END;
+
+$$ LANGUAGE plpgsql STABLE SECURITY INVOKER;
+
+CREATE
 OR REPLACE FUNCTION record_user_entry_exit (p_user_id UUID) RETURNS VOID AS $$
 DECLARE
     curr_time TIMESTAMP WITH TIME ZONE := current_timestamp;
-
-reservation RECORD;
-
-user_is_in BOOLEAN;
+    reservation RECORD;
+    user_is_in BOOLEAN;
 
 BEGIN
     -- 檢查是否為管理員

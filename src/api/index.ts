@@ -35,7 +35,16 @@ export interface Reserve {
   getPersonalReservationsCount(): Promise<any>
   deleteReservation(id: string): Promise<any>
   terminateReservation(id: string): Promise<any>
-  getAllReservations(config: any): Promise<any>
+  getAllReservations(
+    config: any,
+    userID?: string,
+    userRole?: string,
+    seatID?: string,
+    beginTimeStart?: Date,
+    beginTimeEnd?: Date,
+    endTimeStart?: Date,
+    endTimeEnd?: Date
+  ): Promise<any>
   getAllReservationsCount(): Promise<any>
 
   // 報到、離開
