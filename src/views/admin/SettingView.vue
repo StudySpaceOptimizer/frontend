@@ -21,7 +21,7 @@ const form = ref({
   ],
   studentReservationLimit: settingStore.settings?.studentReservationLimit ?? 1,
   outsiderReservationLimit: settingStore.settings?.outsiderReservationLimit ?? 1,
-  minimumReservationDuration: settingStore.settings?.minimumReservationDuration ?? 0.5,
+  reservation_time_unit: settingStore.settings?.reservation_time_unit ?? 0.5,
   maximumReservationDuration: settingStore.settings?.maximumReservationDuration ?? 24,
   pointsToBanUser: settingStore.settings?.pointsToBanUser ?? 1,
   checkinDeadlineMinutes: settingStore.settings?.checkin_deadline_minutes ?? 1,
@@ -41,7 +41,7 @@ function onSubmit() {
     },
     studentReservationLimit: form.value.studentReservationLimit,
     outsiderReservationLimit: form.value.outsiderReservationLimit,
-    minimumReservationDuration: form.value.minimumReservationDuration,
+    reservation_time_unit: form.value.reservation_time_unit,
     maximumReservationDuration: form.value.maximumReservationDuration,
     pointsToBanUser: form.value.pointsToBanUser,
     checkin_deadline_minutes: form.value.checkinDeadlineMinutes,
@@ -81,15 +81,14 @@ function makeRange(start: number, end: number) {
         :disabled-seconds="() => makeRange(0, 59)"
       />
     </el-form-item>
-    <el-form-item label="最小預約時間" prop="minimumReservationDuration">
+    <el-form-item label="最小預約單位" prop="minimumReservationDuration">
       <el-input-number
-        v-model="form.minimumReservationDuration"
-        :min="0.5"
-        :max="2"
-        :precision="1"
-        :step="0.5"
+        v-model="form.reservation_time_unit"
+        :min="30"
+        :max="120"
+        :step="30"
       />
-      <el-text style="margin-left: 10px; margin-right: auto">小時</el-text>
+      <el-text style="margin-left: 10px; margin-right: auto">分鐘</el-text>
     </el-form-item>
     <el-form-item label="單次預約時間上限" prop="maximumReservationDuration">
       <el-input-number
@@ -102,12 +101,12 @@ function makeRange(start: number, end: number) {
       <el-text style="margin-left: 10px; margin-right: auto">小時</el-text>
     </el-form-item>
     <el-form-item label="學生提前預約期限" prop="reservationLimit">
-      <el-input-number v-model="form.studentReservationLimit" :min="1" :max="30" />
-      <el-text style="margin-left: 10px; margin-right: auto">天</el-text>
+      <el-input-number v-model="form.studentReservationLimit" :min="-1" :max="30" />
+      <el-text style="margin-left: 10px; margin-right: auto">天 (0 代表僅供當天預約，-1 代表不能預約)</el-text>
     </el-form-item>
     <el-form-item label="校外人士提前預約期限" prop="outsiderReservationLimit">
-      <el-input-number v-model="form.outsiderReservationLimit" :min="1" :max="30" />
-      <el-text style="margin-left: 10px; margin-right: auto">天</el-text>
+      <el-input-number v-model="form.outsiderReservationLimit" :min="-1" :max="30" />
+      <el-text style="margin-left: 10px; margin-right: auto">天 (0 代表僅供當天預約，-1 代表不能預約)</el-text>
     </el-form-item>
     <el-form-item label="報到時間" prop="checkin_deadline_minutes">
       <el-input-number v-model="form.checkinDeadlineMinutes" :min="1" :max="60" />

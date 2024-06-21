@@ -26,7 +26,7 @@ export class DrawUntil {
 
   static seat_id_gen(type: string = 'A') {
     if (DrawUntil.seat_id[type] !== undefined) {
-      return `${type}${DrawUntil.seat_id[type]++}`
+      return `${type}${++DrawUntil.seat_id[type]}`
     } else {
       DrawUntil.seat_id[type] = 1
       return `${type}1`

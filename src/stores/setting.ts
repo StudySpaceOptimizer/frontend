@@ -39,8 +39,8 @@ export const useSettingStore = defineStore('settings', () => {
       : settings.value?.weekdayOpeningHours
   }
 
-  function getMinimumReservationDuration(): number {
-    return settings.value?.minimumReservationDuration ?? 0
+  function getReservationTimeUnit(): number {
+    return (settings.value?.reservation_time_unit  ?? 0) / 60
   }
 
   function getMaximumReservationDuration(): number {
@@ -52,7 +52,7 @@ export const useSettingStore = defineStore('settings', () => {
     getSettings,
     updateSettings,
     getTodayOpeningHours,
-    getMinimumReservationDuration,
+    getMinimumReservationDuration: getReservationTimeUnit,
     getMaximumReservationDuration
   }
 }, {

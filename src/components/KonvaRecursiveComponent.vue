@@ -40,6 +40,12 @@ watchEffect(async () => {
     return
   }
 
+  if (!seatStatus.available) {
+    components.value[0].config.fill = '#808080'
+    isSeat = false
+    return
+  }
+
   isSeat = true
 
   // TODO: optimize, refactor

@@ -171,8 +171,28 @@ export class SupabaseUser implements User {
     )
   }
 
+  async getUsersCount(): Promise<number> {
+    const { data: data, error } = await supabase
+      .from('user_profiles')
+      .select('count', { count: 'exact' })
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    return data?.at(0)?.count || 0
+  }
+
   async getMyUser(userId: string): Promise<Type.UserData> {
-    return (await this.getUsers({}, userId))[0]
+    return (
+      await this.getUsers(
+        {
+          pageSize: 1,
+          pageOffset: 0
+        },
+        userId
+      )
+    )[0]
   }
 
   async updateUserPassword(password: string): Promise<void> {
@@ -250,27 +270,10 @@ export class SupabaseUser implements User {
    * @param point 要增加的積分數
    * @returns 無返回值，操作失敗將拋出錯誤
    */
-  async addPointUser(id: string, point: number): Promise<void> {
-    const { data, error: getError } = await supabase
-      .from('user_profiles')
-      .select('point')
-      .eq('id', id)
-      .single()
-
-    if (getError) {
-      throw new Error(`取得用戶點數時發生錯誤: ${getError.message}`)
-    }
-
-    if (!data) {
-      throw new Error('找不到用戶資料')
-    }
-
-    // 計算新的點數
-    const newPoint = data.point + point
-
+  async updatePointUser(id: string, point: number): Promise<void> {
     const { error: updateError } = await supabase
       .from('user_profiles')
-      .update({ point: newPoint })
+      .update({ point: point })
       .eq('id', id)
 
     if (updateError) {
