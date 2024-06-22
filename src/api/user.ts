@@ -21,7 +21,7 @@ export class SupabaseUser implements User {
         case 400:
           throw new Error('登入失敗，郵件信箱或密碼不正確')
         default:
-          console.log(error.message)
+          console.error(error.message)
           throw new Error('遇到未知錯誤，請稍後再試')
       }
     }
@@ -68,7 +68,6 @@ export class SupabaseUser implements User {
    * @returns 無返回值，註冊失敗將拋出錯誤
    */
   async studentSignUp(email: string, password: string): Promise<void> {
-    console.log(`email: ${email}, password: ${password}`)
     if (email.split('@')[1] !== 'mail.ntou.edu.tw') {
       throw new Error('請使用學校信箱註冊')
     }
@@ -83,7 +82,7 @@ export class SupabaseUser implements User {
         case 422:
           throw new Error('密碼應至少包含 6 個字元')
         default:
-          console.log(error.message)
+          console.error(error.message)
           throw new Error('遇到未知錯誤，請稍後再試')
       }
     }
@@ -107,7 +106,7 @@ export class SupabaseUser implements User {
         case 422:
           throw new Error('密碼應至少包含 6 個字元')
         default:
-          console.log(error.message)
+          console.error(error.message)
           throw new Error('遇到未知錯誤，請稍後再試')
       }
     }

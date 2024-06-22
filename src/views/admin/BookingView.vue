@@ -53,11 +53,16 @@ async function cancelBooking(id: string) {
 }
 
 async function getReservationData(filterCondition?: any) {
-  const data = await reserveApi.getAllReservations({
-    pageSize: filterCondition?.pageSize || 10,
-    pageOffset: filterCondition?.pageOffset
-  })
-  return transformReservations(data)
+  try {
+    const data = await reserveApi.getAllReservations({
+      pageSize: filterCondition?.pageSize || 10,
+      pageOffset: filterCondition?.pageOffset
+    })
+    return transformReservations(data)
+  } catch (error: any) {
+    ElMessage.error(error.message)
+    return []
+  }
 }
 
 async function updateReservationData(data: number): Promise<void> {

@@ -214,7 +214,5 @@ export class SupabaseSeat implements Seat {
     if (error) {
       throw new Error(`更新座位失敗: ${error.message}`)
     }
-
-    console.log('座位更新成功')
   }
 }

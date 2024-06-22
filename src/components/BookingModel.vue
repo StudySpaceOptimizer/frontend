@@ -95,16 +95,21 @@ function getTime(time: string) {
 const disabledTimes = ref<string[]>([])
 watch(dialogVisible, async (value) => {
   if (value) {
-    const data = await seatApi.getSeatStatus(seatName.value)
-    const reservationsTime = data.reservations
-
-    disabledTimes.value = []
-    reservationsTime.forEach((reservation: any) => {
-      const beginTime = getTime(reservation.beginTime)
-      const endTime = getTime(reservation.endTime)
-
-      disabledTimes.value.push(`${beginTime}-${endTime}`)
-    })
+    try {
+      const data = await seatApi.getSeatStatus(seatName.value)
+      const reservationsTime = data.reservations
+  
+      disabledTimes.value = []
+      reservationsTime.forEach((reservation: any) => {
+        const beginTime = getTime(reservation.beginTime)
+        const endTime = getTime(reservation.endTime)
+  
+        disabledTimes.value.push(`${beginTime}-${endTime}`)
+      })
+    } catch (e: any) {
+      console.error('獲取座位預約紀錄失敗: ', e.message)
+      ElMessage.error('獲取座位預約紀錄失敗，該座位可能已被預約')
+    }
   }
 })
 

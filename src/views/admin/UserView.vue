@@ -10,11 +10,16 @@ const userApi = DependencyContainer.inject<Api.User>(Api.API_SERVICE.USER)
 const users = ref<any[]>([])
 
 async function getUserData(page: number) {
-  const data = await userApi.getUsers({
-    pageSize: 10,
-    pageOffset: Math.max(0, (page - 1) * 10)
-  })
-  return data
+  try {
+    const data = await userApi.getUsers({
+      pageSize: 10,
+      pageOffset: Math.max(0, (page - 1) * 10)
+    })
+    return data
+  } catch (error: any) {
+    ElMessage.error(error.message)
+    return []
+  }
 }
 
 const count = ref(0)

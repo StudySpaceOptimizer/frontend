@@ -79,11 +79,17 @@ export function useReservation() {
   }
 
   const getReservationData = async (filterCondition?: any) => {
-    const data = await reserveApi.getPersonalReservations({
-      pageSize: filterCondition?.pageSize || 10,
-      pageOffset: filterCondition?.pageOffset
-    })
-    return transformReservations(data)
+    try {
+      const data = await reserveApi.getPersonalReservations({
+        pageSize: filterCondition?.pageSize || 10,
+        pageOffset: filterCondition?.pageOffset
+      })
+      return transformReservations(data)
+    } catch (error: any) {
+      console.error(error)
+      ElMessage.error("無法取得個人預約記錄")
+      return []
+    }
   }
 
   const updateReservationData = async (data: number): Promise<void> => {
@@ -94,7 +100,12 @@ export function useReservation() {
   }
 
   const getCount = async () => {
-    return await reserveApi.getPersonalReservationsCount()
+    try {
+      return await reserveApi.getPersonalReservationsCount()
+    } catch (error: any) {
+      console.error(error)
+      return 0
+    }
   }
 
   return { reservations, getReservationData, updateReservationData, getCount }

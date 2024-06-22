@@ -13,10 +13,15 @@ const count = ref(0)
 const search = ref('')
 
 async function getSeatDataWithCache() {
-  if (cacheSeats.length === 0) {
-    cacheSeats = await seatApi.getSeatsStatus({})
+  try {
+    if (cacheSeats.length === 0) {
+      cacheSeats = await seatApi.getSeatsStatus({})
+    }
+    return cacheSeats.filter((seat) => seat.id.includes(search.value))
+  } catch (error: any) {
+    ElMessage.error(error.message)
+    return []
   }
-  return cacheSeats.filter((seat) => seat.id.includes(search.value))
 }
 
 async function getSeatDataPage(pageSize: number, pageOffset: number) {

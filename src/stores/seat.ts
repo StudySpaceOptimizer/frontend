@@ -25,11 +25,15 @@ export const useSeatStore = defineStore('seat', () => {
     canSelect = state
   }
 
-  async function fetchSeatsStatus(filter: Filter): Promise<void> {
-    seatsStatus.value = await seatApi.getSeatsStatus({
-      beginTime: filter.beginTime,
-      endTime: filter.endTime
-    })
+  async function fetchSeatsStatus(filter: Filter): Promise<void>{
+    try {
+      seatsStatus.value = await seatApi.getSeatsStatus({
+        beginTime: filter.beginTime,
+        endTime: filter.endTime
+      })
+    } catch (error: any) {
+      console.error(error)
+    }
   }
 
   async function getSeatStatus(seatID: string): Promise<any> {
