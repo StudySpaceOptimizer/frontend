@@ -1,10 +1,22 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+
+const version = import.meta.env.VITE_APP_VERSION || 'unknown'
+const type = import.meta.env.VITE_APP_TYPE || 'alpha'
+const formattedVersion = computed(() => {
+  const now = new Date()
+  const year = now.getFullYear().toString().slice(2)
+  const month = (now.getMonth() + 1).toString().padStart(2, '0')
+  return `${year}${month}.${version}.${type}`
+})
+</script>
+
 <template>
   <footer>
     <div class="wrapper">
       <p>全興書苑 預約系統</p>
       <p>© 2024 全興書苑</p>
-      <!-- TODO: version value to be enviorment variable -->
-      <p>version: 2401.1.alpha</p>
+      <p>{{ formattedVersion }}</p>
     </div>
   </footer>
 </template>
