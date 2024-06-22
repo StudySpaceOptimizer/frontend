@@ -85,7 +85,7 @@ function getNowCanBookingDay(): Date {
 }
 
 function getMinimumReservationDuration(): string {
-  const duration = settingStore.settings?.minimumReservationDuration
+  const duration = settingStore.settings?.reservation_time_unit! / 60
   if (duration) {
     const hours = Math.floor(duration)
     const minutes = (duration - hours) * 60
