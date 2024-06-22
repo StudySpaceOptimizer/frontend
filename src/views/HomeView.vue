@@ -18,11 +18,11 @@ const mapRef = ref(null)
 const drawStageConfig = reactive({
   width: 0,
   height: 0,
-  x: 0,
-  y: 0,
+  x: 110,
+  y: 60,
   // TODO: compute center
-  scaleX: 0.55,
-  scaleY: 0.55,
+  scaleX: 0.45,
+  scaleY: 0.45,
   offsetX: 0,
   offsetY: 0
 })
@@ -82,7 +82,7 @@ onMounted(() => {
 .map-container {
   position: relative;
   margin-top: 16px;
-  height: 80%;
+  height: 86%;
   width: 100%;
   border-radius: 6px;
   background-color: #e8e8e8;
