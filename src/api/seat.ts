@@ -118,16 +118,14 @@ export class SupabaseSeat implements Seat {
 
       let currentEnd = beginTime
 
-      console.log(currentEnd)
-
       // 可以用UTC時間比較
       coverage.forEach((time) => {
-        if (time.start.toISOString() == currentEnd.toISOString()) {
+        if (time.start.toISOString() == currentEnd!.toISOString()) {
           currentEnd = time.end
         }
       })
 
-      if (currentEnd >= endTime) {
+      if (currentEnd! >= endTime!) {
         seatData[seatId].status = 'reserved'
       } else {
         seatData[seatId].status = 'partiallyReserved'
