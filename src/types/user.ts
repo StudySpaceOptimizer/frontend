@@ -35,3 +35,8 @@ export interface SettingsData {
   check_in_violation_points: number // 違反 checkin 截止時間時增加的點數
   reservation_time_unit: number // 最小預約的單位(分鐘)
 }
+
+export interface PasswordForm {
+  password: string
+  repeatPassword: string
+}

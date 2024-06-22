@@ -99,26 +99,28 @@ export const useAccountStore = defineStore(
       }
     }
 
-    async function getUserProfile(): Promise<void> {
+    async function fetchUserProfile() {
       try {
         const userData = await api.getMyUser(userId.value)
-        userDisplayName.value = userData.name ?? 'guest'
-        userRole.value = userData.userRole ?? 'student'
-        adminRole.value = userData.adminRole ?? 'non-admin'
-        if (userData.name == undefined) {
-          ElMessage.warning('可以到個人資料修改名稱')
-        }
-
+        updateUserProfile(userData)
         settingStore.getSettings()
       } catch (error) {
         ElMessage.error('取得使用者資料失敗')
       }
     }
-
+    
+    function updateUserProfile(userData: any) {
+      userDisplayName.value = userData.name ?? 'guest'
+      userRole.value = userData.userRole ?? 'student'
+      adminRole.value = userData.adminRole ?? 'non-admin'
+      if (userData.name === undefined) {
+        ElMessage.warning('可以到個人資料修改名稱')
+      }
+    }
+    
     watch(isSignIn, (newValue, oldValue) => {
-      // TODO: optimize
-      if (oldValue === false && newValue === true) {
-        getUserProfile()
+      if (!oldValue && newValue && userId.value) {
+        fetchUserProfile()
       }
     })
 
@@ -136,7 +138,7 @@ export const useAccountStore = defineStore(
       studentSignUp,
       outsiderSignUp,
       toggleDialog,
-      getUserProfile
+      fetchUserProfile
     }
   },
   {

@@ -14,7 +14,6 @@ export class Seat extends Group {
     x: number,
     y: number,
     rotation: number,
-    // TODO: text content should be the seat number
     text: string = ''
   ) {
     const children = [

@@ -9,7 +9,6 @@ import type { Filter } from '../types'
 export const useSeatStore = defineStore('seat', () => {
   const seatApi = DependencyContainer.inject<API.Seat>(API.API_SERVICE.SEAT)
   const nowSelectedSeat = ref<string | null>(null)
-  // TODO: should expose thjis to outside
   const seatsStatus = ref<Type.SeatData[]>([])
   let canSelect = true
 
@@ -34,7 +33,6 @@ export const useSeatStore = defineStore('seat', () => {
   }
 
   async function getSeatStatus(seatID: string): Promise<any> {
-    // TODO: optimize this, this is O(n), maybe use a map?
     return computed(() => seatsStatus.value.find(seat => seat.id === seatID))
   }
 

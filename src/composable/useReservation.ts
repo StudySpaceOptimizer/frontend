@@ -78,7 +78,6 @@ export function useReservation() {
     })
   }
 
-  // TODO: optimzie this, handle filter condition namely.
   const getReservationData = async (filterCondition?: any) => {
     const data = await reserveApi.getPersonalReservations({
       pageSize: filterCondition?.pageSize || 10,
@@ -90,12 +89,10 @@ export function useReservation() {
   const updateReservationData = async (data: number): Promise<void> => {
     reservations.value = await getReservationData({
       pageSize: 10,
-      // TODO: don't minus 1 here, should be handled in the view.
       pageOffset: Math.max(0, (data - 1) * 10)
     })
   }
 
-  // TODO: maybe change method name or implement better way to get count.
   const getCount = async () => {
     return await reserveApi.getPersonalReservationsCount()
   }

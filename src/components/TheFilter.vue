@@ -48,24 +48,25 @@ function getOpeningHours(date: Date | string): {
 const earliestStartTime = ref(getOpeningHours(new Date()).beginTime)
 const latestEndTime = ref(getOpeningHours(new Date()).endTime)
 
-// TODO: rename this
 // 現在時間要調整到後面的半小時
-function nowTimeToCanBookingTime() {
+function getCanBookingTime() {
   const now = new Date()
   const nowHour = now.getHours()
   const nowMinute = now.getMinutes()
 
-  if (
-    now < new Date(`${now.toLocaleDateString()} ${earliestStartTime.value}`) ||
-    now > new Date(`${now.toLocaleDateString()} ${latestEndTime.value}`)
-  ) {
+  const todayEarliest = new Date(`${now.toLocaleDateString()} ${earliestStartTime.value}`)
+  const todayLatest = new Date(`${now.toLocaleDateString()} ${latestEndTime.value}`)
+
+  // 如果現在時間不在開放時間內，返回最早可預訂時間
+  if (now < todayEarliest || now > todayLatest) {
     return earliestStartTime.value
   }
 
+  // 調整當前時間到下一個可預訂的半小時
   if (nowMinute < 30) {
-    now.setMinutes(30)
+    now.setMinutes(30, 0, 0)
   } else {
-    now.setHours(nowHour + 1, 0)
+    now.setHours(nowHour + 1, 0, 0, 0)
   }
 
   const formattedHour = now.getHours().toString().padStart(2, '0')
@@ -74,18 +75,22 @@ function nowTimeToCanBookingTime() {
   return `${formattedHour}:${formattedMinute}`
 }
 
-function getNowCanBookingDay(): Date {
+function getCanBookingDay(): Date {
   const now = new Date()
-  // TODO: optimize, don't use string compare, use Date compare
-  if (now.getHours().toString() >= latestEndTime.value.split(':')[0]) {
+  const [latestHour, latestMinute] = latestEndTime.value.split(':').map(Number)
+
+  const latestTimeToday = new Date(now)
+  latestTimeToday.setHours(latestHour, latestMinute, 0, 0)
+
+  if (now >= latestTimeToday) {
     now.setDate(now.getDate() + 1)
   }
 
   return now
 }
 
-function getMinimumReservationDuration(): string {
-  const duration = settingStore.settings?.reservation_time_unit! / 60
+function getReservationTimeUnit(): string {
+  const duration = settingStore.getReservationTimeUnit()
   if (duration) {
     const hours = Math.floor(duration)
     const minutes = (duration - hours) * 60
@@ -96,11 +101,8 @@ function getMinimumReservationDuration(): string {
 }
 
 const DateTimePicker = ref({
-  // TODO: if nowtime > endTime, date must be tomorrow
-  date: getNowCanBookingDay(),
-
-  // TODO: [1] use now time
-  beginTime: nowTimeToCanBookingTime(),
+  date: getCanBookingDay(),
+  beginTime: getCanBookingTime(),
   endTime: latestEndTime
 })
 
@@ -138,7 +140,7 @@ function pickingDateChangeHandler() {
   if (!isSelectToday(date)) {
     DateTimePicker.value.beginTime = earliestStartTime.value
   } else {
-    DateTimePicker.value.beginTime = nowTimeToCanBookingTime()
+    DateTimePicker.value.beginTime = getCanBookingTime()
   }
 
   filter.beginTime = new Date(`${date} ${DateTimePicker.value.beginTime}`)
@@ -158,7 +160,7 @@ function checkDisabledDate(time: Date): boolean {
 }
 
 const timeSelectBeginTime = computed(() => {
-  return isSelectToday(DateTimePicker.value.date) ? nowTimeToCanBookingTime() : earliestStartTime.value
+  return isSelectToday(DateTimePicker.value.date) ? getCanBookingTime() : earliestStartTime.value
 })
 
 onMounted(() => {
@@ -186,7 +188,7 @@ onMounted(() => {
           class="mr-4"
           placeholder="開始時間"
           :start="timeSelectBeginTime"
-          :step="getMinimumReservationDuration()"
+          :step="getReservationTimeUnit()"
           :end="latestEndTime"
         />
       </div>
@@ -197,7 +199,7 @@ onMounted(() => {
           :min-time="DateTimePicker.beginTime"
           placeholder="結束時間"
           :start="timeSelectBeginTime"
-          :step="getMinimumReservationDuration()"
+          :step="getReservationTimeUnit()"
           :end="latestEndTime"
         />
       </div>

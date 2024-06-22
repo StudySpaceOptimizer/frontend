@@ -10,23 +10,20 @@ import DrawStage from '@/components/seats/stage'
 import SeatIllustration from '@/components/SeatIllustration.vue'
 import SeatMap from '@/components/SeatMap.vue'
 import TheFilter from '@/components/TheFilter.vue'
-
-// TODO: optimize this
 import { useSettingStore } from '@/stores/setting'
 
+const { getSettings } = useSettingStore()
 const mapRef = ref(null)
 const drawStageConfig = reactive({
   width: 0,
   height: 0,
-  x: 110,
-  y: 60,
-  // TODO: compute center
+  x: 0,
+  y: 0,
   scaleX: 0.45,
   scaleY: 0.45,
   offsetX: 0,
   offsetY: 0
 })
-// TODO: move to composable
 const drawStage = new DrawStage()
 let isInitedDrawStage = false
 
@@ -35,8 +32,8 @@ useResizeObserver(mapRef, (entries) => {
   
   drawStageConfig.width = width
   drawStageConfig.height = height
-  drawStageConfig.offsetX = -width / 2 + 80
-  drawStageConfig.offsetY = -height / 2 
+  drawStageConfig.offsetX = -width / 2 - 140
+  drawStageConfig.offsetY = -height / 2 - 130
   if (isInitedDrawStage) return
   drawStage.draw(width, height)
   isInitedDrawStage = true
@@ -54,9 +51,6 @@ watchEffect(() => {
   const filter = filterStore.getFilter(route.name?.toString() || 'default')
   seatStore.fetchSeatsStatus(filter)
 })
-
-// TODO: optimize this
-const { getSettings } = useSettingStore()
 
 onMounted(() => {
   getSettings()

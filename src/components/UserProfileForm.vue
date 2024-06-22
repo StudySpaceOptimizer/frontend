@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import type { FormInstance } from 'element-plus'
+import { ElMessage, type FormInstance } from 'element-plus'
 
-import type * as Type from '@/types'
+import DependencyContainer from '@/DependencyContainer'
+import * as API from '@/api'
+import type * as Types from '@/types'
 
 const props = defineProps<{
-  userProfile: Type.UserData | undefined
+  userProfile: Types.UserData | undefined
   rules: any
   onCanceled: () => void
   onSaveProfile: (elForm: any) => void
 }>()
 
-const userProfileForm = ref<Type.UserData | undefined>()
+const userProfileForm = ref<Types.UserData | undefined>()
 const isStudent = computed(() => userProfileForm.value?.userRole === 'student')
 const updateProfileForm = ref<FormInstance>()
 const isUserProfileChange = ref(false)
@@ -45,23 +47,13 @@ watch(
 watch(
   () => props.userProfile,
   () => {
-    userProfileForm.value = props.userProfile ?? ({} as Type.UserData)
+    userProfileForm.value = props.userProfile ?? ({} as Types.UserData)
   },
   { deep: true }
 )
 
-// TODO: optimize this
-interface PasswordForm {
-  password: string
-  repeatPassword: string
-}
-
-import DependencyContainer from '@/DependencyContainer'
-import * as API from '@/api'
-import { ElMessage } from 'element-plus';
 const userApi = DependencyContainer.inject<API.User>(API.API_SERVICE.USER)
-
-const passwordForm = ref<PasswordForm>({ password: '', repeatPassword: '' })
+const passwordForm = ref<Types.PasswordForm>({ password: '', repeatPassword: '' })
 async function onFormSavePassword() {
   try {
     await userApi.updateUserPassword(passwordForm.value.password)
@@ -127,10 +119,7 @@ async function onFormSavePassword() {
       </el-form-item>
       <el-form-item>
         <el-button text @click="onFormCanceled">取消變更</el-button>
-        <el-button
-          type="primary"
-          @click="onFormSavePassword()"
-          :disabled="!isUserProfileChange"
+        <el-button type="primary" @click="onFormSavePassword()" :disabled="!isUserProfileChange"
           >儲存變更</el-button
         >
       </el-form-item>

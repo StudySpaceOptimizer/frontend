@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { useFilterStore } from '@/stores/filter'
-import { useSettingStore } from '@/stores/setting'
 import { ElMessage } from 'element-plus'
 import { onMounted, ref, watch } from 'vue'
+
+import { useFilterStore } from '@/stores/filter'
+import { useSettingStore } from '@/stores/setting'
+import { getHourAndMinute } from '@/utils'
 
 interface TimeRange {
   begin: string
@@ -17,7 +19,7 @@ const props = defineProps<{
 }>()
 
 const { getFilter } = useFilterStore()
-const { getMinimumReservationDuration, getMaximumReservationDuration } = useSettingStore()
+const { getReservationTimeUnit, getMaximumReservationDuration } = useSettingStore()
 function isDisabledTime(beginTime: string, endTime: string): boolean {
   let flag = false
   props.disabledTimes.forEach((time) => {
@@ -29,15 +31,10 @@ function isDisabledTime(beginTime: string, endTime: string): boolean {
   })
   return flag
 }
-// TODO: move to utils, and use toLocaleTimeString
-function getHourAndMinute(time?: Date): string | undefined {
-  if (time === undefined) return undefined
-  return `${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`
-}
 
 const earliestBeginTime = getHourAndMinute(getFilter().beginTime) || '08:00'
 const latestEndTime = getHourAndMinute(getFilter().endTime) || '22:00'
-const stepTime = getMinimumReservationDuration() * 60
+const stepTime = getReservationTimeUnit() * 60
 function theNextTime(time: string): string {
   let [hour, minute] = time.split(':').map(Number)
   let nextMinute = minute + stepTime

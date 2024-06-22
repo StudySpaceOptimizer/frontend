@@ -102,7 +102,6 @@ onMounted(() => {
       </template>
     </el-table-column>
   </el-table>
-  <!-- TODO: justify content center -->
   <el-pagination
     layout="prev, pager, next"
     :total="count"

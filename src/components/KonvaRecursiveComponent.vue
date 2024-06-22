@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, watchEffect } from 'vue'
 import { useSeatStore } from '@/stores/seat'
-import { ElMessage } from 'element-plus';
+import { ElMessage } from 'element-plus'
 
 const seatStore = useSeatStore()
 
@@ -25,47 +25,48 @@ function checkIsSeat(): boolean {
 }
 
 let isSeat = false
+
 watchEffect(async () => {
   if (!checkIsSeat()) {
-    isSeat = false
+    setSeatStatus(false, '#808080')
     return
   }
 
   const seatStatus = seatStore.seatsStatus.find(
     (seat) => seat.id === components.value[1].config.text
   )
-  if (!seatStatus) {
-    components.value[0].config.fill = '#808080'
-    isSeat = false
-    return
-  }
-
-  if (!seatStatus.available) {
-    components.value[0].config.fill = '#808080'
-    isSeat = false
+  if (!seatStatus || !seatStatus.available) {
+    setSeatStatus(false, '#808080')
     return
   }
 
   isSeat = true
-
-  // TODO: optimize, refactor
-  const status = seatStatus?.status
-  switch (status) {
-    case 'available':
-      components.value[0].config.fill = '#00bd7e'
-      break
-    case 'reserved':
-      components.value[0].config.fill = '#bd0000'
-      isSeat = false
-      break
-    case 'partiallyReserved':
-      components.value[0].config.fill = '#bda700'
-      break
-    default:
-      components.value[0].config.fill = '#808080'
-      isSeat = false
-  }
+  updateSeatColor(seatStatus.status)
 })
+
+function setSeatStatus(status: boolean, color: string) {
+  isSeat = status
+  if (components.value.length === 0) {
+    return
+  }
+  components.value[0].config.fill = color
+}
+
+function updateSeatColor(status?: string) {
+  const colorMap: Record<string, string> = {
+    available: '#00bd7e',
+    reserved: '#bd0000',
+    partiallyReserved: '#bda700',
+    default: '#808080'
+  }
+
+  const color = colorMap[status || 'default'] || colorMap['default']
+  components.value[0].config.fill = color
+
+  if (status === 'reserved') {
+    isSeat = false
+  }
+}
 
 function seatHandler(): void {
   if (!isSeat) {

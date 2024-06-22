@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, watch, ref, computed, watchEffect } from 'vue'
+import { onMounted, watch, ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
 import * as Type from '@/types'
@@ -52,7 +52,6 @@ function loadProfileData() {
   if (activeTabs.value === 'person') {
     onGetUserProfile()
   } else if (activeTabs.value === 'reservation') {
-    // TODO: check page number
     updateReservationData(1)
   }
 }
@@ -72,12 +71,10 @@ watch(
 const count = ref<any>(1)
 onMounted(async () => {
   loadProfileData()
-  // TODO: need check count when reservation data update
   count.value = await getCount()
 })
 
 function handleCurrentChange(val: number) {
-  console.log('handleCurrentChange', val)
   updateReservationData(val)
 }
 </script>
@@ -106,9 +103,8 @@ function handleCurrentChange(val: number) {
           </template>
         </el-table-column>
       </el-table>
-      <!-- TODO: justify content center -->
       <el-pagination layout="prev, pager, next" :total="count" :page-size="10"
-        @current-change="handleCurrentChange" style="margin-top: 10px"
+        @current-change="handleCurrentChange" style="margin-top: 10px; justify-content: center;"
       />
     </el-tab-pane>
   </el-tabs>

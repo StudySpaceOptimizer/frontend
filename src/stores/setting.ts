@@ -52,7 +52,7 @@ export const useSettingStore = defineStore('settings', () => {
     getSettings,
     updateSettings,
     getTodayOpeningHours,
-    getMinimumReservationDuration: getReservationTimeUnit,
+    getReservationTimeUnit,
     getMaximumReservationDuration
   }
 }, {

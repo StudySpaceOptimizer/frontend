@@ -49,7 +49,7 @@ const nowFilterDate = computed(() => {
 
 const beginTime = ref<string | undefined>(undefined)
 const endTime = ref<string | undefined>(undefined)
-function handleBooking(): void {
+async function handleBooking(): Promise<void> {
   if (beginTime.value === undefined || endTime.value === undefined) {
     ElMessage.warning('請選擇預約時間')
     return
@@ -58,20 +58,24 @@ function handleBooking(): void {
   const beginTimeValue = new Date(`${nowFilterDate.value} ${beginTime.value}`)
   const endTimeValue = new Date(`${nowFilterDate.value} ${endTime.value}`)
 
-  // TODO: use async/await
-  reserveApi
-    .reserve(seatName.value, beginTimeValue, endTimeValue)
-    .then(() => {
-      ElMessage.success('預約成功')
-      dialogVisible.value = false
-      seatStore.unselectSeat()
-      clearTimeSetting()
-      // TODO: should be abstracted
-      seatStore.fetchSeatsStatus(filterStore.getFilter(route.name?.toString() || 'default'))
-    })
-    .catch((e) => {
-      ElMessage.error('預約失敗:' + e.message)
-    })
+  try {
+    await reserveApi.reserve(seatName.value, beginTimeValue, endTimeValue)
+    ElMessage.success('預約成功')
+    dialogVisible.value = false
+    seatStore.unselectSeat()
+    clearTimeSetting()
+    await fetchSeatsStatus()
+  } catch (e: any) {
+    ElMessage.error('預約失敗: ' + e.message)
+  }
+}
+
+async function fetchSeatsStatus() {
+  try {
+    await seatStore.fetchSeatsStatus(filterStore.getFilter(route.name?.toString() || 'default'))
+  } catch (e: any) {
+    ElMessage.error('獲取座位狀態失敗: ' + e.message)
+  }
 }
 
 const isCompleteSelectTime = computed(() => {
@@ -123,9 +127,7 @@ function selectTimeRange(timeRange: {
     <div class="date">預約日期：{{ nowFilterDate }}</div>
     <p>
       預約時間：
-      <template v-if="beginTime && endTime">
-        {{ beginTime }} ~ {{ endTime }}
-      </template>
+      <template v-if="beginTime && endTime"> {{ beginTime }} ~ {{ endTime }} </template>
       <template v-else>未選擇時間</template>
     </p>
     <TimeSelect @selectTimeRange="selectTimeRange" :disabledTimes="disabledTimes" />

@@ -56,3 +56,8 @@ export function createTimeRange(
   }
   return times
 }
+
+export function getHourAndMinute(time?: Date): string | undefined {
+  if (!time) return undefined
+  return time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
+}
