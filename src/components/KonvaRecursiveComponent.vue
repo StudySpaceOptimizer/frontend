@@ -28,7 +28,7 @@ let isSeat = false
 
 watchEffect(async () => {
   if (!checkIsSeat()) {
-    setSeatStatus(false, '#808080')
+    setSeatStatus(false, '#354876')
     return
   }
 
