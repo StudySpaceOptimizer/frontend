@@ -77,8 +77,8 @@ export const useAccountStore = defineStore(
       try {
         api.signOut()
         isSignIn.value = false
-        userDisplayName.value = 'guest'
-        toggleDialog()
+        userDisplayName.value = ''
+        userId.value = ''
         ElMessage.success('登出成功')
       } catch (error) {
         ElMessage.error('登出失敗')
@@ -93,6 +93,8 @@ export const useAccountStore = defineStore(
       }
 
       if (!isSignIn.value) {
+        userId.value = ''
+        userDisplayName.value = ''
         ElMessage.error('請先登入')
       }
     }

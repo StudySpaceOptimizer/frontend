@@ -1,10 +1,17 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 import { useAccountStore } from '@/stores/account'
 
+const router = useRouter()
 const accountStore = useAccountStore()
 const activeIndex = ref('/')
+
+function signOutHandler() {
+  accountStore.signOut()
+  router.push('/')
+}
 </script>
 
 <template>
@@ -19,7 +26,7 @@ const activeIndex = ref('/')
     <div class="flex-grow"></div>
     <el-sub-menu index="" v-if="accountStore.isSignIn">
       <template #title>Hi, {{ accountStore.userDisplayName }}</template>
-      <el-menu-item index="" @click="accountStore.signOut()">登出</el-menu-item>
+      <el-menu-item index="" @click="signOutHandler">登出</el-menu-item>
       <el-menu-item index="/profile?tabs=person">個人資料</el-menu-item>
       <el-menu-item index="/profile?tabs=reservation">預約紀錄</el-menu-item>
       <el-menu-item index="/admin" v-if="accountStore.adminRole !== 'non-admin'">

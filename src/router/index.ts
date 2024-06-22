@@ -2,6 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/views/HomeView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import AdminViewVue from '@/views/AdminView.vue'
+import { useAccountStore } from '@/stores/account'
+import { ElMessage } from 'element-plus'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -14,12 +16,14 @@ const router = createRouter({
     {
       path: '/profile',
       name: 'profile',
-      component: ProfileView
+      component: ProfileView,
+      meta: { requiresAuth: true }
     },
     {
       path: '/admin',
       name: 'admin',
       component: AdminViewVue,
+      meta: { requiresAdmin: true },
       children: [
         {
           path: 'user',
@@ -55,5 +59,30 @@ const router = createRouter({
     }
   ]
 })
+
+router.beforeEach(async (to, from, next) => {
+  const accountStore = useAccountStore();
+
+  if (to.matched.some(record => record.meta.requiresAuth)) {
+    await accountStore.checkIsSignIn();
+
+    if (accountStore.isSignIn) {
+      next();
+    } else {
+      next({ name: 'home' });
+    }
+  } else if (to.matched.some(record => record.meta.requiresAdmin)) {
+    await accountStore.checkIsSignIn();
+
+    if (accountStore.isSignIn && accountStore.adminRole === 'admin') {
+      next();
+    } else {
+      ElMessage.error('權限不足');
+      next({ name: 'home' });
+    }
+  } else {
+    next();
+  }
+});
 
 export default router
