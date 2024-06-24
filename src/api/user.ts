@@ -1,6 +1,8 @@
 import type * as Type from '../types'
 import { supabase } from '../service/supabase/supabase'
 import type { User, Config } from './index'
+import { filter } from 'lodash'
+import { aD } from 'vitest/dist/reporters-1evA5lom.js'
 
 export class SupabaseUser implements User {
   /**
@@ -118,35 +120,24 @@ export class SupabaseUser implements User {
    * @param getAllUser 是否獲取所有用戶
    * @returns 返回用戶數據列表
    */
-  async getUsers(
-    config: Config,
-    userID?: string,
-    email?: string,
-    userRole?: string,
-    adminRole?: string,
-    isIn?: boolean,
-    name?: string
-  ): Promise<Type.UserData[]> {
+  async getUsers(config: Config, userDataFilter: Type.UserDataFilter): Promise<Type.UserData[]> {
     const { pageSize, pageOffset } = config
+    const { userID, email, userRole, adminRole, isIn, name } = userDataFilter
 
-    let query = supabase.rpc('test_get_user_data', {
+    const { data: userProfiles, error } = await supabase.rpc('test_get_user_data', {
       page_size: pageSize,
-      page_offset: pageOffset
+      page_offset: pageOffset,
+      filter_user_id: userID,
+      filter_email: email,
+      filter_user_role: userRole,
+      filter_admin_role: adminRole,
+      filter_is_in: isIn,
+      filter_name: name
     })
-
-    if (userID) query = query.eq('id', userID)
-    if (email) query = query.eq('email', email)
-    if (userRole) query = query.eq('user_role', userRole)
-    if (adminRole) query = query.eq('admin_role', adminRole)
-    if (isIn) query = query.eq('isIn', isIn)
-    if (name) query = query.eq('name', name)
-
-    const { data: userProfiles, error } = await query
 
     if (error) {
       throw new Error(error.message)
     }
-
     return (
       userProfiles?.map(
         (profile: any): Type.UserData => ({
@@ -182,17 +173,17 @@ export class SupabaseUser implements User {
     return data?.at(0)?.count || 0
   }
 
-  async getMyUser(userId: string): Promise<Type.UserData> {
-    return (
-      await this.getUsers(
-        {
-          pageSize: 1,
-          pageOffset: 0
-        },
-        userId
-      )
-    )[0]
-  }
+  // async getMyUser(userId: string): Promise<Type.UserData> {
+  //   return (
+  //     await this.getUsers(
+  //       {
+  //         pageSize: 1,
+  //         pageOffset: 0
+  //       },
+  //       userId
+  //     )
+  //   )[0]
+  // }
 
   async updateUserPassword(password: string): Promise<void> {
     const { error } = await supabase.auth.updateUser({ password: password })

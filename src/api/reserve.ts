@@ -180,36 +180,28 @@ export class SupabaseReserve implements Reserve {
 
   async getAllReservations(
     config: Config,
-    userID?: string,
-    userRole?: string,
-    seatID?: string,
-    beginTimeStart?: Date,
-    beginTimeEnd?: Date,
-    endTimeStart?: Date,
-    endTimeEnd?: Date
+    reservationFilter: Type.ReservationFilter
   ): Promise<Type.Reservation[]> {
     const { pageSize = 10, pageOffset = 0 } = config
+    const { userID, userRole, seatID, beginTimeStart, beginTimeEnd, endTimeStart, endTimeEnd } =
+      reservationFilter
 
-    let query = supabase.rpc('test_get_reservations', {
+    const { data: reservations, error } = await supabase.rpc('test_get_reservations', {
       page_size: pageSize,
-      page_offset: pageOffset
+      page_offset: pageOffset,
+      filter_user_id: userID,
+      filter_user_role: userRole,
+      filter_seat_id: seatID,
+      filter_begin_time_start: beginTimeStart,
+      filter_begin_time_end: beginTimeEnd,
+      filter_end_time_start: endTimeStart,
+      filter_end_time_end: endTimeEnd
     })
-
-    if (userID) query = query.eq('user_id', userID)
-    if (userRole) query = query.eq('user_role', userRole)
-    if (seatID) query = query.eq('seat_id', seatConverterToDB(seatID))
-
-    /// 時間會少 8 小時
-    if (beginTimeStart) query = query.gte('begin_time', beginTimeStart.toISOString())
-    if (beginTimeEnd) query = query.lte('begin_time', beginTimeEnd.toISOString())
-    if (endTimeStart) query = query.gte('end_time', endTimeStart.toISOString())
-    if (endTimeEnd) query = query.lte('end_time', endTimeEnd.toISOString())
-
-    const { data: reservations, error } = await query
 
     if (error) {
       throw new Error(error.message)
     }
+
     return (
       reservations?.map(
         (reservation: any): Type.Reservation => ({

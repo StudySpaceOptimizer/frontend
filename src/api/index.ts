@@ -10,9 +10,9 @@ export interface User {
   checkIsSignIn(): Promise<any>
   studentSignUp(username: string, password: string): Promise<any>
   outsiderSignUp(name: string, phone: string, idcard: string, email: string): Promise<any>
-  getUsers(config: any, userId?: string): Promise<any>
+  getUsers(config: any, userDataFilter: any): Promise<any>
   getUsersCount(): Promise<any>
-  getMyUser(userId: string): Promise<any>
+  // getMyUser(userId: string): Promise<any>
   banUser(id: string, reason: string, end_at: Date): Promise<any>
   unbanUser(id: string): Promise<any>
   updatePointUser(id: string, point: number): Promise<any>
@@ -38,13 +38,7 @@ export interface Reserve {
   terminateReservation(id: string): Promise<any>
   getAllReservations(
     config: any,
-    userID?: string,
-    userRole?: string,
-    seatID?: string,
-    beginTimeStart?: Date,
-    beginTimeEnd?: Date,
-    endTimeStart?: Date,
-    endTimeEnd?: Date
+    reservationFilter:any
   ): Promise<any>
   getAllReservationsCount(): Promise<any>
 

@@ -647,7 +647,14 @@ $$ LANGUAGE plpgsql STABLE SECURITY INVOKER;
 CREATE
 OR REPLACE FUNCTION test_get_reservations (
     page_size INT DEFAULT 10,
-    page_offset INT DEFAULT 0
+    page_offset INT DEFAULT 0,
+    filter_user_id UUID DEFAULT NULL,
+    filter_user_role TEXT DEFAULT NULL,
+    filter_seat_id INT8 DEFAULT NULL,
+    filter_begin_time_start TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+    filter_begin_time_end TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+    filter_end_time_start TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+    filter_end_time_end TIMESTAMP WITH TIME ZONE DEFAULT NULL
 ) RETURNS TABLE (
     -- reservation
     id UUID,
@@ -668,37 +675,44 @@ OR REPLACE FUNCTION test_get_reservations (
     point INT,
     reason TEXT,
     end_at TIMESTAMP WITH TIME ZONE
-) AS $$ BEGIN
-    RETURN QUERY
-    SELECT
-        res.id,
-        res.begin_time,
-        res.end_time,
-        res.seat_id,
-        res.check_in_time,
-        res.temporary_leave_time,
-        user_data.id,
-        user_data.email,
-        user_data.user_role,
-        user_data.admin_role,
-        user_data.is_in,
-        user_data.name,
-        user_data.phone,
-        user_data.id_card,
-        user_data.point,
-        user_data.reason,
-        user_data.end_at
-    FROM
-        reservations res
-        CROSS JOIN LATERAL test_get_user_data() AS user_data
-
-    ORDER BY
-        res.begin_time DESC -- 確保結果有一致的排序
-    LIMIT
-        page_size OFFSET page_offset;
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    res.id,
+    res.begin_time,
+    res.end_time,
+    res.seat_id,
+    res.check_in_time,
+    res.temporary_leave_time,
+    user_data.id,
+    user_data.email,
+    user_data.user_role,
+    user_data.admin_role,
+    user_data.is_in,
+    user_data.name,
+    user_data.phone,
+    user_data.id_card,
+    user_data.point,
+    user_data.reason,
+    user_data.end_at
+  FROM
+    reservations res
+    CROSS JOIN LATERAL test_get_user_data() AS user_data
+  WHERE
+    (filter_user_id IS NULL OR user_data.id = filter_user_id) AND
+    (filter_user_role IS NULL OR user_data.user_role = filter_user_role) AND
+    (filter_seat_id IS NULL OR res.seat_id = filter_seat_id) AND
+    (filter_begin_time_start IS NULL OR res.begin_time >= filter_begin_time_start) AND
+    (filter_begin_time_end IS NULL OR res.begin_time <= filter_begin_time_end) AND
+    (filter_end_time_start IS NULL OR res.end_time >= filter_end_time_start) AND
+    (filter_end_time_end IS NULL OR res.end_time <= filter_end_time_end)
+  ORDER BY
+    res.begin_time DESC -- 確保結果有一致的排序
+  LIMIT
+    page_size OFFSET page_offset;
 
 END;
-
 $$ LANGUAGE plpgsql STABLE SECURITY INVOKER;
 
 CREATE

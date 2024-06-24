@@ -293,7 +293,13 @@ $$ LANGUAGE plpgsql STABLE SECURITY INVOKER;
 CREATE
 OR REPLACE FUNCTION test_get_user_data (
     page_size INT DEFAULT 10,
-    page_offset INT DEFAULT 0
+    page_offset INT DEFAULT 0,
+    filter_user_id UUID DEFAULT NULL,
+    filter_email TEXT DEFAULT NULL,
+    filter_user_role TEXT DEFAULT NULL,
+    filter_admin_role TEXT DEFAULT NULL,
+    filter_is_in BOOLEAN DEFAULT NULL,
+    filter_name TEXT DEFAULT NULL
 ) RETURNS TABLE (
     id UUID,
     email TEXT,
@@ -306,39 +312,46 @@ OR REPLACE FUNCTION test_get_user_data (
     point INT,
     reason TEXT,
     end_at TIMESTAMP WITH TIME ZONE
-) AS $$ 
+) AS $$
 BEGIN
-    RETURN QUERY
+  RETURN QUERY
+  SELECT
+    up.id,
+    up.email,
+    claims ->> 'user_role' as user_role,
+    claims ->> 'admin_role' as admin_role,
+    up.is_in,
+    up.name,
+    up.phone,
+    up.id_card,
+    up.point,
+    ab.reason,
+    ab.end_at
+  FROM
+    user_profiles up
+  LEFT JOIN LATERAL (
     SELECT
-        up.id,
-        up.email,
-        claims ->> 'user_role' as user_role,
-        claims ->> 'admin_role' as admin_role,
-        up.is_in,
-        up.name,
-        up.phone,
-        up.id_card,
-        up.point,
-        ab.reason,
-        ab.end_at
+      ab.reason,
+      ab.end_at
     FROM
-        user_profiles up
-    LEFT JOIN LATERAL (
-        SELECT
-            ab.reason,
-            ab.end_at
-        FROM
-            active_blacklist ab
-        WHERE
-            ab.user_id = up.id
-        ORDER BY
-            ab.end_at DESC
-        LIMIT 1
-    ) ab ON TRUE
-    CROSS JOIN LATERAL
-        get_claims(up.id) as claims
-    ORDER BY up.id  -- 添加排序以確保結果一致
-    LIMIT page_size OFFSET page_offset;
- 
+      active_blacklist ab
+    WHERE
+      ab.user_id = up.id
+    ORDER BY
+      ab.end_at DESC
+    LIMIT 1
+  ) ab ON TRUE
+  CROSS JOIN LATERAL
+    get_claims(up.id) as claims
+  WHERE
+    (filter_user_id IS NULL OR up.id = filter_user_id) AND
+    (filter_email IS NULL OR up.email = filter_email) AND
+    (filter_user_role IS NULL OR claims ->> 'user_role' = filter_user_role) AND
+    (filter_admin_role IS NULL OR claims ->> 'admin_role' = filter_admin_role) AND
+    (filter_is_in IS NULL OR up.is_in = filter_is_in) AND
+    (filter_name IS NULL OR up.name ILIKE '%' || filter_name || '%')
+  ORDER BY up.id  -- 添加排序以確保結果一致
+  LIMIT page_size OFFSET page_offset;
+
 END;
 $$ LANGUAGE plpgsql STABLE SECURITY INVOKER;

@@ -105,17 +105,17 @@ async function testGetSettingData() {
   console.log('Settings loaded:', settings)
 }
 
-async function testGetUserByAdmin() {
-  const user = await signIn(admin, password)
+// async function testGetUserByAdmin() {
+//   const user = await signIn(admin, password)
 
-  const supabaseUser = new SupabaseUser()
-  try {
-    const users = await supabaseUser.getUsers({})
-    console.log(users)
-  } catch (error) {
-    console.error('Error fetching users:', error)
-  }
-}
+//   const supabaseUser = new SupabaseUser()
+//   try {
+//     const users = await supabaseUser.getUsers({})
+//     console.log(users)
+//   } catch (error) {
+//     console.error('Error fetching users:', error)
+//   }
+// }
 
 async function getAllUserData() {
   const pageSize = 10,
@@ -136,12 +136,14 @@ async function getAllUserData() {
   try {
     const result = await supabaseUser.getUsers(
       { pageSize, pageOffset },
-      userID,
-      email,
-      userRole,
-      adminRole,
-      isIn,
-      name
+      {
+        userID,
+        email,
+        userRole,
+        adminRole,
+        isIn,
+        name
+      }
     )
 
     console.log(result)

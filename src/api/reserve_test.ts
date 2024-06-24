@@ -1,7 +1,7 @@
 import { toLocalDateTime } from './common'
 import { supabase } from '../service/supabase/supabase'
 import type * as model from '../types/seat.ts'
-import { seatConverterFromDB } from '../utils/index'
+import { seatConverterFromDB, seatConverterToDB } from '../utils/index'
 import { SupabaseUser } from './user'
 import { SupabaseReserve } from './reserve'
 import type * as Type from '../types'
@@ -298,7 +298,7 @@ async function getAllReservations() {
 
   const userID = undefined
   const userRole = 'student'
-  const seatID = 'A2'
+  const seatID = seatConverterToDB('A2')
   const beginTimeStart = new Date('2024-06-21T13:00:00')
   // const beginTimeStart = undefined
   // const beginTimeEnd = new Date('2024-06-21T07:00:00')
@@ -311,13 +311,15 @@ async function getAllReservations() {
   try {
     const result = await supabaseReserve.getAllReservations(
       { pageSize, pageOffset },
-      userID,
-      userRole,
-      seatID,
-      beginTimeStart,
-      beginTimeEnd,
-      endTimeStart,
-      endTimeEnd
+      {
+        userID,
+        userRole,
+        seatID,
+        beginTimeStart,
+        beginTimeEnd,
+        endTimeStart,
+        endTimeEnd
+      }
     )
 
     console.log(result)
