@@ -1,253 +1,188 @@
--- 創建預約表
-CREATE TABLE IF NOT EXISTS
-    reservations (
-        id UUID PRIMARY KEY DEFAULT uuid_generate_v4 (),
-        begin_time TIMESTAMP WITH TIME ZONE NOT NULL,
-        end_time TIMESTAMP WITH TIME ZONE NOT NULL,
-        user_id UUID NOT NULL,
-        seat_id int8 NOT NULL,
-        check_in_time TIMESTAMP WITH TIME ZONE,
-        temporary_leave_time TIMESTAMP WITH TIME ZONE,
-        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES auth.users (id) ON DELETE CASCADE,
-        CONSTRAINT fk_seat FOREIGN KEY (seat_id) REFERENCES seats (id) ON DELETE CASCADE
-    );
+-- 創建預約表，如果不存在
+CREATE TABLE IF NOT EXISTS reservations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    begin_time TIMESTAMP WITH TIME ZONE NOT NULL,
+    end_time TIMESTAMP WITH TIME ZONE NOT NULL,
+    user_id UUID NOT NULL,
+    seat_id INT8 NOT NULL,
+    check_in_time TIMESTAMP WITH TIME ZONE,
+    temporary_leave_time TIMESTAMP WITH TIME ZONE,
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES auth.users (id) ON DELETE CASCADE,
+    CONSTRAINT fk_seat FOREIGN KEY (seat_id) REFERENCES seats (id) ON DELETE CASCADE
+);
 
--- 為預約紀錄結束時間創建索引
+-- 為預約紀錄的結束時間創建索引，以提高查詢效率
 CREATE INDEX IF NOT EXISTS idx_reservations_end_time ON reservations (end_time);
 
--- 創建視圖以篩選當前有效的黑名單記錄
-CREATE OR REPLACE VIEW
-    active_reservations
-WITH
-    (security_invoker = ON) AS
-SELECT
-    *
-FROM
-    PUBLIC.reservations
-WHERE
-    end_time > NOW();
+-- 創建視圖以篩選當前有效的預約記錄
+CREATE OR REPLACE VIEW active_reservations
+WITH (security_invoker = ON) AS
+SELECT *
+FROM public.reservations
+WHERE end_time > NOW();
 
-/* ==========================
- * RLS
- * ==========================
- */
--- 啟用 RLS
+-- ==========================
+-- RLS
+-- ==========================
+
+-- 啟用RLS
 ALTER TABLE reservations ENABLE ROW LEVEL SECURITY;
 
--- 允許管理員所有權限
+-- 為管理員角色創建全權訪問策略
 DROP POLICY IF EXISTS admin_all_access ON reservations;
+CREATE POLICY admin_all_access ON reservations AS PERMISSIVE FOR ALL USING (is_claims_admin())
+WITH CHECK (is_claims_admin());
 
-CREATE POLICY admin_all_access ON reservations AS PERMISSIVE FOR ALL USING (is_claims_admin ())
-WITH
-    CHECK (is_claims_admin ());
-
--- 允許使用者訪問自己的預約資料
+-- 為普通使用者創建查詢自己的預約資料的策略
 DROP POLICY IF EXISTS user_select_own ON reservations;
+CREATE POLICY user_select_own ON reservations AS PERMISSIVE FOR SELECT
+USING (auth.uid() = user_id);
 
-CREATE POLICY user_select_own ON reservations AS PERMISSIVE FOR
-SELECT
-    USING (auth.uid () = user_id);
-
--- 允許使用者新增自己的預約
+-- 為普通使用者創建新增自己的預約的策略
 DROP POLICY IF EXISTS user_insert_own ON reservations;
-
 CREATE POLICY user_insert_own ON reservations AS PERMISSIVE FOR INSERT
-WITH
-    CHECK (
-        auth.uid () = user_id AND
-        is_not_banned ()
-    );
+WITH CHECK (auth.uid() = user_id AND is_not_banned());
 
--- 允許使用者刪除自己的預約
+-- 為普通使用者創建刪除自己的預約的策略
 DROP POLICY IF EXISTS user_delete_own ON reservations;
+CREATE POLICY user_delete_own ON reservations AS PERMISSIVE FOR DELETE USING (auth.uid() = user_id);
 
-CREATE POLICY user_delete_own ON reservations AS PERMISSIVE FOR DELETE USING (auth.uid () = user_id);
-
--- 允許使用者更新自己的預約
+-- 為普通使用者創建更新自己的預約的策略
 DROP POLICY IF EXISTS user_update_own ON reservations;
-
-CREATE POLICY user_update_own ON reservations AS PERMISSIVE FOR
-UPDATE USING (auth.uid () = user_id)
-WITH
-    CHECK (auth.uid () = user_id);
+CREATE POLICY user_update_own ON reservations AS PERMISSIVE FOR UPDATE
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
 
 /* ==========================
  * CLS
  * ==========================
  */
--- 限制非管理員的更新範圍
-CREATE OR
-REPLACE FUNCTION cls_reservations_update () RETURNS TRIGGER AS $$ BEGIN
-    -- 使用 supabase UI 或 service_key 不受限制
-    IF is_supabase_ui_or_service_key() THEN RETURN NEW;
 
-END IF;
+-- 限制非管理員的更新範圍，確保僅允許更新 end_time 欄位
+CREATE OR REPLACE FUNCTION cls_reservations_update() RETURNS TRIGGER AS $$
+BEGIN
+    IF session_user = 'authenticator' THEN
+        RETURN NEW;
+    END IF;
 
--- 若為管理員，允許任何更新
-IF is_claims_admin() THEN RETURN NEW;
+    IF is_claims_admin() THEN
+        RETURN NEW;
+    END IF;
 
-END IF;
+    IF NEW.id != OLD.id OR
+       NEW.begin_time != OLD.begin_time OR
+       NEW.user_id != OLD.user_id OR
+       NEW.seat_id != OLD.seat_id OR
+       NEW.check_in_time != OLD.check_in_time THEN
+        RAISE EXCEPTION '使用者只能更新 end_time 欄位';
+    END IF;
 
--- 對於非管理員，確保只能更新 end_time
-IF NEW .id != OLD .id
-OR NEW .begin_time != OLD .begin_time
-OR NEW .user_id != OLD .user_id
-OR NEW .seat_id != OLD .seat_id
-OR NEW .check_in_time != OLD .check_in_time THEN RAISE
-EXCEPTION
-    '使用者只能更新 end_time 欄位';
+    IF auth.uid() != OLD.user_id THEN
+        RAISE EXCEPTION '用戶只能更新自己的記錄';
+    END IF;
 
-END IF;
-
--- 確保更新操作由用戶本人發起
-IF auth.uid() != OLD .user_id THEN RAISE
-EXCEPTION
-    '用戶只能更新自己的記錄';
-
-END IF;
-
-RETURN NEW;
-
+    RETURN NEW;
 END;
-
 $$ LANGUAGE plpgsql STABLE SECURITY INVOKER;
 
 -- 在更新前檢查用戶個人資料更新條件
 DROP TRIGGER IF EXISTS trigger_cls_reservations_update ON reservations;
-
-CREATE TRIGGER trigger_cls_reservations_update BEFORE
-UPDATE ON reservations FOR EACH ROW
-EXECUTE FUNCTION cls_reservations_update ();
+CREATE TRIGGER trigger_cls_reservations_update BEFORE UPDATE ON reservations
+FOR EACH ROW EXECUTE FUNCTION cls_reservations_update();
 
 /* ==========================
  * 檢查預約限制
  * ==========================
  */
+ 
 -- 確認提早離開是否合法
-CREATE OR
-REPLACE FUNCTION check_early_termination_validity () RETURNS TRIGGER AS $$ BEGIN
-    -- 使用 supabase UI 或 service_key 不受限制
-    IF is_supabase_ui_or_service_key() THEN RETURN NEW;
+CREATE OR REPLACE FUNCTION check_early_termination_validity() RETURNS TRIGGER AS $$
+BEGIN
+    IF is_supabase_ui_or_service_key() THEN
+        RETURN NEW;
+    END IF;
 
-END IF;
+    IF NEW.check_in_time IS NULL THEN
+        RAISE EXCEPTION '尚未報到';
+    END IF;
 
--- 確認使用者是否已經報到
-IF NEW .check_in_time IS NULL THEN RAISE
-EXCEPTION
-    '尚未報到';
-
-END IF;
-
-RETURN NEW;
-
+    RETURN NEW;
 END;
-
 $$ LANGUAGE plpgsql STABLE SECURITY INVOKER;
 
 -- 在提早結束前檢查是否已經報到
 DROP TRIGGER IF EXISTS trigger_check_early_termination_validity ON reservations;
-
-CREATE TRIGGER trigger_check_early_termination_validity BEFORE
-UPDATE ON reservations FOR EACH ROW
-EXECUTE FUNCTION check_early_termination_validity ();
+CREATE TRIGGER trigger_check_early_termination_validity BEFORE UPDATE ON reservations
+FOR EACH ROW EXECUTE FUNCTION check_early_termination_validity();
 
 -- 檢查預約的合法性
-CREATE OR
-REPLACE FUNCTION check_reservation_validity () RETURNS TRIGGER AS $$ BEGIN
--- 使用 supabase UI 或 service_key 不受限制
-IF is_supabase_ui_or_service_key() THEN
+CREATE OR REPLACE FUNCTION check_reservation_validity() RETURNS TRIGGER AS $$
+BEGIN
+    -- 如果是使用 Supabase UI 或 service_key，則不受限制
+    IF is_supabase_ui_or_service_key() THEN
+        RETURN NEW;
+    END IF;
+
+    -- 檢查預約的開始時間和結束時間是否在同一天
+    IF DATE(NEW.begin_time) != DATE(NEW.end_time) THEN 
+        RAISE EXCEPTION '開始和結束時間必須在同一天';
+    END IF;
+
+    -- 檢查預約的結束時間是否晚於開始時間
+    IF NEW.end_time <= NEW.begin_time THEN
+        RAISE EXCEPTION '結束時間必須晚於開始時間';
+    END IF;
+
+    -- 如果是新增操作，進一步檢查預約開始時間必須大於當前時間
+    IF TG_OP = 'INSERT' AND NEW.begin_time <= current_timestamp THEN
+        RAISE EXCEPTION '預約開始時間必須大於當前時間';
+    END IF;
+
     RETURN NEW;
-END IF;
-
--- 檢查 begin_time 和 end_time 是否在同一天
-IF DATE(NEW .begin_time) != DATE(NEW .end_time) THEN 
-    RAISE EXCEPTION '開始和結束時間必須在同一天';
-END IF;
-
--- 檢查 end_time 是否在 begin_time 之後
-IF NEW .end_time <= NEW .begin_time THEN RAISE
-EXCEPTION
-    '結束時間必須晚於開始時間';
-
-END IF;
-
--- 只在插入操作時進行檢查
-IF TG_OP = 'INSERT' THEN -- 確保預約開始時間大於當前時間
-IF NEW .begin_time <= current_timestamp THEN RAISE
-EXCEPTION
-    '預約開始時間必須大於當前時間';
-
-END IF;
-
-END IF;
-
-RETURN NEW;
-
 END;
-
 $$ LANGUAGE plpgsql SECURITY INVOKER;
 
--- 在新增或修改之前檢查合法預約
+-- 在新增或修改預約之前檢查預約的合法性
 DROP TRIGGER IF EXISTS trigger_check_reservation_validity ON reservations;
-
-CREATE TRIGGER trigger_check_reservation_validity BEFORE INSERT OR
-UPDATE ON reservations FOR EACH ROW
-EXECUTE FUNCTION check_reservation_validity ();
+CREATE TRIGGER trigger_check_reservation_validity
+BEFORE INSERT OR UPDATE ON reservations
+FOR EACH ROW EXECUTE FUNCTION check_reservation_validity();
 
 -- 檢查所選座位的可用性以及預約時間是否與現有預約時間重疊
-CREATE OR
-REPLACE FUNCTION check_seat_availability_and_reservation_conflict () RETURNS TRIGGER AS $$ BEGIN
-    -- 使用 supabase UI 或 service_key 不受限制
-    IF is_supabase_ui_or_service_key() THEN RETURN NEW;
+CREATE OR REPLACE FUNCTION check_seat_availability_and_reservation_conflict() RETURNS TRIGGER AS $$
+BEGIN
+    -- 如果是使用 Supabase UI 或 service_key，則不受限制
+    IF is_supabase_ui_or_service_key() THEN
+        RETURN NEW;
+    END IF;
 
-END IF;
+    -- 檢查選定座位是否可用
+    IF NOT (SELECT available FROM seats WHERE id = NEW.seat_id) THEN
+        RAISE EXCEPTION '所選座位不可用';
+    END IF;
 
--- 檢查選定座位是否可用
-IF (
-    SELECT
-        NOT available
-    FROM
-        seats
-    WHERE
-        id = NEW .seat_id
-) THEN RAISE
-EXCEPTION
-    '所選座位不可用';
+    -- 檢查預約時間是否與同一座位的其他預約重疊
+    IF EXISTS (
+        SELECT 1 FROM active_seat_reservations
+        WHERE seat_id = NEW.seat_id
+        AND reservation_id <> NEW.id -- 確保不檢查當前行
+        AND (NEW.begin_time, NEW.end_time) OVERLAPS (begin_time, end_time)
+    ) THEN
+        RAISE EXCEPTION '預約時間與現有預約重疊';
+    END IF;
 
-END IF;
-
--- 檢查預約時間是否與同一座位的其他預約重疊
-IF EXISTS (
-    SELECT
-        1
-    FROM
-        active_seat_reservations
-    WHERE
-        seat_id = NEW .seat_id
-        AND reservation_id <> NEW .id -- 確保不檢查當前行
-        AND (NEW .begin_time, NEW .end_time) OVERLAPS (begin_time, end_time)
-) THEN RAISE
-EXCEPTION
-    '預約時間與現有預約重疊';
-
-END IF;
-
-RETURN NEW;
-
+    RETURN NEW;
 END;
-
 $$ LANGUAGE plpgsql SECURITY INVOKER;
 
 -- 在新增或修改之前檢查座位可用性和預約時間重疊
 DROP TRIGGER IF EXISTS trigger_check_seat_availability_and_reservation_conflict ON reservations;
-
-CREATE TRIGGER trigger_check_seat_availability_and_reservation_conflict BEFORE INSERT OR
-UPDATE ON reservations FOR EACH ROW
-EXECUTE FUNCTION check_seat_availability_and_reservation_conflict ();
+CREATE TRIGGER trigger_check_seat_availability_and_reservation_conflict
+BEFORE INSERT OR UPDATE ON reservations
+FOR EACH ROW EXECUTE FUNCTION check_seat_availability_and_reservation_conflict();
 
 -- 檢查預約設定限制
-CREATE OR
-REPLACE FUNCTION check_reservation_limits () RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION check_reservation_limits() RETURNS TRIGGER AS $$
 DECLARE
     weekday_opening TIME;
     weekday_closing TIME;
@@ -258,267 +193,158 @@ DECLARE
     outsider_limit INT;
     reservation_duration INT;
     reservation_time_unit INT;
-    user_role user_role;
+    user_role TEXT;
 
 BEGIN
-    -- 使用 supabase UI 或 service_key 不受限制
-    IF is_supabase_ui_or_service_key() THEN RETURN NEW;
-
-END IF;
-
--- 從設定中提取時間和限制
-SELECT
-    (VALUE :: jsonb) ->> 'begin_time',
-    (VALUE :: jsonb) ->> 'end_time' INTO weekday_opening,
-    weekday_closing
-FROM
-    settings
-WHERE
-    key_name = 'weekday_opening_hours';
-
-SELECT
-    (VALUE :: jsonb) ->> 'begin_time',
-    (VALUE :: jsonb) ->> 'end_time' INTO weekend_opening,
-    weekend_closing
-FROM
-    settings
-WHERE
-    key_name = 'weekend_opening_hours';
-
-SELECT
-    VALUE :: numeric INTO maximum_duration
-FROM
-    settings
-WHERE
-    key_name = 'maximum_reservation_duration';
-
-SELECT
-    VALUE :: INT INTO student_limit
-FROM
-    settings
-WHERE
-    key_name = 'student_reservation_limit';
-
-SELECT
-    VALUE :: INT INTO outsider_limit
-FROM
-    settings
-WHERE
-    key_name = 'outsider_reservation_limit';
-
-SELECT
-    VALUE :: INT INTO reservation_time_unit
-FROM
-    settings
-WHERE
-    key_name = 'reservation_time_unit';
-
--- 計算預約時長
-reservation_duration := EXTRACT(EPOCH FROM (NEW .end_time - NEW .begin_time)) / 3600;
-
--- 判斷是否為工作日或周末，並檢查開放時間
-IF EXTRACT(ISODOW FROM NEW .begin_time) BETWEEN 1 AND 5 THEN -- 工作日
-    IF NEW .begin_time::TIME < weekday_opening OR NEW .end_time :: TIME > weekday_closing THEN
-        RAISE EXCEPTION '預約時間必須在工作日的開放時間內';
-    END IF;
-
-ELSE -- 周末
-    IF NEW .begin_time::TIME < weekend_opening OR NEW .end_time::TIME > weekend_closing THEN
-        RAISE EXCEPTION '預約時間必須在周末的開放時間內';
-
-    END IF;
-
-END IF;
-
--- 檢查預約時長是否合法
--- 只在插入操作時進行檢查
-IF TG_OP = 'INSERT' THEN -- 開始、結束能被整除
-IF (
-    EXTRACT(
-        EPOCH
-        FROM
-            NEW .begin_time
-    ) / 60
-) % reservation_time_unit != 0
-OR (
-    EXTRACT(
-        EPOCH
-        FROM
-            NEW .end_time
-    ) / 60
-) % reservation_time_unit != 0 THEN RAISE
-EXCEPTION
-    '預約時間必須以 % 分鐘為單位',
-    reservation_time_unit;
-
-END IF;
-
-IF reservation_duration > maximum_duration THEN RAISE
-EXCEPTION
-    '預約時長必須少於 % 小時',
-    maximum_duration;
-
-END IF;
-
-END IF;
-
-SELECT
-    trim(
-        BOTH '"'
-        FROM
-            (get_my_claims() ->> 'user_role')
-    ) INTO user_role;
-
--- 若不是管理員
-IF NOT is_claims_admin() THEN -- 檢查學生預約是否在可提前預約的日期內
-IF user_role = 'student'
-AND (
-    (NEW .begin_time :: DATE - CURRENT_DATE) > student_limit
-) THEN RAISE
-EXCEPTION
-    '學生只能提前 % 天進行預約',
-    student_limit;
-
-END IF;
-
--- 檢查校外人士預約是否在可提前預約的日期內
-IF user_role = 'outsider'
-AND (
-    (NEW.begin_time :: DATE - CURRENT_DATE) > outsider_limit
-) THEN RAISE
-EXCEPTION
-    '校外人士只能提前 % 天進行預約',
-    outsider_limit;
-
-END IF;
-
-END IF;
-
-RETURN NEW;
-
-END;
-
-$$ LANGUAGE plpgsql SECURITY INVOKER;
-
--- 在新增或修改之前檢查預約設定限制
-DROP TRIGGER IF EXISTS trigger_check_reservation_limits ON reservations;
-
-CREATE TRIGGER trigger_check_reservation_limits BEFORE INSERT OR
-UPDATE ON reservations FOR EACH ROW
-EXECUTE FUNCTION check_reservation_limits ();
-
--- 檢查新的預約時間是否與任何已存在的關閉時段重疊，確保預約在開放時間內
-CREATE OR
-REPLACE FUNCTION check_reservation_overlap_with_closed_periods () RETURNS TRIGGER AS $$ BEGIN
-    -- 使用 supabase UI 或 service_key 不受限制
-    IF is_supabase_ui_or_service_key() THEN RETURN NEW;
-
-END IF;
-
-IF EXISTS (
-    SELECT
-        1
-    FROM
-        active_closed_periods
-    WHERE
-        (NEW .begin_time, NEW .end_time) OVERLAPS (begin_time, end_time)
-) THEN RAISE
-EXCEPTION
-    '預約時間與關閉時段重疊';
-
-END IF;
-
-RETURN NEW;
-
-END;
-
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- 在新增或修改之前檢查是否與關閉時間重疊
-DROP TRIGGER IF EXISTS trigger_check_reservation_overlap_with_closed_periods ON reservations;
-
-CREATE TRIGGER trigger_check_reservation_overlap_with_closed_periods BEFORE INSERT OR
-UPDATE ON reservations FOR EACH ROW
-EXECUTE FUNCTION check_reservation_overlap_with_closed_periods ();
-
--- 檢查用戶當天是否有未完成的預約
-CREATE OR
-REPLACE FUNCTION check_unfinished_reservation () RETURNS TRIGGER AS $$
-DECLARE
-    end_of_day TIMESTAMP WITH TIME ZONE;
-
-    next_time_unit TIMESTAMP WITH TIME ZONE;
-
-    reservation_time_unit INT;
-
-    total_minutes INT;
-
-    next_minutes INT;
-
-BEGIN
-    -- 使用 supabase UI 或 service_key 不受限制
-    IF is_supabase_ui_or_service_key() THEN RETURN NEW;
-
-END IF;
-
--- 從 settings 表中獲取預約時間單位
-SELECT
-    VALUE :: INT INTO reservation_time_unit
-FROM
-    settings
-WHERE
-    key_name = 'reservation_time_unit';
-
--- 計算當前時間點的下一個時間單位
-total_minutes := EXTRACT(
-    HOUR
-    FROM
-        current_timestamp
-) * 60 + EXTRACT(
-    MINUTE
-    FROM
-        current_timestamp
-);
-
-next_minutes := ((total_minutes / reservation_time_unit) + 1) * reservation_time_unit;
-
-next_time_unit := date_trunc('day', current_timestamp) + make_interval(mins := next_minutes);
-
--- 計算該預約開始日期的當天結束時間點，即當天的 23:59:59
-end_of_day := CAST(NEW .begin_time AS DATE) + INTERVAL '23 hours 59 minutes 59 seconds';
-
--- 檢查是否該用戶在預約的當天有未完成的預約
-IF EXISTS (
-    SELECT
-        1
-    FROM
-        reservations
-    WHERE
-        user_id = NEW .user_id
-        AND CAST(begin_time AS DATE) = CAST(NEW .begin_time AS DATE) -- 確保是同一天
-        AND end_time <= end_of_day
-        AND end_time > next_time_unit -- 如果結束時間在下一個時間段之後，則視為未完成
-) THEN RAISE
-EXCEPTION
-    '用戶在預約當天有未完成的預約';
-
-END IF;
-
-RETURN NEW;
-
-END;
-
-$$ LANGUAGE plpgsql SECURITY INVOKER;
-
--- 檢查用戶帳號是否已驗證
-CREATE OR
-REPLACE FUNCTION check_user_is_verified () RETURNS TRIGGER AS $$
-BEGIN
-    -- 使用 supabase UI 或 service_key 不受限制
+    -- 如果是使用 Supabase UI 或 service_key，則不受限制
     IF is_supabase_ui_or_service_key() THEN
         RETURN NEW;
     END IF;
 
+    -- 從設定中提取時間和限制
+    SELECT (VALUE::jsonb)->>'begin_time', (VALUE::jsonb)->>'end_time' INTO weekday_opening, weekday_closing
+    FROM settings WHERE key_name = 'weekday_opening_hours';
+
+    SELECT (VALUE::jsonb)->>'begin_time', (VALUE::jsonb)->>'end_time' INTO weekend_opening, weekend_closing
+    FROM settings WHERE key_name = 'weekend_opening_hours';
+
+    SELECT VALUE::numeric INTO maximum_duration FROM settings WHERE key_name = 'maximum_reservation_duration';
+    SELECT VALUE::int INTO student_limit FROM settings WHERE key_name = 'student_reservation_limit';
+    SELECT VALUE::int INTO outsider_limit FROM settings WHERE key_name = 'outsider_reservation_limit';
+    SELECT VALUE::int INTO reservation_time_unit FROM settings WHERE key_name = 'reservation_time_unit';
+
+    -- 計算預約時長
+    reservation_duration := EXTRACT(EPOCH FROM (NEW.end_time - NEW.begin_time)) / 3600;
+
+    -- 判斷是否為工作日或周末，並檢查開放時間
+    IF EXTRACT(ISODOW FROM NEW.begin_time) BETWEEN 1 AND 5 THEN -- 工作日
+        IF NEW.begin_time::TIME < weekday_opening OR NEW.end_time::TIME > weekday_closing THEN
+            RAISE EXCEPTION '預約時間必須在工作日的開放時間內';
+        END IF;
+    ELSE -- 周末
+        IF NEW.begin_time::TIME < weekend_opening OR NEW.end_time::TIME > weekend_closing THEN
+            RAISE EXCEPTION '預約時間必須在周末的開放時間內';
+        END IF;
+    END IF;
+
+    -- 檢查預約時長是否合法
+    IF TG_OP = 'INSERT' THEN -- 開始、結束能被整除
+        IF (EXTRACT(EPOCH FROM NEW.begin_time) / 60) % reservation_time_unit != 0 OR
+           (EXTRACT(EPOCH FROM NEW.end_time) / 60) % reservation_time_unit != 0 THEN
+            RAISE EXCEPTION '預約時間必須以 % 分鐘為單位', reservation_time_unit;
+        END IF;
+
+        IF reservation_duration > maximum_duration THEN
+            RAISE EXCEPTION '預約時長必須少於 % 小時', maximum_duration;
+        END IF;
+    END IF;
+
+    SELECT trim(BOTH '"' FROM (get_my_claims() ->> 'user_role')) INTO user_role;
+
+    -- 若不是管理員
+    IF NOT is_claims_admin() THEN -- 檢查學生預約是否在可提前預約的日期內
+        IF user_role = 'student' AND ((NEW.begin_time::DATE - CURRENT_DATE) > student_limit) THEN
+            RAISE EXCEPTION '學生只能提前 % 天進行預約', student_limit;
+        END IF;
+
+        -- 檢查校外人士預約是否在可提前預約的日期內
+        IF user_role = 'outsider' AND ((NEW.begin_time::DATE - CURRENT_DATE) > outsider_limit) THEN
+            RAISE EXCEPTION '校外人士只能提前 % 天進行預約', outsider_limit;
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY INVOKER;
+
+-- 在新增或修改之前檢查預約設定限制
+DROP TRIGGER IF EXISTS trigger_check_reservation_limits ON reservations;
+CREATE TRIGGER trigger_check_reservation_limits
+BEFORE INSERT OR UPDATE ON reservations
+FOR EACH ROW EXECUTE FUNCTION check_reservation_limits();
+-- 檢查新的預約時間是否與任何已存在的關閉時段重疊，確保預約在開放時間內
+CREATE OR REPLACE FUNCTION check_reservation_overlap_with_closed_periods() RETURNS TRIGGER AS $$
+BEGIN
+    -- 使用 Supabase UI 或 service_key 不受限制
+    IF is_supabase_ui_or_service_key() THEN 
+        RETURN NEW;
+    END IF;
+
+    -- 如果預約時間與任何已存在的關閉時段重疊，則拋出異常
+    IF EXISTS (
+        SELECT 1
+        FROM active_closed_periods
+        WHERE (NEW.begin_time, NEW.end_time) OVERLAPS (begin_time, end_time)
+    ) THEN 
+        RAISE EXCEPTION '預約時間與關閉時段重疊';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 在新增或修改預約前檢查是否與關閉時段重疊
+DROP TRIGGER IF EXISTS trigger_check_reservation_overlap_with_closed_periods ON reservations;
+CREATE TRIGGER trigger_check_reservation_overlap_with_closed_periods
+BEFORE INSERT OR UPDATE ON reservations
+FOR EACH ROW EXECUTE FUNCTION check_reservation_overlap_with_closed_periods();
+
+-- 檢查用戶當天是否有未完成的預約
+CREATE OR REPLACE FUNCTION check_unfinished_reservation() RETURNS TRIGGER AS $$
+DECLARE
+    end_of_day TIMESTAMP WITH TIME ZONE;
+    next_time_unit TIMESTAMP WITH TIME ZONE;
+    reservation_time_unit INT;
+    total_minutes INT;
+    next_minutes INT;
+BEGIN
+    -- 使用 Supabase UI 或 service_key 不受限制
+    IF is_supabase_ui_or_service_key() THEN 
+        RETURN NEW;
+    END IF;
+
+    -- 從 settings 表中獲取預約時間單位
+    SELECT VALUE::INT INTO reservation_time_unit FROM settings WHERE key_name = 'reservation_time_unit';
+
+    -- 計算當前時間點的下一個時間單位
+    total_minutes := EXTRACT(HOUR FROM current_timestamp) * 60 + EXTRACT(MINUTE FROM current_timestamp);
+    next_minutes := ((total_minutes / reservation_time_unit) + 1) * reservation_time_unit;
+    next_time_unit := date_trunc('day', current_timestamp) + make_interval(mins := next_minutes);
+
+    -- 計算該預約開始日期的當天結束時間點，即當天的 23:59:59
+    end_of_day := CAST(NEW.begin_time AS DATE) + INTERVAL '23 hours 59 minutes 59 seconds';
+
+    -- 檢查是否該用戶在預約的當天有未完成的預約
+    IF EXISTS (
+        SELECT 1
+        FROM reservations
+        WHERE user_id = NEW.user_id
+        AND CAST(begin_time AS DATE) = CAST(NEW.begin_time AS DATE) -- 確保是同一天
+        AND end_time <= end_of_day
+        AND end_time > next_time_unit -- 如果結束時間在下一個時間段之後，則視為未完成
+    ) THEN 
+        RAISE EXCEPTION '用戶在預約當天有未完成的預約';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY INVOKER;
+
+-- 在新增前檢查用戶當天是否有未完成的預約
+DROP TRIGGER IF EXISTS trigger_check_unfinished_reservation ON reservations;
+CREATE TRIGGER trigger_check_unfinished_reservation
+BEFORE INSERT ON reservations
+FOR EACH ROW EXECUTE FUNCTION check_unfinished_reservation();
+
+-- 檢查用戶帳號是否已驗證
+CREATE OR REPLACE FUNCTION check_user_is_verified() RETURNS TRIGGER AS $$
+BEGIN
+    -- 使用 Supabase UI 或 service_key 不受限制
+    IF is_supabase_ui_or_service_key() THEN
+        RETURN NEW;
+    END IF;
+
+    -- 如果用戶帳號未驗證，拋出異常
     IF is_claims_admin() THEN
         IF get_claim(NEW.user_id, 'is_verified') = 'false' THEN
             RAISE EXCEPTION '用戶的帳號未驗證';
@@ -533,43 +359,40 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY INVOKER;
 
--- 在新增或修改之前檢查用戶帳號是否已驗證
+-- 在新增或修改預約前檢查用戶帳號是否已驗證
 DROP TRIGGER IF EXISTS trigger_check_user_is_verified ON reservations;
-
-CREATE TRIGGER trigger_check_user_is_verified BEFORE INSERT ON reservations FOR EACH ROW
-EXECUTE FUNCTION check_user_is_verified ();
+CREATE TRIGGER trigger_check_user_is_verified
+BEFORE INSERT ON reservations
+FOR EACH ROW EXECUTE FUNCTION check_user_is_verified();
 
 -- 檢查是否可以刪除預約
-CREATE OR
-REPLACE FUNCTION check_if_reservation_can_be_deleted () RETURNS TRIGGER AS $$ BEGIN
-    -- 使用 supabase UI 或 service_key 不受限制
-    IF is_supabase_ui_or_service_key() THEN RETURN OLD;
+CREATE OR REPLACE FUNCTION check_if_reservation_can_be_deleted() RETURNS TRIGGER AS $$
+BEGIN
+    -- 使用 Supabase UI 或 service_key 不受限制
+    IF is_supabase_ui_or_service_key() THEN 
+        RETURN OLD;
+    END IF;
 
-END IF;
+    -- 檢查是否嘗試刪除的預約的開始時間在當前時間後
+    IF (OLD.begin_time <= current_timestamp) THEN 
+        RAISE EXCEPTION '只能刪除尚未開始的預約';
+    END IF;
 
--- 檢查是否嘗試刪除的預約的開始時間在當前時間後
-IF (OLD .begin_time <= current_timestamp) THEN RAISE
-EXCEPTION
-    '只能刪除尚未開始的預約';
-
-END IF;
-
-RETURN OLD;
-
+    RETURN OLD;
 END;
-
 $$ LANGUAGE plpgsql SECURITY INVOKER;
 
--- 在新增或修改之前檢查是否可以刪除預約
+-- 在刪除預約前檢查是否可以進行刪除
 DROP TRIGGER IF EXISTS trigger_check_if_reservation_can_be_deleted ON reservations;
-
-CREATE TRIGGER trigger_check_if_reservation_can_be_deleted BEFORE DELETE ON reservations FOR EACH ROW
-EXECUTE FUNCTION check_if_reservation_can_be_deleted ();
+CREATE TRIGGER trigger_check_if_reservation_can_be_deleted
+BEFORE DELETE ON reservations
+FOR EACH ROW EXECUTE FUNCTION check_if_reservation_can_be_deleted();
 
 /* ==========================
  * UTILS FUNCTION
  * ==========================
  */
+
 /*
 取得當前用戶的預約資料及個人資訊，但會受到權限限制，例如一般使用者只會返回自己的資料
 函數支持多種過濾條件和分頁功能，以便調用者可以根據具體需求獲取數據
@@ -608,8 +431,7 @@ EXECUTE FUNCTION check_if_reservation_can_be_deleted ();
 - reason: 黑名單原因
 - end_at: 黑名單結束時間
  */
-CREATE OR
-REPLACE FUNCTION get_reservations (
+CREATE OR REPLACE FUNCTION get_reservations (
     page_size INT DEFAULT 10,
     page_offset INT DEFAULT 0,
     filter_user_id UUID DEFAULT NULL,
@@ -621,65 +443,64 @@ REPLACE FUNCTION get_reservations (
     filter_end_time_end TIMESTAMP WITH TIME ZONE DEFAULT NULL,
     filter_is_verified BOOLEAN DEFAULT NULL
 ) RETURNS TABLE (
-    -- reservation
+    -- 預約相關字段
     id UUID,
     begin_time TIMESTAMP WITH TIME ZONE,
     end_time TIMESTAMP WITH TIME ZONE,
-    seat_id int8,
+    seat_id INT8,
     check_in_time TIMESTAMP WITH TIME ZONE,
     temporary_leave_time TIMESTAMP WITH TIME ZONE,
-    -- user_data
+    -- 用戶相關資訊
     user_id UUID,
     email TEXT,
     user_role TEXT,
     admin_role TEXT,
     is_verified BOOLEAN,
     is_in BOOLEAN,
-    NAME TEXT,
+    name TEXT,
     phone TEXT,
     id_card TEXT,
-    POINT INT,
+    point INT,
     reason TEXT,
     end_at TIMESTAMP WITH TIME ZONE
 ) AS $$
 BEGIN
-  RETURN QUERY
-  SELECT
-    res.id,
-    res.begin_time,
-    res.end_time,
-    res.seat_id,
-    res.check_in_time,
-    res.temporary_leave_time,
-    user_data.id,
-    user_data.email,
-    user_data.user_role,
-    user_data.admin_role,
-    user_data.is_verified,
-    user_data.is_in,
-    user_data.name,
-    user_data.phone,
-    user_data.id_card,
-    user_data.point,
-    user_data.reason,
-    user_data.end_at
-  FROM
-    reservations res
-    CROSS JOIN LATERAL test_get_user_data() AS user_data
-  WHERE
-    (filter_user_id IS NULL OR user_data.id = filter_user_id) AND
-    (filter_user_role IS NULL OR user_data.user_role = filter_user_role) AND
-    (filter_is_verified IS NULL OR user_data.is_verified = filter_is_verified) AND
-    (filter_seat_id IS NULL OR res.seat_id = filter_seat_id) AND
-    (filter_begin_time_start IS NULL OR res.begin_time >= filter_begin_time_start) AND
-    (filter_begin_time_end IS NULL OR res.begin_time <= filter_begin_time_end) AND
-    (filter_end_time_start IS NULL OR res.end_time >= filter_end_time_start) AND
-    (filter_end_time_end IS NULL OR res.end_time <= filter_end_time_end)
-  ORDER BY
-    res.begin_time DESC -- 確保結果有一致的排序
-  LIMIT
-    page_size OFFSET page_offset;
-
+    RETURN QUERY
+    SELECT
+        res.id,
+        res.begin_time,
+        res.end_time,
+        res.seat_id,
+        res.check_in_time,
+        res.temporary_leave_time,
+        user_data.id AS user_id,
+        user_data.email,
+        user_data.user_role,
+        user_data.admin_role,
+        user_data.is_verified,
+        user_data.is_in,
+        user_data.name,
+        user_data.phone,
+        user_data.id_card,
+        user_data.point,
+        user_data.reason,
+        user_data.end_at
+    FROM
+        reservations res
+        CROSS JOIN LATERAL test_get_user_data() AS user_data
+    WHERE
+        (filter_user_id IS NULL OR user_data.id = filter_user_id) AND
+        (filter_user_role IS NULL OR user_data.user_role = filter_user_role) AND
+        (filter_is_verified IS NULL OR user_data.is_verified = filter_is_verified) AND
+        (filter_seat_id IS NULL OR res.seat_id = filter_seat_id) AND
+        (filter_begin_time_start IS NULL OR res.begin_time >= filter_begin_time_start) AND
+        (filter_begin_time_end IS NULL OR res.begin_time <= filter_begin_time_end) AND
+        (filter_end_time_start IS NULL OR res.end_time >= filter_end_time_start) AND
+        (filter_end_time_end IS NULL OR res.end_time <= filter_end_time_end)
+    ORDER BY
+        res.begin_time DESC -- 確保結果有一致的排序
+    LIMIT
+        page_size OFFSET page_offset;
 END;
 $$ LANGUAGE plpgsql STABLE SECURITY INVOKER;
 
@@ -721,8 +542,7 @@ $$ LANGUAGE plpgsql STABLE SECURITY INVOKER;
 - reason: 若用戶被列入黑名單，其原因
 - end_at: 黑名單結束時間
  */
-CREATE OR
-REPLACE FUNCTION get_active_reservations (
+CREATE OR REPLACE FUNCTION get_active_reservations (
     page_size INT DEFAULT 10,
     page_offset INT DEFAULT 0,
     filter_user_id UUID DEFAULT NULL,
@@ -787,85 +607,64 @@ REPLACE FUNCTION get_active_reservations (
         (filter_begin_time_end IS NULL OR res.begin_time <= filter_begin_time_end) AND
         (filter_end_time_start IS NULL OR res.end_time >= filter_end_time_start) AND
         (filter_end_time_end IS NULL OR res.end_time <= filter_end_time_end)
-        
     ORDER BY
         res.begin_time DESC -- 確保結果有一致的排序
     LIMIT
         page_size OFFSET page_offset;
-
 END;
-
 $$ LANGUAGE plpgsql STABLE SECURITY INVOKER;
 
-CREATE OR
-REPLACE FUNCTION record_user_entry_exit (p_user_id UUID) RETURNS VOID AS $$
+/*
+記錄用戶進出場狀態。此函數用於記錄及更新用戶的進場和臨時離場時間。
+只有管理員可以執行此操作。
+
+- 參數:
+  - p_user_id: 需要更新進出狀態的用戶的 UUID。
+
+流程:
+1. 驗證操作者是否為管理員。
+2. 查詢該用戶的當前在場狀態。
+3. 更新用戶的在場狀態。
+4. 查詢用戶的當前有效預約。
+5. 如果用戶在場，則更新其臨時離場時間。
+6. 如果用戶不在場，則更新其簽到時間。
+*/
+CREATE OR REPLACE FUNCTION record_user_entry_exit(p_user_id UUID) RETURNS VOID AS $$
 DECLARE
-    curr_time TIMESTAMP WITH TIME ZONE := current_timestamp;
-    reservation RECORD;
-    user_is_in BOOLEAN;
+    curr_time TIMESTAMP WITH TIME ZONE := current_timestamp; -- 定義當前時間
+    reservation RECORD; -- 用於存儲查詢到的預約信息
+    user_is_in BOOLEAN; -- 用於存儲用戶當前的在場狀態
 
 BEGIN
-    -- 檢查是否為管理員
-    IF NOT is_claims_admin() THEN RAISE
-    EXCEPTION
-        '只有管理員可以執行此操作';
+    -- 檢查是否為管理員，非管理員則拋出異常
+    IF NOT is_claims_admin() THEN
+        RAISE EXCEPTION '只有管理員可以執行此操作';
+    END IF;
 
-END IF;
+    -- 從用戶檔案中獲取用戶當前是否在場的狀態
+    SELECT is_in INTO user_is_in FROM user_profiles WHERE id = p_user_id;
 
--- 獲取用戶當前是否在場
-SELECT
-    is_in INTO user_is_in
-FROM
-    user_profiles
-WHERE
-    id = p_user_id;
+    -- 反轉用戶的在場狀態並更新到數據庫
+    UPDATE user_profiles SET is_in = NOT user_is_in WHERE id = p_user_id;
 
--- 更改用戶 is_in 狀態
-UPDATE
-    user_profiles
-SET
-    is_in = NOT user_is_in
-WHERE
-    id = p_user_id;
+    -- 查找用戶當前正在進行的有效預約
+    SELECT * INTO reservation FROM active_reservations
+    WHERE user_id = p_user_id AND begin_time <= curr_time AND end_time > curr_time LIMIT 1;
 
--- 查找用戶當前正在進行的預約
-SELECT
-    * INTO reservation
-FROM
-    active_reservations
-WHERE
-    user_id = p_user_id
-    AND begin_time <= curr_time
-    AND end_time > curr_time
-LIMIT
-    1;
+    -- 如果沒有找到正在進行的預約，發出通知
+    IF NOT FOUND THEN
+        RAISE NOTICE '該用戶目前沒有正在進行的預約';
+        RETURN;
+    END IF;
 
-IF NOT FOUND THEN RAISE NOTICE '該用戶目前沒有正在進行的預約';
-
-RETURN;
-
-END IF;
-
--- 根據用戶當前狀態更新預約
-IF user_is_in THEN -- 用戶正在場內，更新 temporary_leave_time
-UPDATE
-    reservations
-SET
-    temporary_leave_time = curr_time
-WHERE
-    id = reservation.id;
-
-ELSE -- 用戶不在場內，更新 temporary_leave_time 和 check_in_time
-UPDATE
-    reservations
-SET
-    temporary_leave_time = NULL,
-    check_in_time = COALESCE(check_in_time, curr_time)
-WHERE
-    id = reservation.id;
-
-END IF;
+    -- 如果用戶正在場內，則記錄臨時離場時間
+    IF user_is_in THEN
+        UPDATE reservations SET temporary_leave_time = curr_time WHERE id = reservation.id;
+    ELSE
+        -- 如果用戶不在場內，則重置臨時離場時間並記錄簽到時間
+        UPDATE reservations SET temporary_leave_time = NULL, check_in_time = COALESCE(check_in_time, curr_time)
+        WHERE id = reservation.id;
+    END IF;
 
 END;
-
 $$ LANGUAGE plpgsql VOLATILE SECURITY INVOKER;

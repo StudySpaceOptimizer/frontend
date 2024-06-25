@@ -1,3 +1,4 @@
+-- 檢查並創建 user_role 枚舉類型
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
@@ -6,6 +7,7 @@ BEGIN
 END
 $$;
 
+-- 檢查並創建 admin_role 枚舉類型
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'admin_role') THEN
