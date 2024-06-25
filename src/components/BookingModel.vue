@@ -98,12 +98,12 @@ watch(dialogVisible, async (value) => {
     try {
       const data = await seatApi.getSeatStatus(seatName.value)
       const reservationsTime = data.reservations
-  
+
       disabledTimes.value = []
       reservationsTime.forEach((reservation: any) => {
         const beginTime = getTime(reservation.beginTime)
         const endTime = getTime(reservation.endTime)
-  
+
         disabledTimes.value.push(`${beginTime}-${endTime}`)
       })
     } catch (e: any) {

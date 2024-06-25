@@ -124,7 +124,7 @@ async function getAllUserData() {
   const user = await signIn(admin, password)
 
   // const userID = '9252cca4-d17e-46bd-bd8c-8f15492e082e'
-  const userID = undefined
+  const userId = undefined
   const email = undefined
   const userRole = 'student'
   const adminRole = undefined
@@ -134,17 +134,16 @@ async function getAllUserData() {
   const supabaseUser = new SupabaseUser()
 
   try {
-    const result = await supabaseUser.getUsers(
-      { pageSize, pageOffset },
-      {
-        userID,
-        email,
-        userRole,
-        adminRole,
-        isIn,
-        name
-      }
-    )
+    const result = await supabaseUser.getUsers({
+      pageSize,
+      pageOffset,
+      userId,
+      email,
+      userRole,
+      adminRole,
+      isIn,
+      name
+    })
 
     console.log(result)
   } catch (e) {

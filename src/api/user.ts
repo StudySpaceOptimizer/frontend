@@ -1,8 +1,6 @@
 import type * as Type from '../types'
 import { supabase } from '../service/supabase/supabase'
 import type { User } from './index'
-import { filter } from 'lodash'
-import { aD } from 'vitest/dist/reporters-1evA5lom.js'
 
 export class SupabaseUser implements User {
   /**
@@ -38,6 +36,26 @@ export class SupabaseUser implements User {
     }
 
     return user.id
+  }
+
+  async verifyWithPOP3(email: string, password: string): Promise<string> {
+    const res = await fetch(
+      '/authenticate', // 測試的時候改成 http://localhost:8088
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      }
+    )
+
+    if (!res.ok) {
+      throw new Error('學號或密碼錯誤')
+    }
+
+    const data = await res.json()
+    return data.password
   }
 
   /**
@@ -121,17 +139,13 @@ export class SupabaseUser implements User {
    * @param userDataFilter 包含用戶的過濾條件
    * @returns 返回用戶數據列表
    */
-  async getUsers(
-    pageFilter: Type.PageFilter,
-    userDataFilter: Type.UserDataFilter
-  ): Promise<Type.UserData[]> {
-    const { pageSize, pageOffset } = pageFilter
-    const { userID, email, userRole, adminRole, isIn, name } = userDataFilter
+  async getUsers(options: Type.PageFilter & Type.UserDataFilter = {}): Promise<Type.UserData[]> {
+    const { pageSize, pageOffset, userId, email, userRole, adminRole, isIn, name } = options
 
     const { data: userProfiles, error } = await supabase.rpc('get_user_data', {
       page_size: pageSize,
       page_offset: pageOffset,
-      filter_user_id: userID,
+      filter_user_id: userId,
       filter_email: email,
       filter_user_role: userRole,
       filter_admin_role: adminRole,

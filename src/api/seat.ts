@@ -1,7 +1,7 @@
 import type * as Type from '../types'
 import { supabase } from '../service/supabase/supabase'
 import { seatConverterFromDB, seatConverterToDB } from '../utils'
-import { toLocalDateTime, parseTimeString } from './common'
+import { parseTimeString } from './common'
 import type { Seat } from './index'
 import { useSettingStore } from '../stores/setting'
 
@@ -147,23 +147,29 @@ export class SupabaseSeat implements Seat {
    *@returns 返回詳細的座位預約信息
    */
   async getSeatStatus(
-    pageFilter: Type.PageFilter,
-    reservationFilter: Type.ReservationFilter
+    seatId: string | number,
+    options: Type.PageFilter & Type.ReservationFilter = {}
   ): Promise<Type.SeatDetail> {
-    const { pageSize = 10, pageOffset = 0 } = pageFilter
-    const { userID, userRole, seatID, beginTimeStart, beginTimeEnd, endTimeStart, endTimeEnd } =
-      reservationFilter
+    const {
+      pageSize = 10,
+      pageOffset = 0,
+      userId,
+      userRole,
+      beginTimeStart,
+      beginTimeEnd,
+      endTimeStart,
+      endTimeEnd
+    } = options
 
-    if (seatID == undefined) {
-      throw new Error('座位編號錯誤')
-    }
+    const seatIdNum = typeof seatId === 'number' ? seatId : seatConverterToDB(seatId)
+    const seatIdStr = typeof seatId === 'string' ? seatId : seatConverterFromDB(seatId)
 
     const { data: reservations, error } = await supabase.rpc('get_seat_active_reservations', {
       page_size: pageSize,
       page_offset: pageOffset,
-      filter_user_id: userID,
+      filter_user_id: userId,
       filter_user_role: userRole,
-      filter_seat_id: seatID,
+      filter_seat_id: seatIdNum,
       filter_begin_time_start: beginTimeStart,
       filter_begin_time_end: beginTimeEnd,
       filter_end_time_start: endTimeStart,
@@ -175,14 +181,14 @@ export class SupabaseSeat implements Seat {
     }
 
     const seatDetail: Type.SeatDetail = {
-      id: seatConverterFromDB(seatID),
+      id: seatIdStr,
       reservations:
         reservations?.map(
           (reservation: any): Type.Reservation => ({
             id: reservation.id,
             beginTime: new Date(reservation.begin_time),
             endTime: new Date(reservation.end_time),
-            seatID: seatConverterFromDB(reservation.seat_id),
+            seatId: seatConverterFromDB(reservation.seat_id),
             checkInTime: reservation.check_in_time,
             temporaryLeaveTime: reservation.temporary_leave_time,
             user: {
@@ -220,7 +226,7 @@ export class SupabaseSeat implements Seat {
    */
   async updateSeat(seatId: string, available: boolean, otherInfo?: string): Promise<void> {
     const id = seatConverterToDB(seatId)
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('seats')
       .update({
         available: available,

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 
+import * as Types from '@/types'
 import * as Api from '@/api'
 import DependencyContainer from '@/DependencyContainer'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -52,12 +53,9 @@ async function cancelBooking(id: string) {
   })
 }
 
-async function getReservationData(filterCondition?: any) {
+async function getReservationData(pageFilter: Types.PageFilter) {
   try {
-    const data = await reserveApi.getAllReservations({
-      pageSize: filterCondition?.pageSize || 10,
-      pageOffset: filterCondition?.pageOffset
-    })
+    const data = await reserveApi.getReservations(pageFilter)
     return transformReservations(data)
   } catch (error: any) {
     ElMessage.error(error.message)

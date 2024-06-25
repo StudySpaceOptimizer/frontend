@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
+import * as Types from '@/types'
 import * as Api from '@/api'
 import DependencyContainer from '@/DependencyContainer'
 
@@ -78,16 +79,13 @@ export function useReservation() {
     })
   }
 
-  const getReservationData = async (filterCondition?: any) => {
+  const getReservationData = async (pageFilter: Types.PageFilter) => {
     try {
-      const data = await reserveApi.getPersonalReservations({
-        pageSize: filterCondition?.pageSize || 10,
-        pageOffset: filterCondition?.pageOffset
-      })
+      const data = await reserveApi.getReservations(pageFilter)
       return transformReservations(data)
     } catch (error: any) {
       console.error(error)
-      ElMessage.error("無法取得個人預約記錄")
+      ElMessage.error('無法取得個人預約記錄')
       return []
     }
   }

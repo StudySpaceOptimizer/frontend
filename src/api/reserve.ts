@@ -110,19 +110,18 @@ export class SupabaseReserve implements Reserve {
    * @returns 返回符合條件的預約列表
    */
   async getReservations(
-    pageFilter: Type.PageFilter,
-    reservationFilter: Type.ReservationFilter
+    options: Type.PageFilter & Type.ReservationFilter = {}
   ): Promise<Type.Reservation[]> {
-    const { pageSize = 10, pageOffset = 0 } = pageFilter
+    const { pageSize = 10, pageOffset = 0 } = options
     const { userId, userRole, seatId, beginTimeStart, beginTimeEnd, endTimeStart, endTimeEnd } =
-      reservationFilter
+      options
 
     const { data: reservations, error } = await supabase.rpc('get_reservations', {
       page_size: pageSize,
       page_offset: pageOffset,
       filter_user_id: userId,
       filter_user_role: userRole,
-      filter_seat_id: seatId,
+      filter_seat_id: typeof seatId === 'string' ? seatConverterToDB(seatId) : seatId,
       filter_begin_time_start: beginTimeStart,
       filter_begin_time_end: beginTimeEnd,
       filter_end_time_start: endTimeStart,

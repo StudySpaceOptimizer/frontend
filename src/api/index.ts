@@ -10,10 +10,7 @@ export interface User {
   checkIsSignIn(): Promise<boolean>
   studentSignUp(username: string, password: string): Promise<void>
   outsiderSignUp(name: string, phone: string, idcard: string, email: string): Promise<any>
-  getUsers(
-    pageFilter: Type.PageFilter,
-    userDataFilter: Type.UserDataFilter
-  ): Promise<Type.UserData[]>
+  getUsers(options?: Type.PageFilter & Type.UserDataFilter): Promise<Type.UserData[]>
   getUsersCount(): Promise<number>
   verifyUser(userId: string): Promise<void>
   updateProfile(id: string, name: string, phone: string, idCard: string): Promise<void>
@@ -27,11 +24,11 @@ export interface User {
 
 export interface Seat {
   getSeatsStatus(
-    seatReservationFilterByTime: Type.SeatReservationFilterByTime
+    seatReservationFilterByTime?: Type.SeatReservationFilterByTime
   ): Promise<Type.SeatData[]>
   getSeatStatus(
-    pageFilter: Type.PageFilter,
-    reservationFilter: Type.ReservationFilter
+    seatId: string,
+    options?: Type.PageFilter & Type.ReservationFilter
   ): Promise<Type.SeatDetail>
   updateSeat(seatId: string, available: boolean, otherInfo?: string): Promise<void>
 }
@@ -39,10 +36,7 @@ export interface Seat {
 export interface Reserve {
   reserve(seatId: string, beginTime: Date, endTime: Date): Promise<string>
   reserveForUser(idCard: string, seatId: string, beginTime: Date, endTime: Date): Promise<string>
-  getReservations(
-    pageFilter: Type.PageFilter,
-    reservationFilter: Type.ReservationFilter
-  ): Promise<Type.Reservation[]>
+  getReservations(options?: Type.PageFilter & Type.ReservationFilter): Promise<Type.Reservation[]>
   getPersonalReservationsCount(): Promise<number>
   getAllReservationsCount(): Promise<number>
   deleteReservation(id: string): Promise<void>

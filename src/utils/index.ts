@@ -23,15 +23,14 @@ export function timeToString(time?: Date): string {
   return `${year}-${month}-${day} ${hours}:${minutes}`
 }
 
-export function seatConverterToDB(seat: string): number | undefined {
+export function seatConverterToDB(seat: string): number {
   const prefix = seat[0]
   const rowNumber = parseInt(seat.slice(1))
 
   if (prefix === 'A') {
     return rowNumber
-  } else if (prefix === 'B') {
-    return rowNumber + 1000
   }
+  return rowNumber + 1000
 }
 
 export function seatConverterFromDB(seat: number): string {

@@ -327,9 +327,9 @@ async function getAllReservations() {
 
   const user = await signIn(admin, password)
 
-  const userID = undefined
+  const userId = undefined
   const userRole = 'student'
-  const seatID = seatConverterToDB('A2')
+  const seatId = seatConverterToDB('A2')
   const beginTimeStart = new Date('2024-06-21T13:00:00')
   // const beginTimeStart = undefined
   // const beginTimeEnd = new Date('2024-06-21T07:00:00')
@@ -340,18 +340,17 @@ async function getAllReservations() {
   const supabaseReserve = new SupabaseReserve()
 
   try {
-    const result = await supabaseReserve.getAllReservations(
-      { pageSize, pageOffset },
-      {
-        userID,
-        userRole,
-        seatID,
-        beginTimeStart,
-        beginTimeEnd,
-        endTimeStart,
-        endTimeEnd
-      }
-    )
+    const result = await supabaseReserve.getReservations({
+      pageSize,
+      pageOffset,
+      userId,
+      userRole,
+      seatId,
+      beginTimeStart,
+      beginTimeEnd,
+      endTimeStart,
+      endTimeEnd
+    })
 
     console.log(result)
   } catch (e) {

@@ -19,7 +19,7 @@ export interface UserDataFilter {
 export interface ReservationFilter {
   userId?: string
   userRole?: string
-  seatId?: number
+  seatId?: string | number
   isVerified?: boolean
   beginTimeStart?: Date
   beginTimeEnd?: Date
