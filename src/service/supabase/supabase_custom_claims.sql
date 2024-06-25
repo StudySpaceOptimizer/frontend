@@ -12,9 +12,14 @@
 example:
 SELECT is_claims_admin();
  */
-CREATE
-OR REPLACE FUNCTION is_claims_admin () RETURNS BOOLEAN AS $$
+CREATE OR
+REPLACE FUNCTION is_claims_admin () RETURNS BOOLEAN AS $$
 BEGIN
+  IF current_user = 'supabase_admin' THEN
+    RETURN TRUE;
+  END IF;
+  
+
   IF session_user = 'authenticator' THEN
     --------------------------------------------
     -- To disallow any authenticated app users
@@ -59,8 +64,8 @@ SELECT get_my_claims();
 Return:
 {"provider": "email", "userrole": "MANAGER", "providers": ["email"], "userlevel": 100, "useractive": true, "userjoined": "2022-05-20T14:07:27.742Z", "claims_admin": true}
  */
-CREATE
-OR REPLACE FUNCTION get_my_claims () RETURNS jsonb AS $$
+CREATE OR
+REPLACE FUNCTION get_my_claims () RETURNS jsonb AS $$
 BEGIN
   RETURN (
     SELECT
@@ -77,8 +82,8 @@ $$ LANGUAGE plpgsql STABLE SECURITY INVOKER;
 Example:
 SELECT get_my_claim('userlevel');
  */
-CREATE
-OR REPLACE FUNCTION get_my_claim (claim TEXT) RETURNS jsonb AS $$
+CREATE OR
+REPLACE FUNCTION get_my_claim (claim TEXT) RETURNS jsonb AS $$
 BEGIN
   RETURN (
     SELECT
@@ -94,8 +99,8 @@ $$ LANGUAGE plpgsql STABLE SECURITY INVOKER;
 - 首先檢查執行操作的使用者是否為管理員，如果是，從 auth.users 表中查詢並傳回指定使用者的 raw_app_meta_data 欄位
 - 如果不是管理員，回傳錯誤訊息
  */
-CREATE
-OR REPLACE FUNCTION get_claims (uid uuid) RETURNS jsonb AS $$
+CREATE OR
+REPLACE FUNCTION get_claims (uid UUID) RETURNS jsonb AS $$
 DECLARE retval jsonb;
 BEGIN
   IF NOT is_claims_admin() THEN
@@ -114,8 +119,8 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 - uid: 目標使用者的 UUID
 - claim: 想要查詢的特定 claim 名稱
  */
-CREATE
-OR REPLACE FUNCTION get_claim (uid uuid, claim text) RETURNS jsonb AS $$
+CREATE OR
+REPLACE FUNCTION get_claim (uid UUID, claim TEXT) RETURNS jsonb AS $$
 DECLARE retval jsonb;
 BEGIN
   IF NOT is_claims_admin() THEN
@@ -142,8 +147,8 @@ SELECT set_claim('72e699aa-d50c-4ee3-9eb6-e29c169b5eff', 'userrole', '"webadmin"
 -- 注意單引號裡面的雙引號
 SELECT set_claim('72e699aa-d50c-4ee3-9eb6-e29c169b5eff', 'claims_admin', 'true');
  */
-CREATE
-OR REPLACE FUNCTION set_claim (uid uuid, claim text, value jsonb) RETURNS TEXT AS $$
+CREATE OR
+REPLACE FUNCTION set_claim (uid UUID, claim TEXT, VALUE jsonb) RETURNS TEXT AS $$
 BEGIN
   IF NOT is_claims_admin() THEN
     RAISE EXCEPTION '不具有管理員權限';
@@ -162,8 +167,8 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 - 檢查執行操作的使用者是否為管理員，如果是，更新 auth.users 表中指定使用者的 raw_app_meta_data 欄位，移除指定的 claim
 - 如果不是管理員，回傳錯誤訊息
  */
-CREATE
-OR REPLACE FUNCTION delete_claim (uid uuid, claim text) RETURNS TEXT AS $$
+CREATE OR
+REPLACE FUNCTION delete_claim (uid UUID, claim TEXT) RETURNS TEXT AS $$
 BEGIN
   IF NOT is_claims_admin() THEN
     RAISE EXCEPTION '不具有管理員權限';
@@ -180,8 +185,8 @@ NOTIFY pgrst,
 /*
 檢查是否為 supabase UI 或 service key
  */
-CREATE
-OR REPLACE FUNCTION is_supabase_ui_or_service_key () RETURNS BOOLEAN AS $$
+CREATE OR
+REPLACE FUNCTION is_supabase_ui_or_service_key () RETURNS BOOLEAN AS $$
 BEGIN
   IF current_user = 'supabase_admin' THEN
     RETURN TRUE;

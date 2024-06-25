@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4 (),
         begin_time TIMESTAMP WITH TIME ZONE NOT NULL,
         end_time TIMESTAMP WITH TIME ZONE NOT NULL,
-        user_id uuid NOT NULL,
+        user_id UUID NOT NULL,
         seat_id int8 NOT NULL,
         check_in_time TIMESTAMP WITH TIME ZONE,
         temporary_leave_time TIMESTAMP WITH TIME ZONE,
@@ -54,8 +54,8 @@ DROP POLICY IF EXISTS user_insert_own ON reservations;
 CREATE POLICY user_insert_own ON reservations AS PERMISSIVE FOR INSERT
 WITH
     CHECK (
-        auth.uid () = user_id
-        AND is_not_banned ()
+        auth.uid () = user_id AND
+        is_not_banned ()
     );
 
 -- 允許使用者刪除自己的預約
@@ -76,8 +76,8 @@ WITH
  * ==========================
  */
 -- 限制非管理員的更新範圍
-CREATE
-OR REPLACE FUNCTION cls_reservations_update () RETURNS TRIGGER AS $$ BEGIN
+CREATE OR
+REPLACE FUNCTION cls_reservations_update () RETURNS TRIGGER AS $$ BEGIN
     -- 使用 supabase UI 或 service_key 不受限制
     IF is_supabase_ui_or_service_key() THEN RETURN NEW;
 
@@ -124,8 +124,8 @@ EXECUTE FUNCTION cls_reservations_update ();
  * ==========================
  */
 -- 確認提早離開是否合法
-CREATE
-OR REPLACE FUNCTION check_early_termination_validity () RETURNS TRIGGER AS $$ BEGIN
+CREATE OR
+REPLACE FUNCTION check_early_termination_validity () RETURNS TRIGGER AS $$ BEGIN
     -- 使用 supabase UI 或 service_key 不受限制
     IF is_supabase_ui_or_service_key() THEN RETURN NEW;
 
@@ -152,18 +152,16 @@ UPDATE ON reservations FOR EACH ROW
 EXECUTE FUNCTION check_early_termination_validity ();
 
 -- 檢查預約的合法性
-CREATE
-OR REPLACE FUNCTION check_reservation_validity () RETURNS TRIGGER AS $$ BEGIN
-    -- 使用 supabase UI 或 service_key 不受限制
-    IF is_supabase_ui_or_service_key() THEN RETURN NEW;
-
+CREATE OR
+REPLACE FUNCTION check_reservation_validity () RETURNS TRIGGER AS $$ BEGIN
+-- 使用 supabase UI 或 service_key 不受限制
+IF is_supabase_ui_or_service_key() THEN
+    RETURN NEW;
 END IF;
 
 -- 檢查 begin_time 和 end_time 是否在同一天
-IF DATE(NEW .begin_time) != DATE(NEW .end_time) THEN RAISE
-EXCEPTION
-    '開始和結束時間必須在同一天';
-
+IF DATE(NEW .begin_time) != DATE(NEW .end_time) THEN 
+    RAISE EXCEPTION '開始和結束時間必須在同一天';
 END IF;
 
 -- 檢查 end_time 是否在 begin_time 之後
@@ -192,14 +190,13 @@ $$ LANGUAGE plpgsql SECURITY INVOKER;
 -- 在新增或修改之前檢查合法預約
 DROP TRIGGER IF EXISTS trigger_check_reservation_validity ON reservations;
 
-CREATE TRIGGER trigger_check_reservation_validity BEFORE INSERT
-OR
+CREATE TRIGGER trigger_check_reservation_validity BEFORE INSERT OR
 UPDATE ON reservations FOR EACH ROW
 EXECUTE FUNCTION check_reservation_validity ();
 
 -- 檢查所選座位的可用性以及預約時間是否與現有預約時間重疊
-CREATE
-OR REPLACE FUNCTION check_seat_availability_and_reservation_conflict () RETURNS TRIGGER AS $$ BEGIN
+CREATE OR
+REPLACE FUNCTION check_seat_availability_and_reservation_conflict () RETURNS TRIGGER AS $$ BEGIN
     -- 使用 supabase UI 或 service_key 不受限制
     IF is_supabase_ui_or_service_key() THEN RETURN NEW;
 
@@ -244,34 +241,24 @@ $$ LANGUAGE plpgsql SECURITY INVOKER;
 -- 在新增或修改之前檢查座位可用性和預約時間重疊
 DROP TRIGGER IF EXISTS trigger_check_seat_availability_and_reservation_conflict ON reservations;
 
-CREATE TRIGGER trigger_check_seat_availability_and_reservation_conflict BEFORE INSERT
-OR
+CREATE TRIGGER trigger_check_seat_availability_and_reservation_conflict BEFORE INSERT OR
 UPDATE ON reservations FOR EACH ROW
 EXECUTE FUNCTION check_seat_availability_and_reservation_conflict ();
 
 -- 檢查預約設定限制
-CREATE
-OR REPLACE FUNCTION check_reservation_limits () RETURNS TRIGGER AS $$
+CREATE OR
+REPLACE FUNCTION check_reservation_limits () RETURNS TRIGGER AS $$
 DECLARE
     weekday_opening TIME;
-
-weekday_closing TIME;
-
-weekend_opening TIME;
-
-weekend_closing TIME;
-
-maximum_duration INT;
-
-student_limit INT;
-
-outsider_limit INT;
-
-reservation_duration INT;
-
-reservation_time_unit INT;
-
-user_role user_role;
+    weekday_closing TIME;
+    weekend_opening TIME;
+    weekend_closing TIME;
+    maximum_duration INT;
+    student_limit INT;
+    outsider_limit INT;
+    reservation_duration INT;
+    reservation_time_unit INT;
+    user_role user_role;
 
 BEGIN
     -- 使用 supabase UI 或 service_key 不受限制
@@ -327,33 +314,19 @@ WHERE
     key_name = 'reservation_time_unit';
 
 -- 計算預約時長
-reservation_duration := EXTRACT(
-    EPOCH
-    FROM
-        (NEW .end_time - NEW .begin_time)
-) / 3600;
+reservation_duration := EXTRACT(EPOCH FROM (NEW .end_time - NEW .begin_time)) / 3600;
 
 -- 判斷是否為工作日或周末，並檢查開放時間
-IF EXTRACT(
-    ISODOW
-    FROM
-        NEW .begin_time
-) BETWEEN 1
-AND 5 THEN -- 工作日
-IF NEW .begin_time :: TIME < weekday_opening
-OR NEW .end_time :: TIME > weekday_closing THEN RAISE
-EXCEPTION
-    '預約時間必須在工作日的開放時間內';
-
-END IF;
+IF EXTRACT(ISODOW FROM NEW .begin_time) BETWEEN 1 AND 5 THEN -- 工作日
+    IF NEW .begin_time::TIME < weekday_opening OR NEW .end_time :: TIME > weekday_closing THEN
+        RAISE EXCEPTION '預約時間必須在工作日的開放時間內';
+    END IF;
 
 ELSE -- 周末
-IF NEW .begin_time :: TIME < weekend_opening
-OR NEW .end_time :: TIME > weekend_closing THEN RAISE
-EXCEPTION
-    '預約時間必須在周末的開放時間內';
+    IF NEW .begin_time::TIME < weekend_opening OR NEW .end_time::TIME > weekend_closing THEN
+        RAISE EXCEPTION '預約時間必須在周末的開放時間內';
 
-END IF;
+    END IF;
 
 END IF;
 
@@ -411,7 +384,7 @@ END IF;
 -- 檢查校外人士預約是否在可提前預約的日期內
 IF user_role = 'outsider'
 AND (
-    (NEW .begin_time :: DATE - CURRENT_DATE) > outsider_limit
+    (NEW.begin_time :: DATE - CURRENT_DATE) > outsider_limit
 ) THEN RAISE
 EXCEPTION
     '校外人士只能提前 % 天進行預約',
@@ -430,14 +403,13 @@ $$ LANGUAGE plpgsql SECURITY INVOKER;
 -- 在新增或修改之前檢查預約設定限制
 DROP TRIGGER IF EXISTS trigger_check_reservation_limits ON reservations;
 
-CREATE TRIGGER trigger_check_reservation_limits BEFORE INSERT
-OR
+CREATE TRIGGER trigger_check_reservation_limits BEFORE INSERT OR
 UPDATE ON reservations FOR EACH ROW
 EXECUTE FUNCTION check_reservation_limits ();
 
 -- 檢查新的預約時間是否與任何已存在的關閉時段重疊，確保預約在開放時間內
-CREATE
-OR REPLACE FUNCTION check_reservation_overlap_with_closed_periods () RETURNS TRIGGER AS $$ BEGIN
+CREATE OR
+REPLACE FUNCTION check_reservation_overlap_with_closed_periods () RETURNS TRIGGER AS $$ BEGIN
     -- 使用 supabase UI 或 service_key 不受限制
     IF is_supabase_ui_or_service_key() THEN RETURN NEW;
 
@@ -465,14 +437,13 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- 在新增或修改之前檢查是否與關閉時間重疊
 DROP TRIGGER IF EXISTS trigger_check_reservation_overlap_with_closed_periods ON reservations;
 
-CREATE TRIGGER trigger_check_reservation_overlap_with_closed_periods BEFORE INSERT
-OR
+CREATE TRIGGER trigger_check_reservation_overlap_with_closed_periods BEFORE INSERT OR
 UPDATE ON reservations FOR EACH ROW
 EXECUTE FUNCTION check_reservation_overlap_with_closed_periods ();
 
 -- 檢查用戶當天是否有未完成的預約
-CREATE
-OR REPLACE FUNCTION check_unfinished_reservation () RETURNS TRIGGER AS $$
+CREATE OR
+REPLACE FUNCTION check_unfinished_reservation () RETURNS TRIGGER AS $$
 DECLARE
     end_of_day TIMESTAMP WITH TIME ZONE;
 
@@ -539,15 +510,38 @@ END;
 
 $$ LANGUAGE plpgsql SECURITY INVOKER;
 
--- 在新增或修改之前檢查用戶當天是否有未完成的預約
-DROP TRIGGER IF EXISTS trigger_check_unfinished_reservation ON reservations;
+-- 檢查用戶帳號是否已驗證
+CREATE OR
+REPLACE FUNCTION check_user_is_verified () RETURNS TRIGGER AS $$
+BEGIN
+    -- 使用 supabase UI 或 service_key 不受限制
+    IF is_supabase_ui_or_service_key() THEN
+        RETURN NEW;
+    END IF;
 
-CREATE TRIGGER trigger_check_unfinished_reservation BEFORE INSERT ON reservations FOR EACH ROW
-EXECUTE FUNCTION check_unfinished_reservation ();
+    IF is_claims_admin() THEN
+        IF get_claim(NEW.user_id, 'is_verified') = 'false' THEN
+            RAISE EXCEPTION '用戶的帳號未驗證';
+        END IF;
+    ELSE
+        IF get_my_claim('is_verified') = 'false' THEN
+            RAISE EXCEPTION '用戶的帳號未驗證';
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY INVOKER;
+
+-- 在新增或修改之前檢查用戶帳號是否已驗證
+DROP TRIGGER IF EXISTS trigger_check_user_is_verified ON reservations;
+
+CREATE TRIGGER trigger_check_user_is_verified BEFORE INSERT ON reservations FOR EACH ROW
+EXECUTE FUNCTION check_user_is_verified ();
 
 -- 檢查是否可以刪除預約
-CREATE
-OR REPLACE FUNCTION check_if_reservation_can_be_deleted () RETURNS TRIGGER AS $$ BEGIN
+CREATE OR
+REPLACE FUNCTION check_if_reservation_can_be_deleted () RETURNS TRIGGER AS $$ BEGIN
     -- 使用 supabase UI 或 service_key 不受限制
     IF is_supabase_ui_or_service_key() THEN RETURN OLD;
 
@@ -577,75 +571,45 @@ EXECUTE FUNCTION check_if_reservation_can_be_deleted ();
  * ==========================
  */
 /*
-取得當前用戶的預約資料及個人資訊
+取得當前用戶的預約資料及個人資訊，但會受到權限限制，例如一般使用者只會返回自己的資料
+函數支持多種過濾條件和分頁功能，以便調用者可以根據具體需求獲取數據
+
 - 參數:
-- page_size: 每頁的大小 (默認為 10)
-- page_offset: 頁偏移量 (默認為 0)
+- page_size: 每頁的大小 (默認為 10)，控制返回的記錄數量
+- page_offset: 頁偏移量 (默認為 0)，用於分頁中跳過前n條記錄
+- filter_user_id: 用戶ID過濾條件，如果指定，則只返回該用戶的預約資訊
+- filter_user_role: 用戶角色過濾條件，用於基於角色過濾記錄
+- filter_seat_id: 座位ID過濾條件，如果指定，則只返回指定座位的預約
+- filter_begin_time_start: 預約開始時間的起始過濾，用於範圍查詢
+- filter_begin_time_end: 預約開始時間的結束過濾，用於範圍查詢
+- filter_end_time_start: 預約結束時間的起始過濾，用於範圍查詢
+- filter_end_time_end: 預約結束時間的結束過濾，用於範圍查詢
+- filter_is_verified: 是否驗證過濾條件，用於篩選已驗證或未驗證的用戶
 
-Example:
-SELECT * FROM get_my_reservations();
-SELECT * FROM get_my_reservations(5, 10);
+- 返回值:
+- 預約相關字段：
+- id: 預約ID
+- begin_time: 預約開始時間
+- end_time: 預約結束時間
+- seat_id: 預約座位ID
+- check_in_time: 簽到時間
+- temporary_leave_time: 臨時離開時間
+- 用戶相關資訊：
+- user_id: 用戶ID
+- email: 電子郵件
+- user_role: 用戶角色
+- admin_role: 管理員角色
+- is_verified: 是否驗證
+- is_in: 是否在場
+- name: 姓名
+- phone: 電話號碼
+- id_card: 身份證號
+- point: 積分
+- reason: 黑名單原因
+- end_at: 黑名單結束時間
  */
-CREATE
-OR REPLACE FUNCTION get_my_reservations (
-    page_size INT DEFAULT 10,
-    page_offset INT DEFAULT 0
-) RETURNS TABLE (
-    -- reservation
-    id UUID,
-    begin_time TIMESTAMP WITH TIME ZONE,
-    end_time TIMESTAMP WITH TIME ZONE,
-    seat_id int8,
-    check_in_time TIMESTAMP WITH TIME ZONE,
-    temporary_leave_time TIMESTAMP WITH TIME ZONE,
-    -- user_data
-    user_id UUID,
-    email TEXT,
-    user_role TEXT,
-    admin_role TEXT,
-    is_in BOOLEAN,
-    NAME TEXT,
-    phone TEXT,
-    id_card TEXT,
-    point INT,
-    reason TEXT,
-    end_at TIMESTAMP WITH TIME ZONE
-) AS $$ BEGIN
-    RETURN QUERY
-    SELECT
-        res.id,
-        res.begin_time,
-        res.end_time,
-        res.seat_id,
-        res.check_in_time,
-        res.temporary_leave_time,
-        user_data.id,
-        user_data.email,
-        user_data.user_role,
-        user_data.admin_role,
-        user_data.is_in,
-        user_data.name,
-        user_data.phone,
-        user_data.id_card,
-        user_data.point,
-        user_data.reason,
-        user_data.end_at
-    FROM
-        Reservations res
-        CROSS JOIN LATERAL get_user_data(auth.uid()) AS user_data
-    WHERE
-        auth.uid() = res.user_id
-    ORDER BY
-        res.begin_time DESC -- 確保結果有一致的排序
-    LIMIT
-        page_size OFFSET page_offset;
-
-END;
-
-$$ LANGUAGE plpgsql STABLE SECURITY INVOKER;
-
-CREATE
-OR REPLACE FUNCTION test_get_reservations (
+CREATE OR
+REPLACE FUNCTION get_reservations (
     page_size INT DEFAULT 10,
     page_offset INT DEFAULT 0,
     filter_user_id UUID DEFAULT NULL,
@@ -654,7 +618,8 @@ OR REPLACE FUNCTION test_get_reservations (
     filter_begin_time_start TIMESTAMP WITH TIME ZONE DEFAULT NULL,
     filter_begin_time_end TIMESTAMP WITH TIME ZONE DEFAULT NULL,
     filter_end_time_start TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-    filter_end_time_end TIMESTAMP WITH TIME ZONE DEFAULT NULL
+    filter_end_time_end TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+    filter_is_verified BOOLEAN DEFAULT NULL
 ) RETURNS TABLE (
     -- reservation
     id UUID,
@@ -668,11 +633,12 @@ OR REPLACE FUNCTION test_get_reservations (
     email TEXT,
     user_role TEXT,
     admin_role TEXT,
+    is_verified BOOLEAN,
     is_in BOOLEAN,
-    name TEXT,
+    NAME TEXT,
     phone TEXT,
     id_card TEXT,
-    point INT,
+    POINT INT,
     reason TEXT,
     end_at TIMESTAMP WITH TIME ZONE
 ) AS $$
@@ -689,6 +655,7 @@ BEGIN
     user_data.email,
     user_data.user_role,
     user_data.admin_role,
+    user_data.is_verified,
     user_data.is_in,
     user_data.name,
     user_data.phone,
@@ -702,6 +669,7 @@ BEGIN
   WHERE
     (filter_user_id IS NULL OR user_data.id = filter_user_id) AND
     (filter_user_role IS NULL OR user_data.user_role = filter_user_role) AND
+    (filter_is_verified IS NULL OR user_data.is_verified = filter_is_verified) AND
     (filter_seat_id IS NULL OR res.seat_id = filter_seat_id) AND
     (filter_begin_time_start IS NULL OR res.begin_time >= filter_begin_time_start) AND
     (filter_begin_time_end IS NULL OR res.begin_time <= filter_begin_time_end) AND
@@ -715,10 +683,56 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql STABLE SECURITY INVOKER;
 
-CREATE
-OR REPLACE FUNCTION test_get_active_reservations (
+/*
+取得當前活躍的預約資料及個人資訊
+此函數支持多種過濾條件，以便根據用戶需求提供特定的數據集，並且具備分頁功能，適用於需要處理大量數據的情況
+
+- 參數:
+- page_size: 每頁顯示的預約記錄數目，默認為 10
+- page_offset: 預約記錄的偏移量，用於分頁，默認為 0
+- filter_user_id: 用戶ID過濾條件，若提供，則只返回該用戶的預約資料
+- filter_user_role: 用戶角色過濾條件，若提供，則只返回對應角色的用戶的預約資料
+- filter_seat_id: 座位ID過濾條件，若提供，則只返回該座位的預約資料
+- filter_begin_time_start: 預約開始時間的最早界限，用於篩選在此時間後開始的預約
+- filter_begin_time_end: 預約開始時間的最晚界限，用於篩選在此時間前開始的預約
+- filter_end_time_start: 預約結束時間的最早界限，用於篩選在此時間後結束的預約
+- filter_end_time_end: 預約結束時間的最晚界限，用於篩選在此時間前結束的預約
+- filter_is_verified: 是否驗證過濾條件，若提供，則只返回對應驗證狀態的用戶的預約資料
+
+- 返回值:
+- 預約資訊（reservation）：
+- id: 預約的唯一識別碼
+- begin_time: 預約開始時間
+- end_time: 預約結束時間
+- seat_id: 預約的座位ID
+- check_in_time: 預約的簽到時間
+- temporary_leave_time: 預約期間的臨時離開時間
+- 用戶資料（user_data）：
+- user_id: 用戶的唯一識別碼
+- email: 用戶的電子郵件地址
+- user_role: 用戶的角色
+- admin_role: 若用戶為管理員，其管理角色
+- is_verified: 用戶是否已經過驗證
+- is_in: 用戶是否在場
+- name: 用戶的姓名
+- phone: 用戶的電話號碼
+- id_card: 用戶的身份證號碼
+- point: 用戶的積分
+- reason: 若用戶被列入黑名單，其原因
+- end_at: 黑名單結束時間
+ */
+CREATE OR
+REPLACE FUNCTION get_active_reservations (
     page_size INT DEFAULT 10,
-    page_offset INT DEFAULT 0
+    page_offset INT DEFAULT 0,
+    filter_user_id UUID DEFAULT NULL,
+    filter_user_role TEXT DEFAULT NULL,
+    filter_seat_id INT8 DEFAULT NULL,
+    filter_begin_time_start TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+    filter_begin_time_end TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+    filter_end_time_start TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+    filter_end_time_end TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+    filter_is_verified BOOLEAN DEFAULT NULL
 ) RETURNS TABLE (
     -- reservation
     id UUID,
@@ -732,11 +746,12 @@ OR REPLACE FUNCTION test_get_active_reservations (
     email TEXT,
     user_role TEXT,
     admin_role TEXT,
+    is_verified BOOLEAN,
     is_in BOOLEAN,
-    name TEXT,
+    NAME TEXT,
     phone TEXT,
     id_card TEXT,
-    point INT,
+    POINT INT,
     reason TEXT,
     end_at TIMESTAMP WITH TIME ZONE
 ) AS $$ BEGIN
@@ -752,6 +767,7 @@ OR REPLACE FUNCTION test_get_active_reservations (
         user_data.email,
         user_data.user_role,
         user_data.admin_role,
+        user_data.is_verified,
         user_data.is_in,
         user_data.name,
         user_data.phone,
@@ -762,6 +778,15 @@ OR REPLACE FUNCTION test_get_active_reservations (
     FROM
         active_reservations res
         CROSS JOIN LATERAL test_get_user_data() AS user_data
+    WHERE
+        (filter_user_id IS NULL OR user_data.id = filter_user_id) AND
+        (filter_user_role IS NULL OR user_data.user_role = filter_user_role) AND
+        (filter_is_verified IS NULL OR user_data.is_verified = filter_is_verified) AND
+        (filter_seat_id IS NULL OR res.seat_id = filter_seat_id) AND
+        (filter_begin_time_start IS NULL OR res.begin_time >= filter_begin_time_start) AND
+        (filter_begin_time_end IS NULL OR res.begin_time <= filter_begin_time_end) AND
+        (filter_end_time_start IS NULL OR res.end_time >= filter_end_time_start) AND
+        (filter_end_time_end IS NULL OR res.end_time <= filter_end_time_end)
         
     ORDER BY
         res.begin_time DESC -- 確保結果有一致的排序
@@ -772,8 +797,8 @@ END;
 
 $$ LANGUAGE plpgsql STABLE SECURITY INVOKER;
 
-CREATE
-OR REPLACE FUNCTION record_user_entry_exit (p_user_id UUID) RETURNS VOID AS $$
+CREATE OR
+REPLACE FUNCTION record_user_entry_exit (p_user_id UUID) RETURNS VOID AS $$
 DECLARE
     curr_time TIMESTAMP WITH TIME ZONE := current_timestamp;
     reservation RECORD;

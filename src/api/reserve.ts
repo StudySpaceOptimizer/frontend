@@ -13,7 +13,7 @@ export class SupabaseReserve implements Reserve {
    * @param endTime 預約結束時間
    * @returns 無返回值，操作失敗將拋出錯誤
    */
-  async reserve(seatID: string, beginTime: Date, endTime: Date): Promise<void> {
+  async reserve(seatID: string, beginTime: Date, endTime: Date): Promise<string> {
     const { data: authData, error: getUserError } = await supabase.auth.getUser()
 
     // 檢查是否成功獲取用戶資訊，或用戶是否存在
@@ -25,14 +25,17 @@ export class SupabaseReserve implements Reserve {
     // 提取用戶ID
     const userID = authData.user.id
 
-    const { error } = await supabase.from('reservations').insert([
-      {
-        begin_time: beginTime,
-        end_time: endTime,
-        user_id: userID,
-        seat_id: seatIDNumber
-      }
-    ])
+    const { data, error } = await supabase
+      .from('reservations')
+      .insert([
+        {
+          begin_time: beginTime,
+          end_time: endTime,
+          user_id: userID,
+          seat_id: seatIDNumber
+        }
+      ])
+      .select()
 
     if (error) {
       switch (error.code) {
@@ -42,6 +45,9 @@ export class SupabaseReserve implements Reserve {
           console.error(error.message)
           throw new Error('遇到未知錯誤，請稍後再試')
       }
+    } else {
+      console.log(data)
+      return data[0].id
     }
   }
 
@@ -59,7 +65,7 @@ export class SupabaseReserve implements Reserve {
     seatID: string,
     beginTime: Date,
     endTime: Date
-  ): Promise<void> {
+  ): Promise<string> {
     // 根據 id_card 查找用戶
     const { data: userData, error: getUserDataError } = await supabase
       .from('user_profiles')
@@ -76,25 +82,44 @@ export class SupabaseReserve implements Reserve {
     const seatIDNumber = seatConverterToDB(seatID)
 
     // 插入預約
-    const { error } = await supabase.from('reservations').insert([
-      {
-        begin_time: beginTime,
-        end_time: endTime,
-        user_id: userID,
-        seat_id: seatIDNumber
-      }
-    ])
+    const { data, error } = await supabase
+      .from('reservations')
+      .insert([
+        {
+          begin_time: beginTime,
+          end_time: endTime,
+          user_id: userID,
+          seat_id: seatIDNumber
+        }
+      ])
+      .select()
 
     if (error) {
       throw new Error(error.message)
+    } else {
+      console.log(data)
+      return data[0].id
     }
   }
 
-  async getPersonalReservations(config: Config): Promise<Type.Reservation[]> {
+  async getReservations(
+    config: Config,
+    reservationFilter: Type.ReservationFilter
+  ): Promise<Type.Reservation[]> {
     const { pageSize = 10, pageOffset = 0 } = config
-    const { data: reservations, error } = await supabase.rpc('get_my_reservations', {
+    const { userID, userRole, seatID, beginTimeStart, beginTimeEnd, endTimeStart, endTimeEnd } =
+      reservationFilter
+
+    const { data: reservations, error } = await supabase.rpc('get_reservations', {
       page_size: pageSize,
-      page_offset: pageOffset
+      page_offset: pageOffset,
+      filter_user_id: userID,
+      filter_user_role: userRole,
+      filter_seat_id: seatID,
+      filter_begin_time_start: beginTimeStart,
+      filter_begin_time_end: beginTimeEnd,
+      filter_end_time_start: endTimeStart,
+      filter_end_time_end: endTimeEnd
     })
 
     if (error) {
@@ -105,13 +130,17 @@ export class SupabaseReserve implements Reserve {
       reservations?.map(
         (reservation: any): Type.Reservation => ({
           id: reservation.id,
-          beginTime: reservation.begin_time,
-          endTime: reservation.end_time,
+          beginTime: new Date(reservation.begin_time),
+          endTime: new Date(reservation.end_time),
+          seatID: seatConverterFromDB(reservation.seat_id),
+          checkInTime: reservation.check_in_time,
+          temporaryLeaveTime: reservation.temporary_leave_time,
           user: {
             id: reservation.user_id,
-            email: reservation.email,
             userRole: reservation.user_role,
+            email: reservation.email,
             adminRole: reservation.admin_role,
+            isVerified: reservation.is_verified,
             isIn: reservation.is_in,
             name: reservation.name,
             phone: reservation.phone,
@@ -123,10 +152,7 @@ export class SupabaseReserve implements Reserve {
                   endAt: new Date(reservation.blacklist[0].end_at)
                 }
               : undefined
-          },
-          seatID: seatConverterFromDB(reservation.seat_id),
-          checkInTime: reservation.check_in_time,
-          temporaryLeaveTime: reservation.temporary_leave_time
+          }
         })
       ) || []
     )
@@ -137,6 +163,18 @@ export class SupabaseReserve implements Reserve {
       .from('reservations')
       .select('count', { count: 'exact' })
       .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    return data?.at(0)?.count || 0
+  }
+
+  async getAllReservationsCount(): Promise<number> {
+    const { data: data, error } = await supabase
+      .from('reservations')
+      .select('count', { count: 'exact' })
 
     if (error) {
       throw new Error(error.message)
@@ -180,72 +218,5 @@ export class SupabaseReserve implements Reserve {
     if (error) {
       throw new Error(error.message)
     }
-  }
-
-  async getAllReservations(
-    config: Config,
-    reservationFilter: Type.ReservationFilter
-  ): Promise<Type.Reservation[]> {
-    const { pageSize = 10, pageOffset = 0 } = config
-    const { userID, userRole, seatID, beginTimeStart, beginTimeEnd, endTimeStart, endTimeEnd } =
-      reservationFilter
-
-    const { data: reservations, error } = await supabase.rpc('test_get_reservations', {
-      page_size: pageSize,
-      page_offset: pageOffset,
-      filter_user_id: userID,
-      filter_user_role: userRole,
-      filter_seat_id: seatID,
-      filter_begin_time_start: beginTimeStart,
-      filter_begin_time_end: beginTimeEnd,
-      filter_end_time_start: endTimeStart,
-      filter_end_time_end: endTimeEnd
-    })
-
-    if (error) {
-      throw new Error(error.message)
-    }
-
-    return (
-      reservations?.map(
-        (reservation: any): Type.Reservation => ({
-          id: reservation.id,
-          beginTime: new Date(reservation.begin_time),
-          endTime: new Date(reservation.end_time),
-          seatID: seatConverterFromDB(reservation.seat_id),
-          checkInTime: reservation.check_in_time,
-          temporaryLeaveTime: reservation.temporary_leave_time,
-          user: {
-            id: reservation.user_id,
-            userRole: reservation.user_role,
-            email: reservation.email,
-            adminRole: reservation.admin_role,
-            isIn: reservation.is_in,
-            name: reservation.name,
-            phone: reservation.phone,
-            idCard: reservation.id_card,
-            point: reservation.point,
-            ban: reservation.blacklist
-              ? {
-                  reason: reservation.blacklist[0].reason,
-                  endAt: new Date(reservation.blacklist[0].end_at)
-                }
-              : undefined
-          }
-        })
-      ) || []
-    )
-  }
-
-  async getAllReservationsCount(): Promise<number> {
-    const { data: data, error } = await supabase
-      .from('reservations')
-      .select('count', { count: 'exact' })
-
-    if (error) {
-      throw new Error(error.message)
-    }
-
-    return data?.at(0)?.count || 0
   }
 }

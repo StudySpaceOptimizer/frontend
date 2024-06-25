@@ -6,6 +6,7 @@ export interface UserData {
   email: string
   userRole: userRole
   adminRole?: adminRole
+  isVerified: boolean
   isIn: boolean
   name?: string
   phone?: string

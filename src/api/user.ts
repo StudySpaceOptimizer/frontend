@@ -124,7 +124,7 @@ export class SupabaseUser implements User {
     const { pageSize, pageOffset } = config
     const { userID, email, userRole, adminRole, isIn, name } = userDataFilter
 
-    const { data: userProfiles, error } = await supabase.rpc('test_get_user_data', {
+    const { data: userProfiles, error } = await supabase.rpc('get_user_data', {
       page_size: pageSize,
       page_offset: pageOffset,
       filter_user_id: userID,
@@ -145,6 +145,7 @@ export class SupabaseUser implements User {
           email: profile.email,
           userRole: profile.user_role,
           adminRole: profile.admin_role,
+          isVerified: profile.is_verified,
           isIn: profile.is_in,
           name: profile.name,
           phone: profile.phone,
@@ -162,9 +163,7 @@ export class SupabaseUser implements User {
   }
 
   async getUsersCount(): Promise<number> {
-    const { data: data, error } = await supabase
-      .from('user_profiles')
-      .select('count', { count: 'exact' })
+    const { data, error } = await supabase.from('user_profiles').select('count', { count: 'exact' })
 
     if (error) {
       throw new Error(error.message)
@@ -173,23 +172,16 @@ export class SupabaseUser implements User {
     return data?.at(0)?.count || 0
   }
 
-  // async getMyUser(userId: string): Promise<Type.UserData> {
-  //   return (
-  //     await this.getUsers(
-  //       {
-  //         pageSize: 1,
-  //         pageOffset: 0
-  //       },
-  //       userId
-  //     )
-  //   )[0]
-  // }
-
-  async updateUserPassword(password: string): Promise<void> {
-    const { error } = await supabase.auth.updateUser({ password: password })
+  async verifyUser(userID: string): Promise<void> {
+    const { error } = await supabase.rpc('set_claim', {
+      uid: userID,
+      claim: 'is_verified',
+      value: true
+    })
 
     if (error) {
-      throw new Error('請重新檢查密碼')
+      console.log(error)
+      throw new Error('驗證使用者錯誤')
     }
   }
 
@@ -271,30 +263,6 @@ export class SupabaseUser implements User {
     }
   }
 
-  async updateSettings(newSettings: Type.SettingsData): Promise<void> {
-    for (const key in newSettings) {
-      const value = JSON.stringify(newSettings[key as keyof Type.SettingsData])
-      const { error } = await supabase
-        .from('settings')
-        .update({ value: camelToSnakeCase(value) })
-        .eq('key_name', camelToSnakeCase(key))
-
-      if (error) {
-        throw new Error(error.message)
-      }
-    }
-  }
-
-  async grantAdminRole(userID: String, adminRole: Type.adminRole): Promise<void> {
-    const { error } = await supabase.rpc('set_claim', {
-      claim: 'admin_role',
-      uid: userID,
-      value: adminRole
-    })
-
-    if (error) throw new Error(error.message)
-  }
-
   async getSettings(): Promise<Type.SettingsData> {
     const { data, error } = await supabase.from('settings').select('*')
 
@@ -349,6 +317,30 @@ export class SupabaseUser implements User {
     })
 
     return settings as Type.SettingsData
+  }
+
+  async updateSettings(newSettings: Type.SettingsData): Promise<void> {
+    for (const key in newSettings) {
+      const value = JSON.stringify(newSettings[key as keyof Type.SettingsData])
+      const { error } = await supabase
+        .from('settings')
+        .update({ value: camelToSnakeCase(value) })
+        .eq('key_name', camelToSnakeCase(key))
+
+      if (error) {
+        throw new Error(error.message)
+      }
+    }
+  }
+
+  async grantAdminRole(userID: string, adminRole: Type.adminRole): Promise<void> {
+    const { error } = await supabase.rpc('set_claim', {
+      claim: 'admin_role',
+      uid: userID,
+      value: adminRole
+    })
+
+    if (error) throw new Error(error.message)
   }
 }
 

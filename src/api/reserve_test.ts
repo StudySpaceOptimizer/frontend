@@ -48,12 +48,42 @@ async function testReserveSuccess() {
 
   const beginTime = new Date(tomorrow.setHours(13, 0, 0, 0))
   const endTime = new Date(tomorrow.setHours(14, 0, 0, 0))
-  const seatID = 'A2'
+  const seatID = 'A5'
+  let reservationId
 
   try {
-    await supabaseReserve.reserve(seatID, beginTime, endTime)
+    reservationId = await supabaseReserve.reserve(seatID, beginTime, endTime)
   } catch (e) {
     console.log(e)
+  } finally {
+    if (reservationId) {
+      await supabaseReserve.deleteReservation(reservationId)
+    }
+  }
+}
+
+async function testReserveForUser() {
+  const user = await signIn(admin, password)
+
+  const supabaseReserve = new SupabaseReserve()
+  const tomorrow = new Date()
+  tomorrow.setDate(tomorrow.getDate() + 1)
+
+  const idCard = 'F000000000'
+  const beginTime = new Date(tomorrow.setHours(13, 0, 0, 0))
+  const endTime = new Date(tomorrow.setHours(14, 0, 0, 0))
+  const seatID = 'A6'
+
+  let reservationId
+
+  try {
+    reservationId = await supabaseReserve.reserveForUser(idCard, seatID, beginTime, endTime)
+  } catch (e) {
+    console.log(e)
+  } finally {
+    if (reservationId) {
+      await supabaseReserve.deleteReservation(reservationId)
+    }
   }
 }
 
@@ -289,6 +319,7 @@ async function testRecordUserEntryExit() {
 // await testBannedUserReserve()
 
 // await testReserveSuccess()
+await testReserveForUser()
 
 async function getAllReservations() {
   const pageSize = 10,
@@ -328,4 +359,16 @@ async function getAllReservations() {
   }
 }
 
-await getAllReservations()
+// await getAllReservations()
+
+// await signIn(admin, password)
+
+// const { error } = await supabase.rpc('set_claim', {
+//   uid: 'e31510cc-c7ad-4da1-8148-f809bdd1fca0',
+//   claim: 'is_verified',
+//   value: true
+// })
+
+// if (error) {
+//   console.log(error)
+// }

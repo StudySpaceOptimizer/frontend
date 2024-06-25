@@ -11,6 +11,7 @@ export interface UserDataFilter {
   email?: string
   userRole?: string
   adminRole?: string
+  isVerified?: boolean
   isIn?: boolean
   name?: string
 }
@@ -19,6 +20,7 @@ export interface ReservationFilter {
   userID?: string
   userRole?: string
   seatID?: number
+  isVerified?: boolean
   beginTimeStart?: Date
   beginTimeEnd?: Date
   endTimeStart?: Date

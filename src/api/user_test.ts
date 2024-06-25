@@ -105,17 +105,17 @@ async function testGetSettingData() {
   console.log('Settings loaded:', settings)
 }
 
-// async function testGetUserByAdmin() {
-//   const user = await signIn(admin, password)
+async function testGetUserByAdmin() {
+  const supabaseUser = new SupabaseUser()
+  const email = 'test_outsider@mail.com'
+  const password = 'password'
 
-//   const supabaseUser = new SupabaseUser()
-//   try {
-//     const users = await supabaseUser.getUsers({})
-//     console.log(users)
-//   } catch (error) {
-//     console.error('Error fetching users:', error)
-//   }
-// }
+  try {
+    await supabaseUser.outsiderSignUp(email, password)
+  } catch (e) {
+    console.log(e)
+  }
+}
 
 async function getAllUserData() {
   const pageSize = 10,
@@ -152,7 +152,7 @@ async function getAllUserData() {
   }
 }
 
-await getAllUserData()
+// await getAllUserData()
 
 // await testGrantAdminRoleSuccess()
 // await testGetSettingData()
@@ -180,3 +180,5 @@ await getAllUserData()
 
 // await testGetUserByAdmin()
 // await testSignUpSuccess('daasadadds@asd', 'daqwewqes')
+
+await testGetUserByAdmin()

@@ -12,37 +12,31 @@ export interface User {
   outsiderSignUp(name: string, phone: string, idcard: string, email: string): Promise<any>
   getUsers(config: any, userDataFilter: any): Promise<any>
   getUsersCount(): Promise<any>
-  // getMyUser(userId: string): Promise<any>
+  verifyUser(userID: string): Promise<any>
+  updateProfile(id: string, name: string, phone: string, idCard: string): Promise<any>
   banUser(id: string, reason: string, end_at: Date): Promise<any>
   unbanUser(id: string): Promise<any>
   updatePointUser(id: string, point: number): Promise<any>
-  updateProfile(id: string, name: string, phone: string, idCard: string): Promise<any>
   getSettings(): Promise<any>
   updateSettings(settings: any): Promise<any>
-
-  updateUserPassword(newPassword: string): Promise<any>
+  grantAdminRole(userID: string, adminRole: any): Promise<void>
 }
 
 export interface Seat {
   getSeatsStatus(config: any): Promise<any>
   getSeatsConfigurations(): Promise<any>
-  getSeatStatus(id: string): Promise<any>
+  getSeatStatus(config: any, reservationFilter: any): Promise<any>
   updateSeat(seatID: string, available: boolean, otherInfo?: string): Promise<any>
 }
 
 export interface Reserve {
   reserve(seatId: string, begin: Date, end: Date): Promise<any>
-  getPersonalReservations(config: any): Promise<any>
+  reserveForUser(idCard: string, seatID: string, beginTime: Date, endTime: Date): Promise<any>
+  getReservations(config: any, reservationFilter: any): Promise<any>
   getPersonalReservationsCount(): Promise<any>
+  getAllReservationsCount(): Promise<any>
   deleteReservation(id: string): Promise<any>
   terminateReservation(id: string): Promise<any>
-  getAllReservations(
-    config: any,
-    reservationFilter:any
-  ): Promise<any>
-  getAllReservationsCount(): Promise<any>
-
-  // 報到、離開
 }
 
 export const API_SERVICE = {

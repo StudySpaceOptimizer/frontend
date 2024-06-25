@@ -2,7 +2,7 @@ import type * as Type from '../types'
 import { supabase } from '../service/supabase/supabase'
 import { seatConverterFromDB, seatConverterToDB } from '../utils'
 import { toLocalDateTime, parseTimeString } from './common'
-import type { Seat } from './index'
+import type { Seat, Config } from './index'
 import { useSettingStore } from '../stores/setting'
 
 interface SeatRequest {
@@ -62,7 +62,10 @@ export class SupabaseSeat implements Seat {
       }
     }
 
-    const { data: seatInfo, error: getSeatsError } = await supabase.from('seats').select('*').order('id', { ascending: true })
+    const { data: seatInfo, error: getSeatsError } = await supabase
+      .from('seats')
+      .select('*')
+      .order('id', { ascending: true })
 
     if (getSeatsError) {
       throw new Error(getSeatsError.message)
@@ -151,43 +154,65 @@ export class SupabaseSeat implements Seat {
    * @param id 要查詢的座位ID
    * @returns 返回座位詳細資訊的 Promise
    */
-  async getSeatStatus(seatID: string): Promise<Type.SeatDetail> {
-    const id = seatConverterToDB(seatID)
-    const { data: active_seat_reservations, error } = await supabase.rpc(
-      'get_seat_active_reservations',
-      {
-        p_seat_id: id
-      }
-    )
+  async getSeatStatus(
+    config: Config,
+    reservationFilter: Type.ReservationFilter
+  ): Promise<Type.SeatDetail> {
+    const { pageSize = 10, pageOffset = 0 } = config
+    const { userID, userRole, seatID, beginTimeStart, beginTimeEnd, endTimeStart, endTimeEnd } =
+      reservationFilter
+
+    if (seatID == undefined) {
+      throw new Error('座位編號錯誤')
+    }
+
+    const { data: reservations, error } = await supabase.rpc('get_seat_active_reservations', {
+      page_size: pageSize,
+      page_offset: pageOffset,
+      filter_user_id: userID,
+      filter_user_role: userRole,
+      filter_seat_id: seatID,
+      filter_begin_time_start: beginTimeStart,
+      filter_begin_time_end: beginTimeEnd,
+      filter_end_time_start: endTimeStart,
+      filter_end_time_end: endTimeEnd
+    })
 
     if (error) {
       throw new Error(error.message)
     }
 
     const seatDetail: Type.SeatDetail = {
-      id: seatID,
+      id: seatConverterFromDB(seatID),
       reservations:
-        active_seat_reservations?.map((reservation: any) => ({
-          beginTime: toLocalDateTime(reservation.begin_time),
-          endTime: toLocalDateTime(reservation.end_time),
-          user: {
-            id: reservation.user_id,
-            email: reservation.email,
-            userRole: reservation.user_role,
-            adminRole: reservation.admin_role,
-            isIn: reservation.is_in,
-            name: reservation.name,
-            phone: reservation.phone,
-            idCard: reservation.id_card,
-            point: reservation.point,
-            ban: reservation.blacklist
-              ? {
-                  reason: reservation.blacklist[0].reason,
-                  endAt: new Date(reservation.blacklist[0].end_at)
-                }
-              : undefined
-          }
-        })) || []
+        reservations?.map(
+          (reservation: any): Type.Reservation => ({
+            id: reservation.id,
+            beginTime: new Date(reservation.begin_time),
+            endTime: new Date(reservation.end_time),
+            seatID: seatConverterFromDB(reservation.seat_id),
+            checkInTime: reservation.check_in_time,
+            temporaryLeaveTime: reservation.temporary_leave_time,
+            user: {
+              id: reservation.user_id,
+              userRole: reservation.user_role,
+              email: reservation.email,
+              adminRole: reservation.admin_role,
+              isVerified: reservation.is_verified,
+              isIn: reservation.is_in,
+              name: reservation.name,
+              phone: reservation.phone,
+              idCard: reservation.id_card,
+              point: reservation.point,
+              ban: reservation.blacklist
+                ? {
+                    reason: reservation.blacklist[0].reason,
+                    endAt: new Date(reservation.blacklist[0].end_at)
+                  }
+                : undefined
+            }
+          })
+        ) || []
     }
 
     return seatDetail
