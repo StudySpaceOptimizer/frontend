@@ -5,7 +5,7 @@ export interface Reservation {
   beginTime: Date
   endTime: Date
   user: UserData
-  seatID: string
+  seatId: string
 
   checkInTime?: Date
 

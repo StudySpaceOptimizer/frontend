@@ -2,18 +2,18 @@ import type * as Type from '../types'
 import { supabase } from '../service/supabase/supabase'
 import { seatConverterToDB, seatConverterFromDB } from '../utils'
 
-import type { Reserve, Config } from './index'
+import type { Reserve } from './index'
 
 export class SupabaseReserve implements Reserve {
   /**
    * 預約座位，若座位已被預約或發生其他錯誤，將拋出錯誤
    * @url POST /api/seats/
-   * @param seatID 座位ID
+   * @param seatId 座位ID
    * @param beginTime 預約開始時間
    * @param endTime 預約結束時間
    * @returns 無返回值，操作失敗將拋出錯誤
    */
-  async reserve(seatID: string, beginTime: Date, endTime: Date): Promise<string> {
+  async reserve(seatId: string, beginTime: Date, endTime: Date): Promise<string> {
     const { data: authData, error: getUserError } = await supabase.auth.getUser()
 
     // 檢查是否成功獲取用戶資訊，或用戶是否存在
@@ -21,7 +21,7 @@ export class SupabaseReserve implements Reserve {
       throw new Error('Failed to get user data:' + getUserError?.message)
     }
 
-    const seatIDNumber = seatConverterToDB(seatID)
+    const seatIdNumber = seatConverterToDB(seatId)
     // 提取用戶ID
     const userID = authData.user.id
 
@@ -32,7 +32,7 @@ export class SupabaseReserve implements Reserve {
           begin_time: beginTime,
           end_time: endTime,
           user_id: userID,
-          seat_id: seatIDNumber
+          seat_id: seatIdNumber
         }
       ])
       .select()
@@ -55,14 +55,14 @@ export class SupabaseReserve implements Reserve {
    * 為指定的用戶預約座位，若座位已被預約或發生其他錯誤，將拋出錯誤
    * @url POST /api/seats/
    * @param idCard 用戶的身份證號碼
-   * @param seatID 座位ID
+   * @param seatId 座位ID
    * @param beginTime 預約開始時間
    * @param endTime 預約結束時間
-   * @returns 無返回值，操作失敗將拋出錯誤
+   * @returns 操作成功返回預約ID，失敗則拋出錯誤
    */
   async reserveForUser(
     idCard: string,
-    seatID: string,
+    seatId: string,
     beginTime: Date,
     endTime: Date
   ): Promise<string> {
@@ -79,7 +79,7 @@ export class SupabaseReserve implements Reserve {
 
     const userID = userData.id
 
-    const seatIDNumber = seatConverterToDB(seatID)
+    const seatIdNumber = seatConverterToDB(seatId)
 
     // 插入預約
     const { data, error } = await supabase
@@ -89,7 +89,7 @@ export class SupabaseReserve implements Reserve {
           begin_time: beginTime,
           end_time: endTime,
           user_id: userID,
-          seat_id: seatIDNumber
+          seat_id: seatIdNumber
         }
       ])
       .select()
@@ -102,20 +102,27 @@ export class SupabaseReserve implements Reserve {
     }
   }
 
+  /**
+   * 根據過濾條件獲取預約列表，一般使用者使用此 API 只會返回自己的預約紀錄
+   * @url POST /api/reservations/
+   * @param pageFilter 包含分頁配置
+   * @param reservationFilter 包含座位和用戶的過濾條件
+   * @returns 返回符合條件的預約列表
+   */
   async getReservations(
-    config: Config,
+    pageFilter: Type.PageFilter,
     reservationFilter: Type.ReservationFilter
   ): Promise<Type.Reservation[]> {
-    const { pageSize = 10, pageOffset = 0 } = config
-    const { userID, userRole, seatID, beginTimeStart, beginTimeEnd, endTimeStart, endTimeEnd } =
+    const { pageSize = 10, pageOffset = 0 } = pageFilter
+    const { userId, userRole, seatId, beginTimeStart, beginTimeEnd, endTimeStart, endTimeEnd } =
       reservationFilter
 
     const { data: reservations, error } = await supabase.rpc('get_reservations', {
       page_size: pageSize,
       page_offset: pageOffset,
-      filter_user_id: userID,
+      filter_user_id: userId,
       filter_user_role: userRole,
-      filter_seat_id: seatID,
+      filter_seat_id: seatId,
       filter_begin_time_start: beginTimeStart,
       filter_begin_time_end: beginTimeEnd,
       filter_end_time_start: endTimeStart,
@@ -132,7 +139,7 @@ export class SupabaseReserve implements Reserve {
           id: reservation.id,
           beginTime: new Date(reservation.begin_time),
           endTime: new Date(reservation.end_time),
-          seatID: seatConverterFromDB(reservation.seat_id),
+          seatId: seatConverterFromDB(reservation.seat_id),
           checkInTime: reservation.check_in_time,
           temporaryLeaveTime: reservation.temporary_leave_time,
           user: {
@@ -158,6 +165,11 @@ export class SupabaseReserve implements Reserve {
     )
   }
 
+  /**
+   * 獲取當前用戶的預約數量
+   * @url
+   * @returns 返回當前用戶的預約數量
+   */
   async getPersonalReservationsCount(): Promise<number> {
     const { data: data, error } = await supabase
       .from('reservations')
@@ -171,6 +183,11 @@ export class SupabaseReserve implements Reserve {
     return data?.at(0)?.count || 0
   }
 
+  /**
+   * 獲取所有用戶的預約總數
+   * @url
+   * @returns 返回系統中的總預約數量
+   */
   async getAllReservationsCount(): Promise<number> {
     const { data: data, error } = await supabase
       .from('reservations')
@@ -184,9 +201,10 @@ export class SupabaseReserve implements Reserve {
   }
 
   /**
-   * 删除指定的预约记录
+   * 刪除指定的預約記錄
+   * @url
    * @param id 預約記錄的ID
-   * @returns 無回傳值，操作失敗將拋出錯誤
+   * @returns 操作無回傳值，失敗將拋出錯誤
    */
   async deleteReservation(id: string): Promise<void> {
     const { error } = await supabase.from('reservations').delete().eq('id', id)
@@ -203,9 +221,10 @@ export class SupabaseReserve implements Reserve {
   }
 
   /**
-   * 終止指定的預約
+   * 終止指定的預約，將預約結束時間設為當前時間
+   * @url
    * @param id 預約記錄的ID
-   * @returns 無回傳值，操作失敗將拋出錯誤
+   * @returns 操作無回傳值，失敗將拋出錯誤
    */
   async terminateReservation(id: string): Promise<void> {
     // const seatId = seatConverterToDB(id)

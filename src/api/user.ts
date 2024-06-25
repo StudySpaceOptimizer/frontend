@@ -1,6 +1,6 @@
 import type * as Type from '../types'
 import { supabase } from '../service/supabase/supabase'
-import type { User, Config } from './index'
+import type { User } from './index'
 import { filter } from 'lodash'
 import { aD } from 'vitest/dist/reporters-1evA5lom.js'
 
@@ -13,17 +13,17 @@ export class SupabaseUser implements User {
    * @returns 無返回值，登入失敗將拋出錯誤
    */
   async signIn(email: string, password: string): Promise<string> {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error: signInError } = await supabase.auth.signInWithPassword({
       email: email,
       password: password
     })
 
-    if (error) {
-      switch (error.status) {
+    if (signInError) {
+      switch (signInError.status) {
         case 400:
           throw new Error('登入失敗，郵件信箱或密碼不正確')
         default:
-          console.error(error.message)
+          console.error(signInError.message)
           throw new Error('遇到未知錯誤，請稍後再試')
       }
     }
@@ -43,7 +43,7 @@ export class SupabaseUser implements User {
   /**
    * 登出當前用戶，失敗將拋出錯誤
    * @url POST /api/signout
-   * @returns 無返回值
+   * @returns 操作無返回值，失敗將拋出錯誤
    */
   async signOut(): Promise<void> {
     const { error } = await supabase.auth.signOut()
@@ -115,13 +115,17 @@ export class SupabaseUser implements User {
   }
 
   /**
-   * 獲取所有用戶資料，只有管理員有權限調用此接口
-   * @url GET /api/users?all=[Boolean]
-   * @param getAllUser 是否獲取所有用戶
+   * 根據過濾條件獲取用戶資料一般使用者使用此 API 只會返回自己的用戶資料
+   * @url
+   * @param pageFilter 包含分頁配置
+   * @param userDataFilter 包含用戶的過濾條件
    * @returns 返回用戶數據列表
    */
-  async getUsers(config: Config, userDataFilter: Type.UserDataFilter): Promise<Type.UserData[]> {
-    const { pageSize, pageOffset } = config
+  async getUsers(
+    pageFilter: Type.PageFilter,
+    userDataFilter: Type.UserDataFilter
+  ): Promise<Type.UserData[]> {
+    const { pageSize, pageOffset } = pageFilter
     const { userID, email, userRole, adminRole, isIn, name } = userDataFilter
 
     const { data: userProfiles, error } = await supabase.rpc('get_user_data', {
@@ -138,6 +142,7 @@ export class SupabaseUser implements User {
     if (error) {
       throw new Error(error.message)
     }
+
     return (
       userProfiles?.map(
         (profile: any): Type.UserData => ({
@@ -162,6 +167,11 @@ export class SupabaseUser implements User {
     )
   }
 
+  /**
+   * 獲取目前註冊的所有用戶的總數。這個 API 用於管理員儀表板，以顯示用戶總數
+   * @url
+   * @returns 返回用戶總數，如果發生錯誤，將拋出異常
+   */
   async getUsersCount(): Promise<number> {
     const { data, error } = await supabase.from('user_profiles').select('count', { count: 'exact' })
 
@@ -172,9 +182,15 @@ export class SupabaseUser implements User {
     return data?.at(0)?.count || 0
   }
 
-  async verifyUser(userID: string): Promise<void> {
+  /**
+   * 驗證指定用戶的帳號，通常用於管理員審核過程中將用戶標記為已驗證
+   * @url
+   * @param userId 要驗證的用戶ID
+   * @returns 操作無返回值，驗證失敗將拋出錯誤
+   */
+  async verifyUser(userId: string): Promise<void> {
     const { error } = await supabase.rpc('set_claim', {
-      uid: userID,
+      uid: userId,
       claim: 'is_verified',
       value: true
     })
@@ -263,6 +279,10 @@ export class SupabaseUser implements User {
     }
   }
 
+  /**
+   * 獲取系統設置資料
+   * @returns 返回系統設置數據
+   */
   async getSettings(): Promise<Type.SettingsData> {
     const { data, error } = await supabase.from('settings').select('*')
 
@@ -319,6 +339,11 @@ export class SupabaseUser implements User {
     return settings as Type.SettingsData
   }
 
+  /**
+   * 更新系統設置
+   * @param newSettings 新的設置數據
+   * @returns 操作無返回值，失敗將拋出錯誤
+   */
   async updateSettings(newSettings: Type.SettingsData): Promise<void> {
     for (const key in newSettings) {
       const value = JSON.stringify(newSettings[key as keyof Type.SettingsData])
@@ -333,14 +358,22 @@ export class SupabaseUser implements User {
     }
   }
 
-  async grantAdminRole(userID: string, adminRole: Type.adminRole): Promise<void> {
+  /**
+   * 給用戶分配管理角色
+   * @param userId 用戶ID
+   * @param adminRole 分配的管理角色
+   * @returns 操作無返回值，失敗將拋出錯誤
+   */
+  async grantAdminRole(userId: string, adminRole: Type.adminRole): Promise<void> {
     const { error } = await supabase.rpc('set_claim', {
       claim: 'admin_role',
-      uid: userID,
+      uid: userId,
       value: adminRole
     })
 
-    if (error) throw new Error(error.message)
+    if (error) {
+      throw new Error(error.message)
+    }
   }
 }
 

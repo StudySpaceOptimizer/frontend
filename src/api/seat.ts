@@ -2,30 +2,31 @@ import type * as Type from '../types'
 import { supabase } from '../service/supabase/supabase'
 import { seatConverterFromDB, seatConverterToDB } from '../utils'
 import { toLocalDateTime, parseTimeString } from './common'
-import type { Seat, Config } from './index'
+import type { Seat } from './index'
 import { useSettingStore } from '../stores/setting'
-
-interface SeatRequest {
-  beginTime?: Date
-  endTime?: Date
-}
 
 export class SupabaseSeat implements Seat {
   /**
-   * 獲取所有座位的狀態，如果提供了開始和結束時間，則返回該時間範圍內座位的狀態
+   * 獲取所有座位的狀態，可選擇性地根據時間範圍來獲取
    * @url GET /api/seats?begin=begin&end=end
-   * @param config 包含 beginTime 和 endTime 的配置對象
-   * @returns 返回座位數據列表的 Promise
+   * @param seatReservationFilterByTime 包含開始時間和結束時間的過濾條件
+   * @returns 返回座位數據列表
    */
-  async getSeatsStatus(config: SeatRequest): Promise<Type.SeatData[]> {
-    let { beginTime, endTime } = config
+  async getSeatsStatus(
+    seatReservationFilterByTime: Type.SeatReservationFilterByTime
+  ): Promise<Type.SeatData[]> {
+    let { beginTime, endTime } = seatReservationFilterByTime
+
+    // 檢查時間參數是否同時提供或同時不提供
     if (Boolean(beginTime) !== Boolean(endTime)) {
-      throw new Error('beginTime and endTime need to provide same time, or both not provide')
+      throw new Error('開始時間和結束時間必須同時提供或同時不提供')
     }
 
-    // 如果沒有給定config : beginTime = Now 的下一個時間段 或是 營業開始時間, endTime = 營業結束時間
-    // 如果 now < 營業開始時間，beginTime = 營業開始時間
-    // 如果 now > 營業結束時間，返回 'unavailable'
+    /*
+      如果沒有給定 filter，beginTime = 'Now 的下一個時間段'或是'營業開始時間', endTime = 營業結束時間
+      如果 now < 營業開始時間，beginTime = 營業開始時間
+      如果 now > 營業結束時間，返回 'unavailable'
+    */
     const settingStore = useSettingStore()
     if (!settingStore.settings) throw new Error('系統錯誤，找不到設定')
 
@@ -44,7 +45,7 @@ export class SupabaseSeat implements Seat {
       beginTime = new Date(now.setHours(openingTime.hours, openingTime.minutes, 0, 0))
       endTime = new Date(now.setHours(closingTime.hours, closingTime.minutes, 0, 0))
 
-      // 如果当前时间小于开业时间或超过闭店时间，处理逻辑
+      // 處理當前時間超出營業時間的情況
       if (now >= endTime) {
         unavailable = true
       } else if (now >= beginTime && now < endTime) {
@@ -139,26 +140,17 @@ export class SupabaseSeat implements Seat {
   }
 
   /**
-   * Get the seats configurations, returns a Konva Object
-   * TODO: 回傳的東西還沒想好，但這個基本上後端不會動，所以先假設一個任意 Object 回傳 (座位圖還沒做完)
-   * @url GET /api/seats/configurations
-   * @returns Promise<Response<any>>
-   */
-  getSeatsConfigurations(): Promise<any> {
-    throw new Error('Method not implemented.')
-  }
-
-  /**
-   * 獲取特定座位的狀態
+   * 獲取特定座位的當前狀態和預約情況
    * @url GET /api/seats/:id
-   * @param id 要查詢的座位ID
-   * @returns 返回座位詳細資訊的 Promise
+   * @param config 包含分頁配置
+   * @param reservationFilter 包含座位和用戶的過濾條件
+   *@returns 返回詳細的座位預約信息
    */
   async getSeatStatus(
-    config: Config,
+    pageFilter: Type.PageFilter,
     reservationFilter: Type.ReservationFilter
   ): Promise<Type.SeatDetail> {
-    const { pageSize = 10, pageOffset = 0 } = config
+    const { pageSize = 10, pageOffset = 0 } = pageFilter
     const { userID, userRole, seatID, beginTimeStart, beginTimeEnd, endTimeStart, endTimeEnd } =
       reservationFilter
 
@@ -219,15 +211,15 @@ export class SupabaseSeat implements Seat {
   }
 
   /**
-   * 更新座位信息
+   * 更新指定座位的可用狀態及其他信息
+   * @url PUT /api/seats/:id
    * @param seatId 座位 ID
-   * @param available 座位是否可用
-   * @param otherInfo 其他資訊
-   * @returns 更新結果
-   * 將座位轉變為不可使用(available = false)後，此座位將無法被預約，但是先前已經預約的不受影響
+   * @param available 是否可用
+   * @param otherInfo 其他相關信息
+   * @returns 操作無回傳值，錯誤將拋出異常
    */
-  async updateSeat(seatID: string, available: boolean, otherInfo?: string): Promise<void> {
-    const id = seatConverterToDB(seatID)
+  async updateSeat(seatId: string, available: boolean, otherInfo?: string): Promise<void> {
+    const id = seatConverterToDB(seatId)
     const { data, error } = await supabase
       .from('seats')
       .update({

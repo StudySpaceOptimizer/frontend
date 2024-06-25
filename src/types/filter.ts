@@ -7,7 +7,7 @@ export interface Filter {
 }
 
 export interface UserDataFilter {
-  userID?: string
+  userId?: string
   email?: string
   userRole?: string
   adminRole?: string
@@ -17,12 +17,22 @@ export interface UserDataFilter {
 }
 
 export interface ReservationFilter {
-  userID?: string
+  userId?: string
   userRole?: string
-  seatID?: number
+  seatId?: number
   isVerified?: boolean
   beginTimeStart?: Date
   beginTimeEnd?: Date
   endTimeStart?: Date
   endTimeEnd?: Date
+}
+
+export interface SeatReservationFilterByTime {
+  beginTime?: Date
+  endTime?: Date
+}
+
+export interface PageFilter {
+  pageSize?: number
+  pageOffset?: number
 }
