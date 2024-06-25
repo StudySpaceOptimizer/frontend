@@ -103,9 +103,9 @@ BEGIN
     adminrole := 'non-admin';
 
     -- 更新 raw_app_meta_data
-    -- 設置 userrole
+    -- 設置 user_role
     NEW.raw_app_meta_data := NEW.raw_app_meta_data || jsonb_build_object('user_role', userrole);
-    -- 設置 claims_admin
+    -- 設置 admin_role
     NEW.raw_app_meta_data := NEW.raw_app_meta_data || jsonb_build_object('admin_role', adminrole);
 
     RETURN NEW;
@@ -123,7 +123,7 @@ CREATE
 OR REPLACE FUNCTION create_user_profile () RETURNS TRIGGER AS $$
 BEGIN
     -- 插入新的 user_profile 記錄
-    INSERT INTO user_profiles (id, email, is_in, point) VALUES (NEW.id, NEW.email, false, 0);
+    INSERT INTO public.user_profiles (id, email, is_in, point) VALUES (NEW.id, NEW.email, false, 0);
 
     RETURN NULL;
 END;
