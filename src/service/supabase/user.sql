@@ -4,10 +4,10 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     id UUID PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
     email TEXT NOT NULL UNIQUE, -- 電子郵件，唯一且不可為空
     is_in BOOLEAN NOT NULL, -- 表示是否在場內，必須填寫
-    POINT INTEGER DEFAULT 0 NOT NULL, -- 用戶積分，默認為0，必須填寫
+    point INTEGER DEFAULT 0 NOT NULL, -- 用戶積分，默認為0，必須填寫
 
     -- 用戶可以選擇填寫和更新的欄位
-    NAME TEXT,
+    name TEXT,
     phone TEXT,
     id_card TEXT
 );
@@ -230,10 +230,10 @@ CREATE OR REPLACE FUNCTION get_user_data (
     admin_role TEXT,
     is_verified BOOLEAN,
     is_in BOOLEAN,
-    NAME TEXT,
+    name TEXT,
     phone TEXT,
     id_card TEXT,
-    POINT INT,
+    point INT,
     reason TEXT,
     end_at TIMESTAMP WITH TIME ZONE
 ) AS $$

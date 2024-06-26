@@ -1,10 +1,30 @@
-import type * as Type from '../types'
+import type * as Types from '../types'
 import { supabase } from '../service/supabase/supabase'
 import type { User } from './index'
 import { filter } from 'lodash'
 import { aD } from 'vitest/dist/reporters-1evA5lom.js'
 
 export class SupabaseUser implements User {
+  async verifyWithPOP3(email: string, password: string): Promise<string> {
+    const res = await fetch(
+      '/authenticate', // 測試的時候改成 http://localhost:8088
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      }
+    )
+
+    if (!res.ok) {
+      throw new Error('學號或密碼錯誤')
+    }
+
+    const data = await res.json()
+    return data.password
+  }
+
   /**
    * 使用郵件地址和密碼進行用戶登入，登入成功後將 Token 存儲在 Cookie 中
    * @url POST /api/signin
@@ -17,6 +37,8 @@ export class SupabaseUser implements User {
       email: email,
       password: password
     })
+
+    // if 第一次登入 -> 註冊
 
     if (signInError) {
       switch (signInError.status) {
@@ -121,20 +143,20 @@ export class SupabaseUser implements User {
    * @param userDataFilter 包含用戶的過濾條件
    * @returns 返回用戶數據列表
    */
-  async getUsers(
-    pageFilter: Type.PageFilter,
-    userDataFilter: Type.UserDataFilter
-  ): Promise<Type.UserData[]> {
-    const { pageSize, pageOffset } = pageFilter
-    const { userID, email, userRole, adminRole, isIn, name } = userDataFilter
+  async getUserData(
+    options: Types.PageFilter & Types.UserDataFilter = {}
+  ): Promise<Types.UserData[]> {
+    const { pageSize, pageOffset, userId, email, userRole, adminRole, isVerified, isIn, name } =
+      options
 
     const { data: userProfiles, error } = await supabase.rpc('get_user_data', {
       page_size: pageSize,
       page_offset: pageOffset,
-      filter_user_id: userID,
+      filter_user_id: userId,
       filter_email: email,
       filter_user_role: userRole,
       filter_admin_role: adminRole,
+      filter_isVerified: isVerified,
       filter_is_in: isIn,
       filter_name: name
     })
@@ -145,7 +167,7 @@ export class SupabaseUser implements User {
 
     return (
       userProfiles?.map(
-        (profile: any): Type.UserData => ({
+        (profile: any): Types.UserData => ({
           id: profile.id,
           email: profile.email,
           userRole: profile.user_role,
@@ -165,6 +187,79 @@ export class SupabaseUser implements User {
         })
       ) || []
     )
+  }
+
+  async getMyUserData(): Promise<Types.UserData> {
+    const {
+      data: { user },
+      error: getUserError
+    } = await supabase.auth.getUser()
+
+    if (getUserError || !user) {
+      throw new Error(getUserError?.message)
+    }
+
+    const { data: userProfiles, error } = await supabase.rpc('get_user_data', {
+      page_size: undefined,
+      page_offset: undefined,
+      filter_user_id: user.id,
+      filter_email: undefined,
+      filter_user_role: undefined,
+      filter_admin_role: undefined,
+      filter_is_in: undefined,
+      filter_name: undefined
+    })
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    const userProfile = userProfiles?.[0]
+    if (!userProfile) {
+      throw new Error('找不到使用者資料')
+    }
+
+    return {
+      id: userProfile.id,
+      email: userProfile.email,
+      userRole: userProfile.user_role,
+      adminRole: userProfile.admin_role,
+      isVerified: userProfile.is_verified,
+      isIn: userProfile.is_in,
+      name: userProfile.name,
+      phone: userProfile.phone,
+      idCard: userProfile.id_card,
+      point: userProfile.point,
+      ban: userProfile.reason
+        ? {
+            reason: userProfile.reason,
+            endAt: new Date(userProfile.end_at)
+          }
+        : undefined
+    }
+
+    // return (
+    //   userProfiles?.map(
+    //     (profile: any): Types.UserData => ({
+    //       id: profile.id,
+    //       email: profile.email,
+    //       userRole: profile.user_role,
+    //       adminRole: profile.admin_role,
+    //       isVerified: profile.is_verified,
+    //       isIn: profile.is_in,
+    //       name: profile.name,
+    //       phone: profile.phone,
+    //       idCard: profile.id_card,
+    //       point: profile.point,
+    //       ban: profile.reason
+    //         ? {
+    //             reason: profile.reason,
+    //             endAt: new Date(profile.end_at)
+    //           }
+    //         : undefined
+    //     })
+    //   ) || []
+    // )
   }
 
   /**
@@ -283,12 +378,12 @@ export class SupabaseUser implements User {
    * 獲取系統設置資料
    * @returns 返回系統設置數據
    */
-  async getSettings(): Promise<Type.SettingsData> {
+  async getSettings(): Promise<Types.SettingsData> {
     const { data, error } = await supabase.from('settings').select('*')
 
     if (error) throw new Error(error.message)
 
-    const settings: Partial<Type.SettingsData> = {}
+    const settings: Partial<Types.SettingsData> = {}
 
     data?.forEach((item) => {
       let parsedValue: any
@@ -336,7 +431,7 @@ export class SupabaseUser implements User {
       }
     })
 
-    return settings as Type.SettingsData
+    return settings as Types.SettingsData
   }
 
   /**
@@ -344,9 +439,9 @@ export class SupabaseUser implements User {
    * @param newSettings 新的設置數據
    * @returns 操作無返回值，失敗將拋出錯誤
    */
-  async updateSettings(newSettings: Type.SettingsData): Promise<void> {
+  async updateSettings(newSettings: Types.SettingsData): Promise<void> {
     for (const key in newSettings) {
-      const value = JSON.stringify(newSettings[key as keyof Type.SettingsData])
+      const value = JSON.stringify(newSettings[key as keyof Types.SettingsData])
       const { error } = await supabase
         .from('settings')
         .update({ value: camelToSnakeCase(value) })
@@ -364,7 +459,7 @@ export class SupabaseUser implements User {
    * @param adminRole 分配的管理角色
    * @returns 操作無返回值，失敗將拋出錯誤
    */
-  async grantAdminRole(userId: string, adminRole: Type.adminRole): Promise<void> {
+  async grantAdminRole(userId: string, adminRole: Types.adminRole): Promise<void> {
     const { error } = await supabase.rpc('set_claim', {
       claim: 'admin_role',
       uid: userId,

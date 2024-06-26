@@ -1,6 +1,6 @@
 import { SupabaseUser } from './user'
 import { supabase } from '../service/supabase/supabase'
-import type * as Type from '@/types'
+import type * as Types from '@/types'
 
 const student = 'student@mail.ntou.edu.tw'
 const bannedstudent = 'bannedstudent@mail.ntou.edu.tw'
@@ -66,7 +66,7 @@ async function testGetSettingData() {
   if (error) console.error(error)
   // else console.log(data)
 
-  const settings: Partial<Type.SettingsData> = {}
+  const settings: Partial<Types.SettingsData> = {}
 
   data?.forEach((item: any) => {
     switch (item.key_name) {
@@ -117,14 +117,14 @@ async function testGetUserByAdmin() {
   }
 }
 
-async function getAllUserData() {
+async function testGetAllUserData() {
   const pageSize = 10,
     pageOffset = 0
 
   const user = await signIn(admin, password)
 
   // const userID = '9252cca4-d17e-46bd-bd8c-8f15492e082e'
-  const userID = undefined
+  const userId = undefined
   const email = undefined
   const userRole = 'student'
   const adminRole = undefined
@@ -134,17 +134,16 @@ async function getAllUserData() {
   const supabaseUser = new SupabaseUser()
 
   try {
-    const result = await supabaseUser.getUsers(
-      { pageSize, pageOffset },
-      {
-        userID,
-        email,
-        userRole,
-        adminRole,
-        isIn,
-        name
-      }
-    )
+    const result = await supabaseUser.getUserData({
+      pageSize,
+      pageOffset,
+      userId,
+      email,
+      userRole,
+      adminRole,
+      isIn,
+      name
+    })
 
     console.log(result)
   } catch (e) {
@@ -152,7 +151,20 @@ async function getAllUserData() {
   }
 }
 
-// await getAllUserData()
+async function testGetMyUserData() {
+  const user = await signIn(admin, password)
+
+  const supabaseUser = new SupabaseUser()
+
+  try {
+    const result = await supabaseUser.getMyUserData()
+
+    console.log(result)
+  } catch (e) {
+    console.log(e)
+  }
+}
+// await testGetAllUserData()
 
 // await testGrantAdminRoleSuccess()
 // await testGetSettingData()
@@ -181,4 +193,5 @@ async function getAllUserData() {
 // await testGetUserByAdmin()
 // await testSignUpSuccess('daasadadds@asd', 'daqwewqes')
 
-await testGetUserByAdmin()
+// await testGetUserByAdmin()
+await testGetMyUserData()

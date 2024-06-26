@@ -487,7 +487,7 @@ BEGIN
         user_data.end_at
     FROM
         reservations res
-        CROSS JOIN LATERAL test_get_user_data() AS user_data
+        CROSS JOIN LATERAL get_user_data() AS user_data
     WHERE
         (filter_user_id IS NULL OR user_data.id = filter_user_id) AND
         (filter_user_role IS NULL OR user_data.user_role = filter_user_role) AND
@@ -568,10 +568,10 @@ CREATE OR REPLACE FUNCTION get_active_reservations (
     admin_role TEXT,
     is_verified BOOLEAN,
     is_in BOOLEAN,
-    NAME TEXT,
+    name TEXT,
     phone TEXT,
     id_card TEXT,
-    POINT INT,
+    point INT,
     reason TEXT,
     end_at TIMESTAMP WITH TIME ZONE
 ) AS $$ BEGIN
@@ -597,7 +597,7 @@ CREATE OR REPLACE FUNCTION get_active_reservations (
         user_data.end_at
     FROM
         active_reservations res
-        CROSS JOIN LATERAL test_get_user_data() AS user_data
+        CROSS JOIN LATERAL get_user_data() AS user_data
     WHERE
         (filter_user_id IS NULL OR user_data.id = filter_user_id) AND
         (filter_user_role IS NULL OR user_data.user_role = filter_user_role) AND
@@ -613,58 +613,3 @@ CREATE OR REPLACE FUNCTION get_active_reservations (
         page_size OFFSET page_offset;
 END;
 $$ LANGUAGE plpgsql STABLE SECURITY INVOKER;
-
-/*
-記錄用戶進出場狀態。此函數用於記錄及更新用戶的進場和臨時離場時間。
-只有管理員可以執行此操作。
-
-- 參數:
-  - p_user_id: 需要更新進出狀態的用戶的 UUID。
-
-流程:
-1. 驗證操作者是否為管理員。
-2. 查詢該用戶的當前在場狀態。
-3. 更新用戶的在場狀態。
-4. 查詢用戶的當前有效預約。
-5. 如果用戶在場，則更新其臨時離場時間。
-6. 如果用戶不在場，則更新其簽到時間。
-*/
-CREATE OR REPLACE FUNCTION record_user_entry_exit(p_user_id UUID) RETURNS VOID AS $$
-DECLARE
-    curr_time TIMESTAMP WITH TIME ZONE := current_timestamp; -- 定義當前時間
-    reservation RECORD; -- 用於存儲查詢到的預約信息
-    user_is_in BOOLEAN; -- 用於存儲用戶當前的在場狀態
-
-BEGIN
-    -- 檢查是否為管理員，非管理員則拋出異常
-    IF NOT is_claims_admin() THEN
-        RAISE EXCEPTION '只有管理員可以執行此操作';
-    END IF;
-
-    -- 從用戶檔案中獲取用戶當前是否在場的狀態
-    SELECT is_in INTO user_is_in FROM user_profiles WHERE id = p_user_id;
-
-    -- 反轉用戶的在場狀態並更新到數據庫
-    UPDATE user_profiles SET is_in = NOT user_is_in WHERE id = p_user_id;
-
-    -- 查找用戶當前正在進行的有效預約
-    SELECT * INTO reservation FROM active_reservations
-    WHERE user_id = p_user_id AND begin_time <= curr_time AND end_time > curr_time LIMIT 1;
-
-    -- 如果沒有找到正在進行的預約，發出通知
-    IF NOT FOUND THEN
-        RAISE NOTICE '該用戶目前沒有正在進行的預約';
-        RETURN;
-    END IF;
-
-    -- 如果用戶正在場內，則記錄臨時離場時間
-    IF user_is_in THEN
-        UPDATE reservations SET temporary_leave_time = curr_time WHERE id = reservation.id;
-    ELSE
-        -- 如果用戶不在場內，則重置臨時離場時間並記錄簽到時間
-        UPDATE reservations SET temporary_leave_time = NULL, check_in_time = COALESCE(check_in_time, curr_time)
-        WHERE id = reservation.id;
-    END IF;
-
-END;
-$$ LANGUAGE plpgsql VOLATILE SECURITY INVOKER;

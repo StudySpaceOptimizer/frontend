@@ -1,4 +1,4 @@
-import type * as Type from '../types'
+import type * as Types from '../types'
 import { supabase } from '../service/supabase/supabase'
 import { seatConverterToDB, seatConverterFromDB } from '../utils'
 
@@ -110,12 +110,19 @@ export class SupabaseReserve implements Reserve {
    * @returns 返回符合條件的預約列表
    */
   async getReservations(
-    pageFilter: Type.PageFilter,
-    reservationFilter: Type.ReservationFilter
-  ): Promise<Type.Reservation[]> {
-    const { pageSize = 10, pageOffset = 0 } = pageFilter
-    const { userId, userRole, seatId, beginTimeStart, beginTimeEnd, endTimeStart, endTimeEnd } =
-      reservationFilter
+    options: Types.PageFilter & Types.ReservationFilter = {}
+  ): Promise<Types.Reservation[]> {
+    const {
+      pageSize,
+      pageOffset,
+      userId,
+      userRole,
+      seatId,
+      beginTimeStart,
+      beginTimeEnd,
+      endTimeStart,
+      endTimeEnd
+    } = options
 
     const { data: reservations, error } = await supabase.rpc('get_reservations', {
       page_size: pageSize,
@@ -135,7 +142,65 @@ export class SupabaseReserve implements Reserve {
 
     return (
       reservations?.map(
-        (reservation: any): Type.Reservation => ({
+        (reservation: any): Types.Reservation => ({
+          id: reservation.id,
+          beginTime: new Date(reservation.begin_time),
+          endTime: new Date(reservation.end_time),
+          seatId: seatConverterFromDB(reservation.seat_id),
+          checkInTime: reservation.check_in_time,
+          temporaryLeaveTime: reservation.temporary_leave_time,
+          user: {
+            id: reservation.user_id,
+            userRole: reservation.user_role,
+            email: reservation.email,
+            adminRole: reservation.admin_role,
+            isVerified: reservation.is_verified,
+            isIn: reservation.is_in,
+            name: reservation.name,
+            phone: reservation.phone,
+            idCard: reservation.id_card,
+            point: reservation.point,
+            ban: reservation.blacklist
+              ? {
+                  reason: reservation.blacklist[0].reason,
+                  endAt: new Date(reservation.blacklist[0].end_at)
+                }
+              : undefined
+          }
+        })
+      ) || []
+    )
+  }
+
+  async getMyReservations(): Promise<Types.Reservation> {
+    const {
+      data: { user },
+      error: getUserError
+    } = await supabase.auth.getUser()
+
+    if (getUserError || !user) {
+      throw new Error(getUserError?.message)
+    }
+
+    const { data: reservations, error } = await supabase.rpc('get_reservations', {
+      page_size: undefined,
+      page_offset: undefined,
+      filter_user_id: user.id,
+      filter_user_role: undefined,
+      filter_seat_id: undefined,
+      filter_begin_time_start: undefined,
+      filter_begin_time_end: undefined,
+      filter_end_time_start: undefined,
+      filter_end_time_end: undefined
+    })
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    return (
+      reservations?.map(
+        (reservation: any): Types.Reservation => ({
           id: reservation.id,
           beginTime: new Date(reservation.begin_time),
           endTime: new Date(reservation.end_time),

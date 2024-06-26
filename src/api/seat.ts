@@ -1,4 +1,4 @@
-import type * as Type from '../types'
+import type * as Types from '../types'
 import { supabase } from '../service/supabase/supabase'
 import { seatConverterFromDB, seatConverterToDB } from '../utils'
 import { toLocalDateTime, parseTimeString } from './common'
@@ -13,8 +13,8 @@ export class SupabaseSeat implements Seat {
    * @returns 返回座位數據列表
    */
   async getSeatsStatus(
-    seatReservationFilterByTime: Type.SeatReservationFilterByTime
-  ): Promise<Type.SeatData[]> {
+    seatReservationFilterByTime: Types.SeatReservationFilterByTime
+  ): Promise<Types.SeatData[]> {
     let { beginTime, endTime } = seatReservationFilterByTime
 
     // 檢查時間參數是否同時提供或同時不提供
@@ -72,7 +72,7 @@ export class SupabaseSeat implements Seat {
       throw new Error(getSeatsError.message)
     }
 
-    const seatData: { [key: string]: Type.SeatData } = {}
+    const seatData: { [key: string]: Types.SeatData } = {}
 
     if (seatInfo == null) throw new Error('找不到座位')
 
@@ -147,23 +147,23 @@ export class SupabaseSeat implements Seat {
    *@returns 返回詳細的座位預約信息
    */
   async getSeatStatus(
-    pageFilter: Type.PageFilter,
-    reservationFilter: Type.ReservationFilter
-  ): Promise<Type.SeatDetail> {
+    pageFilter: Types.PageFilter,
+    reservationFilter: Types.ReservationFilter
+  ): Promise<Types.SeatDetail> {
     const { pageSize = 10, pageOffset = 0 } = pageFilter
-    const { userID, userRole, seatID, beginTimeStart, beginTimeEnd, endTimeStart, endTimeEnd } =
+    const { userId, userRole, seatId, beginTimeStart, beginTimeEnd, endTimeStart, endTimeEnd } =
       reservationFilter
 
-    if (seatID == undefined) {
+    if (seatId == undefined) {
       throw new Error('座位編號錯誤')
     }
 
     const { data: reservations, error } = await supabase.rpc('get_seat_active_reservations', {
       page_size: pageSize,
       page_offset: pageOffset,
-      filter_user_id: userID,
+      filter_user_id: userId,
       filter_user_role: userRole,
-      filter_seat_id: seatID,
+      filter_seat_id: seatId,
       filter_begin_time_start: beginTimeStart,
       filter_begin_time_end: beginTimeEnd,
       filter_end_time_start: endTimeStart,
@@ -174,15 +174,15 @@ export class SupabaseSeat implements Seat {
       throw new Error(error.message)
     }
 
-    const seatDetail: Type.SeatDetail = {
-      id: seatConverterFromDB(seatID),
+    const seatDetail: Types.SeatDetail = {
+      id: seatConverterFromDB(seatId),
       reservations:
         reservations?.map(
-          (reservation: any): Type.Reservation => ({
+          (reservation: any): Types.Reservation => ({
             id: reservation.id,
             beginTime: new Date(reservation.begin_time),
             endTime: new Date(reservation.end_time),
-            seatID: seatConverterFromDB(reservation.seat_id),
+            seatId: seatConverterFromDB(reservation.seat_id),
             checkInTime: reservation.check_in_time,
             temporaryLeaveTime: reservation.temporary_leave_time,
             user: {
