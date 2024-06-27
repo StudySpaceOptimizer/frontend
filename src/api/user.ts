@@ -1,8 +1,6 @@
 import type * as Types from '../types'
 import { supabase } from '../service/supabase/supabase'
 import type { User } from './index'
-import { filter } from 'lodash'
-import { aD } from 'vitest/dist/reporters-1evA5lom.js'
 
 export class SupabaseUser implements User {
   async verifyWithPOP3(email: string, password: string): Promise<string> {
@@ -37,12 +35,7 @@ export class SupabaseUser implements User {
    * @returns 無返回值，登入失敗將拋出錯誤
    */
   async studentSignIn(email: string, password: string): Promise<string> {
-    let logInPassword: string
-    try {
-      logInPassword = await this.verifyWithPOP3(email, password)
-    } catch (e) {
-      throw e
-    }
+    let logInPassword = await this.verifyWithPOP3(email, password)
 
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email: email,
@@ -100,22 +93,66 @@ export class SupabaseUser implements User {
   }
 
   /**
-   * 校外人士使用郵箱註冊外部用戶，註冊成功後會在 Cookie 中存儲一個 token
+   * 插入校外人士註冊請求
    * @param name 用戶的名稱
    * @param phone 用戶的手機
    * @param idCard 用戶的身分證
    * @param email 用戶的郵件地址
-   * @returns 返回操作成功的結果
+   * @returns 無返回值，操作失敗將拋出錯誤
+   */
+  async insertOutsiderSignUpRequest(
+    name: string,
+    phone: string,
+    idCard: string,
+    email: string
+  ): Promise<void> {
+    const { error } = await supabase.from('outsider_sign_up_request').insert([
+      {
+        email: email,
+        name: name,
+        phone: phone,
+        id_card: idCard
+      }
+    ])
+
+    if (error) {
+      throw new Error(error.message)
+    }
+  }
+
+  /**
+   * 管理員註冊校外人士帳號
+   * @param name 用戶的名稱
+   * @param phone 用戶的手機
+   * @param idCard 用戶的身分證
+   * @param email 用戶的郵件地址
+   * @returns 無返回值，操作失敗將拋出錯誤
    */
   async outsiderSignUp(name: string, phone: string, idCard: string, email: string): Promise<void> {
+    const { error: checkError } = await supabase.rpc('check_insert_user_profile', {
+      _phone: phone,
+      _id_card: idCard,
+      _email: email
+    })
+
+    if (checkError) {
+      throw new Error(checkError.message)
+    }
+
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: email,
       password: idCard
     })
 
     if (signUpError) {
-      console.error(signUpError.message)
-      throw new Error(signUpError.message)
+      console.error(signUpError)
+
+      switch (signUpError.code) {
+        case 'user_already_exists':
+          throw new Error('用戶已經存在')
+        default:
+          throw new Error(signUpError.message)
+      }
     }
 
     if (!signUpData.user || !signUpData.user.id) {
@@ -124,11 +161,46 @@ export class SupabaseUser implements User {
 
     const user_id = signUpData.user.id
 
-    try {
-      await this.updateProfile(user_id, name, phone, idCard)
-    } catch (e) {
-      throw e
+    await this.updateProfile(user_id, name, phone, idCard)
+  }
+
+  /**
+   * 根據過濾條件獲取校外人士註冊請求資料
+   * @param pageFilter 包含分頁配置
+   * @param OutsiderSignUpDataFilter 包含用戶的過濾條件
+   * @returns 校外人士註冊請求資料列表
+   */
+  async getOutsiderSignUpData(
+    options: Types.PageFilter & Types.OutsiderSignUpDataFilter = {}
+  ): Promise<Types.OutsiderSignUpData[]> {
+    const { pageSize, pageOffset, email, name, phone, idCard } = options
+
+    const { data: outsiderSignUpRequests, error } = await supabase.rpc(
+      'get_outsider_sign_up_data',
+      {
+        page_size: pageSize,
+        page_offset: pageOffset,
+        filter_email: email,
+        filter_name: name,
+        filter_phone: phone,
+        filter_idCard: idCard
+      }
+    )
+
+    if (error) {
+      throw new Error(error.message)
     }
+
+    return (
+      outsiderSignUpRequests?.map(
+        (request: any): Types.OutsiderSignUpData => ({
+          email: request.email,
+          name: request.name,
+          phone: request.phone,
+          idCard: request.id_card
+        })
+      ) || []
+    )
   }
 
   /**
@@ -140,8 +212,7 @@ export class SupabaseUser implements User {
   async getUserData(
     options: Types.PageFilter & Types.UserDataFilter = {}
   ): Promise<Types.UserData[]> {
-    const { pageSize, pageOffset, userId, email, userRole, adminRole, isVerified, isIn, name } =
-      options
+    const { pageSize, pageOffset, userId, email, userRole, adminRole, isIn, name } = options
 
     const { data: userProfiles, error } = await supabase.rpc('get_user_data', {
       page_size: pageSize,
@@ -150,7 +221,6 @@ export class SupabaseUser implements User {
       filter_email: email,
       filter_user_role: userRole,
       filter_admin_role: adminRole,
-      filter_isVerified: isVerified,
       filter_is_in: isIn,
       filter_name: name
     })
@@ -166,7 +236,6 @@ export class SupabaseUser implements User {
           email: profile.email,
           userRole: profile.user_role,
           adminRole: profile.admin_role,
-          isVerified: profile.is_verified,
           isIn: profile.is_in,
           name: profile.name,
           phone: profile.phone,
@@ -218,7 +287,6 @@ export class SupabaseUser implements User {
       email: userProfile.email,
       userRole: userProfile.user_role,
       adminRole: userProfile.admin_role,
-      isVerified: userProfile.is_verified,
       isIn: userProfile.is_in,
       name: userProfile.name,
       phone: userProfile.phone,
@@ -248,25 +316,7 @@ export class SupabaseUser implements User {
   }
 
   /**
-   * 驗證指定用戶的帳號，通常用於管理員審核過程中將用戶標記為已驗證
-   * @param userId 要驗證的用戶ID
-   * @returns 操作無返回值，驗證失敗將拋出錯誤
-   */
-  async verifyUser(userId: string): Promise<void> {
-    const { error } = await supabase.rpc('set_claim', {
-      uid: userId,
-      claim: 'is_verified',
-      value: true
-    })
-
-    if (error) {
-      console.log(error)
-      throw new Error('驗證使用者錯誤')
-    }
-  }
-
-  /**
-   * 更新用戶個人資料
+   * 更新用戶個人資料，只有管理員可以更新
    * @param id 用戶ID
    * @param name 名稱
    * @param phone 手機

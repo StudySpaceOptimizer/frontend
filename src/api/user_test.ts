@@ -210,10 +210,10 @@ async function testStudentSignIn() {
 
 async function testOutsiderSignUp() {
   const supabaseUser = new SupabaseUser()
+  const email = 'test@mail.com'
   const name = 'TEST'
-  const phone = '090000000'
+  const phone = '0900000000'
   const idCard = 'F111111111'
-  const email = 'test_outsider@mail.com'
 
   try {
     await supabaseUser.outsiderSignUp(name, phone, idCard, email)
@@ -222,5 +222,40 @@ async function testOutsiderSignUp() {
   }
 }
 
+async function testGetOutsiderSignUpData() {
+  const supabaseUser = new SupabaseUser()
+
+  try {
+    await supabaseUser.getOutsiderSignUpData()
+  } catch (e) {
+    console.log(e)
+  }
+}
+
+async function testInsertOutsiderSignUpRequest() {
+  const supabaseUser = new SupabaseUser()
+  await supabaseUser.signOut()
+
+  const {
+    data: { user }
+  } = await supabase.auth.getUser()
+
+  console.log(user)
+
+  const { data, error } = await supabase.from('outsider_sign_up_request').insert([
+    {
+      email: 'test@mail.com',
+      name: 'TEST',
+      phone: '0900000000',
+      id_card: 'F111111111'
+    }
+  ])
+
+  if (error) console.error(error)
+  else console.log(data)
+}
+
 // await testStudentSignIn()
-// await testOutsiderSignUp()
+await testInsertOutsiderSignUpRequest()
+await testGetOutsiderSignUpData()
+await testOutsiderSignUp()

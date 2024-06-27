@@ -11,16 +11,21 @@ export interface UserDataFilter {
   email?: string
   userRole?: string
   adminRole?: string
-  isVerified?: boolean
   isIn?: boolean
   name?: string
+}
+
+export interface OutsiderSignUpDataFilter {
+  email?: string
+  name?: string
+  phone?: string
+  idCard?: string
 }
 
 export interface ReservationFilter {
   userId?: string
   userRole?: string
   seatId?: number
-  isVerified?: boolean
   beginTimeStart?: Date
   beginTimeEnd?: Date
   endTimeStart?: Date

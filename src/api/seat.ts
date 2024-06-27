@@ -188,7 +188,6 @@ export class SupabaseSeat implements Seat {
               userRole: reservation.user_role,
               email: reservation.email,
               adminRole: reservation.admin_role,
-              isVerified: reservation.is_verified,
               isIn: reservation.is_in,
               name: reservation.name,
               phone: reservation.phone,

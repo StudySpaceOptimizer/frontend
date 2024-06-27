@@ -8,12 +8,19 @@ export interface User {
   studentSignIn(username: string, password: string): Promise<string>
   signOut(): Promise<any>
   checkIsSignIn(): Promise<boolean>
-  // studentSignUp(username: string, password: string): Promise<void>
+  insertOutsiderSignUpRequest(
+    name: string,
+    phone: string,
+    idCard: string,
+    email: string
+  ): Promise<void>
   outsiderSignUp(name: string, phone: string, idCard: string, email: string): Promise<void>
+  getOutsiderSignUpData(
+    options?: Types.PageFilter & Types.OutsiderSignUpDataFilter
+  ): Promise<Types.OutsiderSignUpData[]>
   getUserData(options?: Types.PageFilter & Types.UserDataFilter): Promise<Types.UserData[]>
   getMyUserData(): Promise<Types.UserData>
   getUsersCount(): Promise<number>
-  verifyUser(userId: string): Promise<void>
   updateProfile(id: string, name: string, phone: string, idCard: string): Promise<void>
   banUser(id: string, reason: string, end_at: Date): Promise<void>
   unbanUser(id: string): Promise<void>

@@ -336,35 +336,6 @@ CREATE TRIGGER trigger_check_unfinished_reservation
 BEFORE INSERT ON reservations
 FOR EACH ROW EXECUTE FUNCTION check_unfinished_reservation();
 
--- 檢查用戶帳號是否已驗證
-CREATE OR REPLACE FUNCTION check_user_is_verified() RETURNS TRIGGER AS $$
-BEGIN
-    -- 使用 Supabase UI 或 service_key 不受限制
-    IF is_supabase_ui_or_service_key() THEN
-        RETURN NEW;
-    END IF;
-
-    -- 如果用戶帳號未驗證，拋出異常
-    IF is_claims_admin() THEN
-        IF get_claim(NEW.user_id, 'is_verified') = 'false' THEN
-            RAISE EXCEPTION '用戶的帳號未驗證';
-        END IF;
-    ELSE
-        IF get_my_claim('is_verified') = 'false' THEN
-            RAISE EXCEPTION '用戶的帳號未驗證';
-        END IF;
-    END IF;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY INVOKER;
-
--- 在新增或修改預約前檢查用戶帳號是否已驗證
-DROP TRIGGER IF EXISTS trigger_check_user_is_verified ON reservations;
-CREATE TRIGGER trigger_check_user_is_verified
-BEFORE INSERT ON reservations
-FOR EACH ROW EXECUTE FUNCTION check_user_is_verified();
-
 -- 檢查是否可以刪除預約
 CREATE OR REPLACE FUNCTION check_if_reservation_can_be_deleted() RETURNS TRIGGER AS $$
 BEGIN
@@ -407,7 +378,6 @@ FOR EACH ROW EXECUTE FUNCTION check_if_reservation_can_be_deleted();
 - filter_begin_time_end: 預約開始時間的結束過濾，用於範圍查詢
 - filter_end_time_start: 預約結束時間的起始過濾，用於範圍查詢
 - filter_end_time_end: 預約結束時間的結束過濾，用於範圍查詢
-- filter_is_verified: 是否驗證過濾條件，用於篩選已驗證或未驗證的用戶
 
 - 返回值:
 - 預約相關字段：
@@ -422,7 +392,6 @@ FOR EACH ROW EXECUTE FUNCTION check_if_reservation_can_be_deleted();
 - email: 電子郵件
 - user_role: 用戶角色
 - admin_role: 管理員角色
-- is_verified: 是否驗證
 - is_in: 是否在場
 - name: 姓名
 - phone: 電話號碼
@@ -441,7 +410,6 @@ CREATE OR REPLACE FUNCTION get_reservations (
     filter_begin_time_end TIMESTAMP WITH TIME ZONE DEFAULT NULL,
     filter_end_time_start TIMESTAMP WITH TIME ZONE DEFAULT NULL,
     filter_end_time_end TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-    filter_is_verified BOOLEAN DEFAULT NULL
 ) RETURNS TABLE (
     -- 預約相關字段
     id UUID,
@@ -455,7 +423,6 @@ CREATE OR REPLACE FUNCTION get_reservations (
     email TEXT,
     user_role TEXT,
     admin_role TEXT,
-    is_verified BOOLEAN,
     is_in BOOLEAN,
     name TEXT,
     phone TEXT,
@@ -477,7 +444,6 @@ BEGIN
         user_data.email,
         user_data.user_role,
         user_data.admin_role,
-        user_data.is_verified,
         user_data.is_in,
         user_data.name,
         user_data.phone,
@@ -491,7 +457,6 @@ BEGIN
     WHERE
         (filter_user_id IS NULL OR user_data.id = filter_user_id) AND
         (filter_user_role IS NULL OR user_data.user_role = filter_user_role) AND
-        (filter_is_verified IS NULL OR user_data.is_verified = filter_is_verified) AND
         (filter_seat_id IS NULL OR res.seat_id = filter_seat_id) AND
         (filter_begin_time_start IS NULL OR res.begin_time >= filter_begin_time_start) AND
         (filter_begin_time_end IS NULL OR res.begin_time <= filter_begin_time_end) AND
@@ -518,7 +483,6 @@ $$ LANGUAGE plpgsql STABLE SECURITY INVOKER;
 - filter_begin_time_end: 預約開始時間的最晚界限，用於篩選在此時間前開始的預約
 - filter_end_time_start: 預約結束時間的最早界限，用於篩選在此時間後結束的預約
 - filter_end_time_end: 預約結束時間的最晚界限，用於篩選在此時間前結束的預約
-- filter_is_verified: 是否驗證過濾條件，若提供，則只返回對應驗證狀態的用戶的預約資料
 
 - 返回值:
 - 預約資訊（reservation）：
@@ -533,7 +497,6 @@ $$ LANGUAGE plpgsql STABLE SECURITY INVOKER;
 - email: 用戶的電子郵件地址
 - user_role: 用戶的角色
 - admin_role: 若用戶為管理員，其管理角色
-- is_verified: 用戶是否已經過驗證
 - is_in: 用戶是否在場
 - name: 用戶的姓名
 - phone: 用戶的電話號碼
@@ -552,7 +515,6 @@ CREATE OR REPLACE FUNCTION get_active_reservations (
     filter_begin_time_end TIMESTAMP WITH TIME ZONE DEFAULT NULL,
     filter_end_time_start TIMESTAMP WITH TIME ZONE DEFAULT NULL,
     filter_end_time_end TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-    filter_is_verified BOOLEAN DEFAULT NULL
 ) RETURNS TABLE (
     -- reservation
     id UUID,
@@ -566,7 +528,6 @@ CREATE OR REPLACE FUNCTION get_active_reservations (
     email TEXT,
     user_role TEXT,
     admin_role TEXT,
-    is_verified BOOLEAN,
     is_in BOOLEAN,
     name TEXT,
     phone TEXT,
@@ -587,7 +548,6 @@ CREATE OR REPLACE FUNCTION get_active_reservations (
         user_data.email,
         user_data.user_role,
         user_data.admin_role,
-        user_data.is_verified,
         user_data.is_in,
         user_data.name,
         user_data.phone,
@@ -601,7 +561,6 @@ CREATE OR REPLACE FUNCTION get_active_reservations (
     WHERE
         (filter_user_id IS NULL OR user_data.id = filter_user_id) AND
         (filter_user_role IS NULL OR user_data.user_role = filter_user_role) AND
-        (filter_is_verified IS NULL OR user_data.is_verified = filter_is_verified) AND
         (filter_seat_id IS NULL OR res.seat_id = filter_seat_id) AND
         (filter_begin_time_start IS NULL OR res.begin_time >= filter_begin_time_start) AND
         (filter_begin_time_end IS NULL OR res.begin_time <= filter_begin_time_end) AND

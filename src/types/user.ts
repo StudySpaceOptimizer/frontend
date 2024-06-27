@@ -6,7 +6,6 @@ export interface UserData {
   email: string
   userRole: userRole
   adminRole?: adminRole
-  isVerified: boolean
   isIn: boolean
   name?: string
   phone?: string
@@ -16,6 +15,13 @@ export interface UserData {
     reason: string
     endAt: Date
   }
+}
+
+export interface OutsiderSignUpData {
+  email: string
+  name: string
+  phone: string
+  idCard: string
 }
 
 export interface SettingsData {
