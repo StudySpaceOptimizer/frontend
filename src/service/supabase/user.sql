@@ -8,8 +8,8 @@ CREATE TABLE IF NOT EXISTS user_profiles (
 
     -- 用戶可以選擇填寫和更新的欄位
     name TEXT,
-    phone TEXT,
-    id_card TEXT
+    phone TEXT UNIQUE,
+    id_card TEXT UNIQUE
 );
 
 /* ==========================

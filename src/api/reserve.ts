@@ -7,7 +7,6 @@ import type { Reserve } from './index'
 export class SupabaseReserve implements Reserve {
   /**
    * 預約座位，若座位已被預約或發生其他錯誤，將拋出錯誤
-   * @url POST /api/seats/
    * @param seatId 座位ID
    * @param beginTime 預約開始時間
    * @param endTime 預約結束時間
@@ -53,7 +52,6 @@ export class SupabaseReserve implements Reserve {
 
   /**
    * 為指定的用戶預約座位，若座位已被預約或發生其他錯誤，將拋出錯誤
-   * @url POST /api/seats/
    * @param idCard 用戶的身份證號碼
    * @param seatId 座位ID
    * @param beginTime 預約開始時間
@@ -104,7 +102,6 @@ export class SupabaseReserve implements Reserve {
 
   /**
    * 根據過濾條件獲取預約列表，一般使用者使用此 API 只會返回自己的預約紀錄
-   * @url POST /api/reservations/
    * @param pageFilter 包含分頁配置
    * @param reservationFilter 包含座位和用戶的過濾條件
    * @returns 返回符合條件的預約列表
@@ -232,7 +229,6 @@ export class SupabaseReserve implements Reserve {
 
   /**
    * 獲取當前用戶的預約數量
-   * @url
    * @returns 返回當前用戶的預約數量
    */
   async getPersonalReservationsCount(): Promise<number> {
@@ -250,7 +246,6 @@ export class SupabaseReserve implements Reserve {
 
   /**
    * 獲取所有用戶的預約總數
-   * @url
    * @returns 返回系統中的總預約數量
    */
   async getAllReservationsCount(): Promise<number> {
@@ -267,7 +262,6 @@ export class SupabaseReserve implements Reserve {
 
   /**
    * 刪除指定的預約記錄
-   * @url
    * @param id 預約記錄的ID
    * @returns 操作無回傳值，失敗將拋出錯誤
    */
@@ -287,7 +281,6 @@ export class SupabaseReserve implements Reserve {
 
   /**
    * 終止指定的預約，將預約結束時間設為當前時間
-   * @url
    * @param id 預約記錄的ID
    * @returns 操作無回傳值，失敗將拋出錯誤
    */

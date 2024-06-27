@@ -7,7 +7,8 @@ import { aD } from 'vitest/dist/reporters-1evA5lom.js'
 export class SupabaseUser implements User {
   async verifyWithPOP3(email: string, password: string): Promise<string> {
     const res = await fetch(
-      '/authenticate', // 測試的時候改成 http://localhost:8088
+      // '/authenticate', // 測試的時候改成 http://localhost:8080
+      'http://localhost:8080/authenticate',
       {
         method: 'POST',
         headers: {
@@ -18,53 +19,67 @@ export class SupabaseUser implements User {
     )
 
     if (!res.ok) {
+      console.log(res)
       throw new Error('學號或密碼錯誤')
     }
 
+    console.log(res)
     const data = await res.json()
+
+    console.log(data)
     return data.password
   }
 
   /**
-   * 使用郵件地址和密碼進行用戶登入，登入成功後將 Token 存儲在 Cookie 中
-   * @url POST /api/signin
-   * @param email 用戶的郵件地址
+   * 學生使用郵件地址和密碼進行用戶登入，登入成功後將 Token 存儲在 Cookie 中
+   * @param email 學號
    * @param password 用戶的密碼
    * @returns 無返回值，登入失敗將拋出錯誤
    */
-  async signIn(email: string, password: string): Promise<string> {
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+  async studentSignIn(email: string, password: string): Promise<string> {
+    let logInPassword: string
+    try {
+      logInPassword = await this.verifyWithPOP3(email, password)
+    } catch (e) {
+      throw e
+    }
+
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email: email,
-      password: password
+      password: logInPassword
     })
 
-    // if 第一次登入 -> 註冊
-
     if (signInError) {
-      switch (signInError.status) {
-        case 400:
-          throw new Error('登入失敗，郵件信箱或密碼不正確')
-        default:
-          console.error(signInError.message)
-          throw new Error('遇到未知錯誤，請稍後再試')
+      if (signInError.status == 400) {
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: email,
+          password: logInPassword
+        })
+
+        if (signUpError) {
+          console.error(signUpError.message)
+          throw new Error(signUpError.message)
+        }
+
+        if (!signUpData.user || !signUpData.user.id) {
+          throw new Error('系統錯誤：無法創建用戶')
+        }
+
+        return signUpData.user.id
+      } else {
+        console.error(signInError.message)
+        throw new Error(signInError.message)
       }
     }
 
-    const {
-      data: { user },
-      error: getUserError
-    } = await supabase.auth.getUser()
-
-    if (getUserError || !user) {
-      throw new Error(getUserError?.message)
+    if (!signInData.user || !signInData.user.id) {
+      throw new Error('系統錯誤：無法獲取用戶信息')
     }
-
-    return user.id
+    return signInData.user.id
   }
 
   /**
    * 登出當前用戶，失敗將拋出錯誤
-   * @url POST /api/signout
    * @returns 操作無返回值，失敗將拋出錯誤
    */
   async signOut(): Promise<void> {
@@ -85,60 +100,39 @@ export class SupabaseUser implements User {
   }
 
   /**
-   * 學生用戶註冊，必須使用學校郵箱註冊，成功後將 Token 存儲在 Cookie 中
-   * @url POST /api/signup
-   * @param email 用戶的學校郵件地址
-   * @param password 用戶的密碼
-   * @returns 無返回值，註冊失敗將拋出錯誤
-   */
-  async studentSignUp(email: string, password: string): Promise<void> {
-    if (email.split('@')[1] !== 'mail.ntou.edu.tw') {
-      throw new Error('請使用學校信箱註冊')
-    }
-
-    const { error } = await supabase.auth.signUp({
-      email: email,
-      password: password
-    })
-
-    if (error) {
-      switch (error.status) {
-        case 422:
-          throw new Error('密碼應至少包含 6 個字元')
-        default:
-          console.error(error.message)
-          throw new Error('遇到未知錯誤，請稍後再試')
-      }
-    }
-  }
-
-  /**
-   * 使用郵箱註冊外部用戶，註冊成功後會在 Cookie 中存儲一個 token
-   * @url POST /api/signup
+   * 校外人士使用郵箱註冊外部用戶，註冊成功後會在 Cookie 中存儲一個 token
+   * @param name 用戶的名稱
+   * @param phone 用戶的手機
+   * @param idCard 用戶的身分證
    * @param email 用戶的郵件地址
-   * @param password 用戶的密碼
    * @returns 返回操作成功的結果
    */
-  async outsiderSignUp(email: string, password: string): Promise<void> {
-    const { error } = await supabase.auth.signUp({
+  async outsiderSignUp(name: string, phone: string, idCard: string, email: string): Promise<void> {
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: email,
-      password: password
+      password: idCard
     })
 
-    if (error) {
-      switch (error.status) {
-        case 422:
-          throw new Error('密碼應至少包含 6 個字元')
-        default:
-          console.error(error.message)
-          throw new Error('遇到未知錯誤，請稍後再試')
-      }
+    if (signUpError) {
+      console.error(signUpError.message)
+      throw new Error(signUpError.message)
+    }
+
+    if (!signUpData.user || !signUpData.user.id) {
+      throw new Error('系統錯誤：無法創建用戶')
+    }
+
+    const user_id = signUpData.user.id
+
+    try {
+      await this.updateProfile(user_id, name, phone, idCard)
+    } catch (e) {
+      throw e
     }
   }
 
   /**
    * 根據過濾條件獲取用戶資料一般使用者使用此 API 只會返回自己的用戶資料
-   * @url
    * @param pageFilter 包含分頁配置
    * @param userDataFilter 包含用戶的過濾條件
    * @returns 返回用戶數據列表
@@ -237,34 +231,10 @@ export class SupabaseUser implements User {
           }
         : undefined
     }
-
-    // return (
-    //   userProfiles?.map(
-    //     (profile: any): Types.UserData => ({
-    //       id: profile.id,
-    //       email: profile.email,
-    //       userRole: profile.user_role,
-    //       adminRole: profile.admin_role,
-    //       isVerified: profile.is_verified,
-    //       isIn: profile.is_in,
-    //       name: profile.name,
-    //       phone: profile.phone,
-    //       idCard: profile.id_card,
-    //       point: profile.point,
-    //       ban: profile.reason
-    //         ? {
-    //             reason: profile.reason,
-    //             endAt: new Date(profile.end_at)
-    //           }
-    //         : undefined
-    //     })
-    //   ) || []
-    // )
   }
 
   /**
    * 獲取目前註冊的所有用戶的總數。這個 API 用於管理員儀表板，以顯示用戶總數
-   * @url
    * @returns 返回用戶總數，如果發生錯誤，將拋出異常
    */
   async getUsersCount(): Promise<number> {
@@ -279,7 +249,6 @@ export class SupabaseUser implements User {
 
   /**
    * 驗證指定用戶的帳號，通常用於管理員審核過程中將用戶標記為已驗證
-   * @url
    * @param userId 要驗證的用戶ID
    * @returns 操作無返回值，驗證失敗將拋出錯誤
    */
@@ -298,10 +267,10 @@ export class SupabaseUser implements User {
 
   /**
    * 更新用戶個人資料
-   * @param id
-   * @param name
-   * @param phone
-   * @param idCard
+   * @param id 用戶ID
+   * @param name 名稱
+   * @param phone 手機
+   * @param idCard 身分證
    * @returns 無返回值，操作失敗將拋出錯誤
    */
   async updateProfile(id: string, name: string, phone: string, idCard: string): Promise<void> {
@@ -323,7 +292,6 @@ export class SupabaseUser implements User {
 
   /**
    * 禁止用戶訪問，只有管理員能使用此功能
-   * @url POST /api/user/:id/ban
    * @param id 被禁用的用戶ID
    * @param reason 禁用的原因
    * @param end_at 禁用結束的時間
@@ -345,7 +313,6 @@ export class SupabaseUser implements User {
 
   /**
    * 解禁用戶，只有管理員有權限執行此操作
-   * @url DELETE /api/user/:id/ban
    * @param id 要解禁的用戶ID
    * @returns 無返回值，操作失敗將拋出錯誤
    */

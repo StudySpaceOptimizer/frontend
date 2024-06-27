@@ -8,7 +8,6 @@ import { useSettingStore } from '../stores/setting'
 export class SupabaseSeat implements Seat {
   /**
    * 獲取所有座位的狀態，可選擇性地根據時間範圍來獲取
-   * @url GET /api/seats?begin=begin&end=end
    * @param seatReservationFilterByTime 包含開始時間和結束時間的過濾條件
    * @returns 返回座位數據列表
    */
@@ -141,7 +140,6 @@ export class SupabaseSeat implements Seat {
 
   /**
    * 獲取特定座位的當前狀態和預約情況
-   * @url GET /api/seats/:id
    * @param config 包含分頁配置
    * @param reservationFilter 包含座位和用戶的過濾條件
    *@returns 返回詳細的座位預約信息
@@ -212,7 +210,6 @@ export class SupabaseSeat implements Seat {
 
   /**
    * 更新指定座位的可用狀態及其他信息
-   * @url PUT /api/seats/:id
    * @param seatId 座位 ID
    * @param available 是否可用
    * @param otherInfo 其他相關信息

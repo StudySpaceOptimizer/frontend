@@ -5,11 +5,11 @@ export { SupabaseReserve } from './reserve'
 import type * as Types from '../types'
 
 export interface User {
-  signIn(username: string, password: string): Promise<string>
+  studentSignIn(username: string, password: string): Promise<string>
   signOut(): Promise<any>
   checkIsSignIn(): Promise<boolean>
-  studentSignUp(username: string, password: string): Promise<void>
-  outsiderSignUp(name: string, phone: string, idcard: string, email: string): Promise<any>
+  // studentSignUp(username: string, password: string): Promise<void>
+  outsiderSignUp(name: string, phone: string, idCard: string, email: string): Promise<void>
   getUserData(options?: Types.PageFilter & Types.UserDataFilter): Promise<Types.UserData[]>
   getMyUserData(): Promise<Types.UserData>
   getUsersCount(): Promise<number>

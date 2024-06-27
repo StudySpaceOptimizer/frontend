@@ -106,15 +106,14 @@ async function testGetSettingData() {
 }
 
 async function testGetUserByAdmin() {
-  const supabaseUser = new SupabaseUser()
-  const email = 'test_outsider@mail.com'
-  const password = 'password'
-
-  try {
-    await supabaseUser.outsiderSignUp(email, password)
-  } catch (e) {
-    console.log(e)
-  }
+  // const supabaseUser = new SupabaseUser()
+  // const email = 'test_outsider@mail.com'
+  // const password = 'password'
+  // try {
+  //   await supabaseUser.outsiderSignUp(email, password)
+  // } catch (e) {
+  //   console.log(e)
+  // }
 }
 
 async function testGetAllUserData() {
@@ -194,4 +193,34 @@ async function testGetMyUserData() {
 // await testSignUpSuccess('daasadadds@asd', 'daqwewqes')
 
 // await testGetUserByAdmin()
-await testGetMyUserData()
+// await testGetMyUserData()
+async function testStudentSignIn() {
+  const supabaseUser = new SupabaseUser()
+  const email = '00957051@mail.ntou.edu.tw'
+  const logInPassword = 'F130999892'
+
+  try {
+    // const logIn = await supabaseUser.studentSignIn('test@mail.ntou.edu.tw', 'test')
+    const logIn = await supabaseUser.studentSignIn(email, logInPassword)
+    console.log(logIn)
+  } catch (e) {
+    console.log(e)
+  }
+}
+
+async function testOutsiderSignUp() {
+  const supabaseUser = new SupabaseUser()
+  const name = 'TEST'
+  const phone = '090000000'
+  const idCard = 'F111111111'
+  const email = 'test_outsider@mail.com'
+
+  try {
+    await supabaseUser.outsiderSignUp(name, phone, idCard, email)
+  } catch (e) {
+    console.log(e)
+  }
+}
+
+// await testStudentSignIn()
+// await testOutsiderSignUp()
