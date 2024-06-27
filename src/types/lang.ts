@@ -1,0 +1,1 @@
+export type LangEnum = 'zh-tw' | 'en'
