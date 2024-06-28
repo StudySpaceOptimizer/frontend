@@ -1,4 +1,5 @@
 export default {
+  system: '預約系統',
   navbar: {
     signIn: '登入',
     signOut: '登出',
@@ -33,6 +34,48 @@ export default {
     MenToilet: '男廁',
     Elevator: '電梯'
   },
+  profileView: {
+    personalData: '個人資料',
+    reservationHistory: '預約紀錄',
+    date: '日期',
+    beginTime: '開始時間',
+    endTime: '結束時間',
+    seatId: '座位編號',
+    actions: '操作',
+    enterName: '請輸入姓名',
+    nameMaxLength: '姓名最多 {max} 個字元',
+    email: '信箱',
+    emailTooltip: '若需要修改電子信箱，請告知管理員',
+    name: '姓名',
+    cancelChanges: '取消變更',
+    saveChanges: '儲存變更',
+
+    cancel: '取消預約',
+    cancelSuccess: '取消預約成功',
+    cancelConfirmation: '確定要取消座位 {seatID} 於 {date} {beginTime} 至 {endTime} 的預約嗎？',
+
+    terminate: '提前離開',
+    terminateSuccess: '提前離開成功',
+    terminateConfirmation: '確定要提前離開嗎？',
+  },
+  bookingModel: {
+    selectReservationTime: '請選擇預約時間',
+    reserveSuccess: '預約成功',
+
+    reserveSeat: '預約座位 {seatName}',
+    reserveDate: '預約日期',
+    reserveTime: '預約時間',
+    notSelectedTime: '未選擇時間',
+    reserve: '預約',
+
+    reserved: '已預約',
+    notSelectable: '不可選擇',
+    cancelSelection: '取消選擇',
+    select: '選擇',
+  },
+  warning: '警告',
+  confirm: '確認',
+  cancel: '取消',
   available: '可預約',
   booked: '已預約',
   partiallyBooked: '部分時段已預約',

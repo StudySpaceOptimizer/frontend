@@ -2,6 +2,7 @@
 import { computed, reactive, ref, watch, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 
 import { useSeatStore } from '@/stores/seat'
 import { useFilterStore } from '@/stores/filter'
@@ -10,6 +11,7 @@ import DependencyContainer from '@/DependencyContainer'
 import { createTimeRange } from '@/utils'
 import TimeSelect from './TimeSelect.vue'
 
+const { t } = useI18n()
 const reserveApi = DependencyContainer.inject<api.Reserve>(api.API_SERVICE.RESERVE)
 const seatApi = DependencyContainer.inject<api.Seat>(api.API_SERVICE.SEAT)
 const seatStore = useSeatStore()
@@ -51,7 +53,7 @@ const beginTime = ref<string | undefined>(undefined)
 const endTime = ref<string | undefined>(undefined)
 async function handleBooking(): Promise<void> {
   if (beginTime.value === undefined || endTime.value === undefined) {
-    ElMessage.warning('請選擇預約時間')
+    ElMessage.warning(t('bookingModel.selectReservationTime'))
     return
   }
 
@@ -60,7 +62,7 @@ async function handleBooking(): Promise<void> {
 
   try {
     await reserveApi.reserve(seatName.value, beginTimeValue, endTimeValue)
-    ElMessage.success('預約成功')
+    ElMessage.success(t('bookingModel.reserveSuccess'))
     dialogVisible.value = false
     seatStore.unselectSeat()
     clearTimeSetting()
@@ -124,23 +126,23 @@ function selectTimeRange(timeRange: {
 <template>
   <el-dialog
     v-model="dialogVisible"
-    :title="`預約座位 ${seatName}`"
+    :title="$t('bookingModel.reserveSeat', { seatName })"
     width="500"
     :before-close="handleClose"
     destroy-on-close
   >
-    <div class="date">預約日期：{{ nowFilterDate }}</div>
+    <div class="date">{{$t('bookingModel.reserveDate')}}: {{ nowFilterDate }}</div>
     <p>
-      預約時間：
+      {{$t('bookingModel.reserveTime')}}:
       <template v-if="beginTime && endTime"> {{ beginTime }} ~ {{ endTime }} </template>
-      <template v-else>未選擇時間</template>
+      <template v-else>{{$t('bookingModel.notSelectedTime')}}</template>
     </p>
     <TimeSelect @selectTimeRange="selectTimeRange" :disabledTimes="disabledTimes" />
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="handleClose">取消</el-button>
+        <el-button @click="handleClose">{{$t('cancel')}}</el-button>
         <el-button type="primary" @click="handleBooking" :disabled="!isCompleteSelectTime">
-          預約
+          {{$t('bookingModel.reserve')}}
         </el-button>
       </div>
     </template>

@@ -182,12 +182,12 @@ watch(
           >
             {{
               time.reserved
-                ? '已被預約'
+                ? $t('bookingModel.reserved')
                 : time.disabled
-                  ? '不可選擇'
+                  ? $t('bookingModel.notSelectable')
                   : time.selected
-                    ? '取消選擇'
-                    : '選擇'
+                    ? $t('bookingModel.cancelSelection')
+                    : $t('bookingModel.select')
             }}
           </el-button>
         </el-col>

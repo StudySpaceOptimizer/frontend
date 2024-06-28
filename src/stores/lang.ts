@@ -17,4 +17,6 @@ export const useLangStore = defineStore('lang', () => {
     lang,
     setLang
   }
+}, {
+  persist: true
 })
