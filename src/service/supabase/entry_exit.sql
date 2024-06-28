@@ -22,7 +22,7 @@ DECLARE
 BEGIN
     -- 檢查是否為管理員，非管理員則拋出異常
     IF NOT is_claims_admin() THEN
-        RAISE EXCEPTION '只有管理員可以執行此操作';
+        RAISE EXCEPTION '須為管理員才能執行此操作';
     END IF;
 
     -- 查找用戶當前正在進行的有效預約
@@ -56,6 +56,41 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql VOLATILE SECURITY INVOKER;
 
+-- 記錄學生進出場狀態
+CREATE OR REPLACE FUNCTION record_student_user_entry_exit(p_account TEXT) RETURNS VOID AS $$
+DECLARE
+    user_id UUID;
+    p_email TEXT := p_account || '@mail.ntou.edu.tw';
+BEGIN
+    -- 根據 email 查找用戶ID
+    SELECT id INTO user_id FROM user_profiles WHERE email = p_email;
+    
+    -- 如果沒有找到用戶ID，發出通知
+    IF NOT FOUND THEN
+        RAISE NOTICE '用戶未註冊';
+        RETURN;
+    END IF;
+    
+    -- 調用 record_user_entry_exit 函數
+    PERFORM record_user_entry_exit(user_id);
+END;
+$$ LANGUAGE plpgsql VOLATILE SECURITY INVOKER;
 
--- CREATE OR REPLACE FUNCTION record_student_user_entry_exit()
--- CREATE OR REPLACE FUNCTION record_outsider_user_entry_exit()
+-- 記錄校外人士進出場狀態
+CREATE OR REPLACE FUNCTION record_outsider_user_entry_exit(p_phone TEXT) RETURNS VOID AS $$
+DECLARE
+    user_id UUID;
+BEGIN
+    -- 根據 phone 查找用戶ID
+    SELECT id INTO user_id FROM user_profiles WHERE phone = p_phone;
+    
+    -- 如果沒有找到用戶ID，發出通知
+    IF NOT FOUND THEN
+        RAISE NOTICE '用戶未註冊';
+        RETURN;
+    END IF;
+    
+    -- 調用 record_user_entry_exit 函數
+    PERFORM record_user_entry_exit(user_id);
+END;
+$$ LANGUAGE plpgsql VOLATILE SECURITY INVOKER;
