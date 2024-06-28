@@ -107,13 +107,32 @@ async function handleAddPoint(row: any) {
 
   try {
     await userApi.updatePointUser(row.id, row.point)
-  
+
     ElMessage.success('修改違規點數成功')
   } catch (error: any) {
     ElMessage.error(error.message)
   }
 
   users.value = await getUserData(0)
+}
+
+async function handleGrantAdminRole(row: any) {
+  try {
+    const confirmText = `確定要設定 ${row.email} / ${row.name} 為管理員嗎？`
+    const confirmResult = await ElMessageBox.confirm(confirmText, '提示', {
+      confirmButtonText: '確定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+
+    if (!confirmResult) return
+    await userApi.grantAdminRole(row.id, 'admin')
+    ElMessage.success('設定管理員成功')
+    users.value = await getUserData(0)
+  } catch (error: any) {
+      if (error.message === '' || error.message === undefined) return
+      ElMessage.error(error.message)
+  }
 }
 
 onMounted(async () => {
@@ -137,10 +156,24 @@ onMounted(async () => {
       <template #default="{ row }">
         <el-row>
           <el-col :span="16">
-            <el-input-number v-model="row.point" :min="0" :max="999" style="width: 100%" @change="showAddPointConfirm.set(row.id, true)" />
+            <el-input-number
+              v-model="row.point"
+              :min="0"
+              :max="999"
+              style="width: 100%"
+              @change="showAddPointConfirm.set(row.id, true)"
+            />
           </el-col>
           <el-col :span="8">
-            <el-button v-if="showAddPointConfirm.get(row.id)" link type="primary" @click="handleAddPoint(row)" style="line-height: 28px;" > 確認 </el-button>
+            <el-button
+              v-if="showAddPointConfirm.get(row.id)"
+              link
+              type="primary"
+              @click="handleAddPoint(row)"
+              style="line-height: 28px"
+            >
+              確認
+            </el-button>
           </el-col>
         </el-row>
       </template>
@@ -165,6 +198,9 @@ onMounted(async () => {
       <template #default="{ row }">
         <el-button link type="primary" size="small" @click="handleBan(row)">
           {{ row.ban ? '解除禁用' : '禁用' }}
+        </el-button>
+        <el-button link type="primary" size="small" @click="handleGrantAdminRole(row)">
+          {{ row.adminRole === 'admin' ? '' : '設定管理員' }}
         </el-button>
       </template>
     </el-table-column>

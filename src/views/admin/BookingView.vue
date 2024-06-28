@@ -94,7 +94,7 @@ onMounted(() => {
     <el-table-column prop="date" label="日期" width="120" />
     <el-table-column prop="beginTime" label="開始時間" width="120" />
     <el-table-column prop="endTime" label="結束時間" width="120" />
-    <el-table-column prop="seatID" label="座位" width="60" />
+    <el-table-column prop="seatId" label="座位" width="60" />
     <el-table-column prop="user.email" label="Email" width="360" />
     <el-table-column prop="user.name" label="名字" />
     <el-table-column fixed="right" label="操作">
