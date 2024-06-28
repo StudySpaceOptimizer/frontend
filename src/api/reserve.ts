@@ -168,7 +168,7 @@ export class SupabaseReserve implements Reserve {
     )
   }
 
-  async getMyReservations(): Promise<Types.Reservation> {
+  async getMyReservations(options: Types.PageFilter): Promise<Types.Reservation[]> {
     const {
       data: { user },
       error: getUserError
@@ -178,51 +178,7 @@ export class SupabaseReserve implements Reserve {
       throw new Error(getUserError?.message)
     }
 
-    const { data: reservations, error } = await supabase.rpc('get_reservations', {
-      page_size: undefined,
-      page_offset: undefined,
-      filter_user_id: user.id,
-      filter_user_role: undefined,
-      filter_seat_id: undefined,
-      filter_begin_time_start: undefined,
-      filter_begin_time_end: undefined,
-      filter_end_time_start: undefined,
-      filter_end_time_end: undefined
-    })
-
-    if (error) {
-      throw new Error(error.message)
-    }
-
-    return (
-      reservations?.map(
-        (reservation: any): Types.Reservation => ({
-          id: reservation.id,
-          beginTime: new Date(reservation.begin_time),
-          endTime: new Date(reservation.end_time),
-          seatId: seatConverterFromDB(reservation.seat_id),
-          checkInTime: reservation.check_in_time,
-          temporaryLeaveTime: reservation.temporary_leave_time,
-          user: {
-            id: reservation.user_id,
-            userRole: reservation.user_role,
-            email: reservation.email,
-            adminRole: reservation.admin_role,
-            isIn: reservation.is_in,
-            name: reservation.name,
-            phone: reservation.phone,
-            idCard: reservation.id_card,
-            point: reservation.point,
-            ban: reservation.blacklist
-              ? {
-                  reason: reservation.blacklist[0].reason,
-                  endAt: new Date(reservation.blacklist[0].end_at)
-                }
-              : undefined
-          }
-        })
-      ) || []
-    )
+    return await this.getReservations({ userId: user.id, ...options })
   }
 
   /**

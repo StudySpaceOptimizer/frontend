@@ -5,8 +5,8 @@ import type { User } from './index'
 export class SupabaseUser implements User {
   async verifyWithPOP3(email: string, password: string): Promise<string> {
     const res = await fetch(
-      // '/authenticate', // 測試的時候改成 http://localhost:8080
-      'http://localhost:8080/authenticate',
+      '/authenticate', // 測試的時候改成 http://localhost:8080
+      // 'http://localhost:8080/authenticate',
       {
         method: 'POST',
         headers: {
@@ -35,7 +35,7 @@ export class SupabaseUser implements User {
    * @returns 無返回值，登入失敗將拋出錯誤
    */
   async studentSignIn(email: string, password: string): Promise<string> {
-    let logInPassword = await this.verifyWithPOP3(email, password)
+    const logInPassword = await this.verifyWithPOP3(email, password)
 
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email: email,

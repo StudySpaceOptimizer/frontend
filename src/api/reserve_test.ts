@@ -340,20 +340,20 @@ async function getAllReservations() {
   const supabaseReserve = new SupabaseReserve()
 
   try {
-    const result = await supabaseReserve.getAllReservations(
-      { pageSize, pageOffset },
-      {
-        userID,
-        userRole,
-        seatID,
-        beginTimeStart,
-        beginTimeEnd,
-        endTimeStart,
-        endTimeEnd
-      }
-    )
+    // const result = await supabaseReserve.getAllReservations(
+    //   { pageSize, pageOffset },
+    //   {
+    //     userID,
+    //     userRole,
+    //     seatID,
+    //     beginTimeStart,
+    //     beginTimeEnd,
+    //     endTimeStart,
+    //     endTimeEnd
+    //   }
+    // )
 
-    console.log(result)
+    // console.log(result)
   } catch (e) {
     console.log(e)
   }

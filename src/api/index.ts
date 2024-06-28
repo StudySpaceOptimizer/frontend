@@ -34,10 +34,7 @@ export interface Seat {
   getSeatsStatus(
     seatReservationFilterByTime: Types.SeatReservationFilterByTime
   ): Promise<Types.SeatData[]>
-  getSeatStatus(
-    pageFilter: Types.PageFilter,
-    reservationFilter: Types.ReservationFilter
-  ): Promise<Types.SeatDetail>
+  getSeatStatus(seatId: string | number): Promise<Types.SeatDetail>
   updateSeat(seatId: string, available: boolean, otherInfo?: string): Promise<void>
 }
 
@@ -47,7 +44,7 @@ export interface Reserve {
   getReservations(
     options?: Types.PageFilter & Types.ReservationFilter
   ): Promise<Types.Reservation[]>
-  getMyReservations(): Promise<Types.Reservation>
+  getMyReservations(options?: Types.PageFilter): Promise<Types.Reservation[]>
   getPersonalReservationsCount(): Promise<number>
   getAllReservationsCount(): Promise<number>
   deleteReservation(id: string): Promise<void>

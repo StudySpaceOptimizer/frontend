@@ -145,27 +145,13 @@ export class SupabaseSeat implements Seat {
    *@returns 返回詳細的座位預約信息
    */
   async getSeatStatus(
-    pageFilter: Types.PageFilter,
-    reservationFilter: Types.ReservationFilter
+    seatId: string | number,
   ): Promise<Types.SeatDetail> {
-    const { pageSize = 10, pageOffset = 0 } = pageFilter
-    const { userId, userRole, seatId, beginTimeStart, beginTimeEnd, endTimeStart, endTimeEnd } =
-      reservationFilter
-
-    if (seatId == undefined) {
-      throw new Error('座位編號錯誤')
-    }
+    const seatIdNum = typeof seatId === 'number' ? seatId : seatConverterToDB(seatId)
+    const seatIdStr = typeof seatId === 'string' ? seatId : seatConverterFromDB(seatId)
 
     const { data: reservations, error } = await supabase.rpc('get_seat_active_reservations', {
-      page_size: pageSize,
-      page_offset: pageOffset,
-      filter_user_id: userId,
-      filter_user_role: userRole,
-      filter_seat_id: seatId,
-      filter_begin_time_start: beginTimeStart,
-      filter_begin_time_end: beginTimeEnd,
-      filter_end_time_start: endTimeStart,
-      filter_end_time_end: endTimeEnd
+      p_seat_id: seatIdNum,
     })
 
     if (error) {
@@ -173,7 +159,7 @@ export class SupabaseSeat implements Seat {
     }
 
     const seatDetail: Types.SeatDetail = {
-      id: seatConverterFromDB(seatId),
+      id: seatIdStr,
       reservations:
         reservations?.map(
           (reservation: any): Types.Reservation => ({
