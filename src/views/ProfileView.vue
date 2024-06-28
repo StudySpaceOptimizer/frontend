@@ -1,25 +1,23 @@
 <script setup lang="ts">
 import { onMounted, watch, ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 import * as Type from '@/types'
 import { useReservation } from '@/composable/useReservation'
 import { useProfile } from '@/composable/useProfile'
 import UserProfileForm from '@/components/UserProfileForm.vue'
 
+const { t } = useI18n()
 const { updateReservationData, reservations, getCount } = useReservation()
 
 const { getUserProfile, updateUserProfile } = useProfile()
 const userProfile = ref<Type.UserData>()
 const rules = {
   name: [
-    { required: true, message: '請輸入姓名', trigger: 'blur' },
-    { max: 10, message: '姓名不得超過 10 個字', trigger: 'blur' }
+    { required: true, message: t('profileView.enterName'), trigger: 'blur' },
+    { max: 10, message: t('profileView.nameMaxLength', { max: 10 }), trigger: 'blur' }
   ],
-  phone: [
-    { required: true, message: '請輸入手機號碼', trigger: 'blur' },
-    { pattern: /^09\d{8}$/, message: '手機號碼格式不正確', trigger: 'blur' }
-  ]
 }
 
 async function onGetUserProfile(): Promise<void> {
@@ -81,7 +79,7 @@ function handleCurrentChange(val: number) {
 
 <template>
   <el-tabs tab-position="top" class="profile-tabs" v-model="activeTabs">
-    <el-tab-pane label="個人資料" name="person">
+    <el-tab-pane :label="$t('profileView.personalData')" name="person">
       <UserProfileForm
         :userProfile="userProfile"
         :rules="rules"
@@ -89,22 +87,32 @@ function handleCurrentChange(val: number) {
         :onSaveProfile="onUpdateUserProfile"
       />
     </el-tab-pane>
-    <el-tab-pane label="預約紀錄" name="reservation" style="padding: 10px">
-      <el-table :data="reservations" stripe style="width: 100%; height: 100%;">
-        <el-table-column prop="date" label="日期" width="120"/>
-        <el-table-column prop="beginTime" label="開始時間" width="120" />
-        <el-table-column prop="endTime" label="結束時間" width="120"/>
-        <el-table-column prop="seatID" label="座位" />
-        <el-table-column fixed="right" label="操作">
+    <el-tab-pane
+      :label="$t('profileView.reservationHistory')"
+      name="reservation"
+      style="padding: 10px"
+    >
+      <el-table :data="reservations" stripe style="width: 100%; height: 100%">
+        <el-table-column prop="date" :label="$t('profileView.date')" width="120" />
+        <el-table-column prop="beginTime" :label="$t('profileView.beginTime')" width="120" />
+        <el-table-column prop="endTime" :label="$t('profileView.endTime')" width="120" />
+        <el-table-column prop="seatId" :label="$t('profileView.seatId')" />
+        <el-table-column fixed="right" :label="$t('profileView.actions')">
           <template #default="scope">
             <div v-for="action in reservations[scope.$index].actions" :key="action">
-              <el-button link type="primary" size="small" @click="action.handler" >{{ action.text }}</el-button>
+              <el-button link type="primary" size="small" @click="action.handler">{{
+                action.text
+              }}</el-button>
             </div>
           </template>
         </el-table-column>
       </el-table>
-      <el-pagination layout="prev, pager, next" :total="count" :page-size="10"
-        @current-change="handleCurrentChange" style="margin-top: 10px; justify-content: center;"
+      <el-pagination
+        layout="prev, pager, next"
+        :total="count"
+        :page-size="10"
+        @current-change="handleCurrentChange"
+        style="margin-top: 10px; justify-content: center"
       />
     </el-tab-pane>
   </el-tabs>

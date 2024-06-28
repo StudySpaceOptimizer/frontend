@@ -37,7 +37,7 @@ function handleCommand(command: LangEnum) {
     :router="true"
     :ellipsis="false"
   >
-    <el-menu-item index="/"> 全興書苑 預約系統 </el-menu-item>
+    <el-menu-item index="/"> 全興書苑 {{ t('system') }} </el-menu-item>
     <div class="flex-grow"></div>
     <el-sub-menu index="#">
       <template #title>{{ langType[language] }}</template>

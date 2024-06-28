@@ -1,10 +1,12 @@
 import { ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 
 import * as Api from '@/api'
 import DependencyContainer from '@/DependencyContainer'
 
 export function useReservation() {
+  const { t } = useI18n()
   const reserveApi = DependencyContainer.inject<Api.Reserve>(Api.API_SERVICE.RESERVE)
 
   const reservations = ref<any[]>([])
@@ -20,14 +22,14 @@ export function useReservation() {
       if (beginTime > nowTime) {
         item.actions = [
           {
-            text: '取消預約',
+            text: t('profileView.cancel'),
             handler: () => cancelBooking(item.id)
           }
         ]
       } else if (beginTime < nowTime && nowTime < endTime && !item.exit) {
         item.actions = [
           {
-            text: '提前離開',
+            text: t('profileView.terminate'),
             handler: () => terminateBooking(item.id)
           }
         ]
@@ -43,35 +45,35 @@ export function useReservation() {
   const cancelBooking = async (id: string) => {
     const reservation = reservations.value.find((item) => item.id === id)
 
-    const confirmText = `確定要取消 ${reservation.seatID} 預約嗎？<br />
-    預約時間：${reservation.date} ${reservation.beginTime} - ${reservation.endTime}`
+    const confirmText = `${t('profileView.cancelConfirmation', { seatID: reservation.seatID, date: reservation.date, beginTime: reservation.beginTime, endTime: reservation.endTime })}`
 
-    await ElMessageBox.confirm(confirmText, '提示', {
-      confirmButtonText: '確定',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm(confirmText, t('warning'), {
+      confirmButtonText: t('confirm'),
+      cancelButtonText: t('cancel'),
       type: 'warning',
       dangerouslyUseHTMLString: true
     }).then(async () => {
       try {
-        await reserveApi.deleteReservation(id)
-        ElMessage.success('取消預約成功')
-        updateReservationData(1)
+      await reserveApi.deleteReservation(id)
+      ElMessage.success(t('profileView.cancelSuccess'))
+      updateReservationData(1)
       } catch (error: any) {
-        ElMessage.error(error.message)
+      ElMessage.error(error.message)
       }
     })
   }
 
   const terminateBooking = async (id: string) => {
-    await ElMessageBox.confirm('確定要提前離開嗎？', '提示', {
-      confirmButtonText: '確定',
-      cancelButtonText: '取消',
+    const { t } = useI18n()
+    await ElMessageBox.confirm(t('profileView.terminateConfirmation'), t('warning'), {
+      confirmButtonText: t('confirm'),
+      cancelButtonText: t('cancel'),
       type: 'warning'
     }).then(async () => {
       try {
         await reserveApi.terminateReservation(id)
         updateReservationData(1)
-        ElMessage.success('提前離開成功')
+        ElMessage.success(t('profileView.terminateSuccess'))
       } catch (error: any) {
         ElMessage.error(error.message)
       }
