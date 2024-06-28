@@ -57,6 +57,10 @@ export default {
     terminate: '提前離開',
     terminateSuccess: '提前離開成功',
     terminateConfirmation: '確定要提前離開嗎？',
+
+    fetchProfileFailed: '獲取個人資料失敗',
+    saveChangesSuccess: '儲存變更成功',
+    saveChangesFailed: '儲存變更失敗'
   },
   bookingModel: {
     selectReservationTime: '請選擇預約時間',

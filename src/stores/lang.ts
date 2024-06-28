@@ -11,6 +11,7 @@ export const useLangStore = defineStore('lang', () => {
   function setLang(_lang: LangEnum): void {
     lang.value = _lang
     locale.value = _lang
+    sessionStorage.setItem("lang", _lang)
   }
 
   return {

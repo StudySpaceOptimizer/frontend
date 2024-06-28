@@ -57,6 +57,10 @@ export default {
     terminate: 'Early Termination',
     terminateSuccess: 'Termination successful',
     terminateConfirmation: 'Are you sure you want to terminate early?',
+
+    fetchProfileFailed: 'Failed to get personal data',
+    saveChangesSuccess: 'Save changes successful',
+    saveChangesFailed: 'Save changes failed'
   },
   bookingModel: {
     selectReservationTime: 'Please select reservation time',
