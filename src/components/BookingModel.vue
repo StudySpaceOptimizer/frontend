@@ -86,7 +86,6 @@ const isCompleteSelectTime = computed(() => {
 
 function getTime(time: string) {
   const dateTime = new Date(time)
-  dateTime.setHours(dateTime.getHours() - 8)
   return dateTime.toLocaleTimeString('en', {
     hour: '2-digit',
     minute: '2-digit',
