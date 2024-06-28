@@ -212,7 +212,7 @@ export class SupabaseUser implements User {
   ): Promise<Types.UserData[]> {
     const { pageSize, pageOffset, userId, email, userRole, adminRole, isIn, name } = options
 
-    const { data: userProfiles, error } = await supabase.rpc('get_use r_data', {
+    const { data: userProfiles, error } = await supabase.rpc('get_user_data', {
       page_size: pageSize,
       page_offset: pageOffset,
       filter_user_id: userId,
