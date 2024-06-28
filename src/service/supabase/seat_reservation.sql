@@ -64,51 +64,66 @@ CREATE TRIGGER trigger_sync_seat_reservations AFTER INSERT OR UPDATE ON reservat
 
 -- 根據座位ID取得該座位的活躍預約資訊及預約用戶的個人資料，使用交叉連接搭配用戶資料函數
 CREATE OR REPLACE FUNCTION get_seat_active_reservations (p_seat_id INT DEFAULT NULL) RETURNS TABLE (
-    id UUID,
-    begin_time TIMESTAMP WITH TIME ZONE,
-    end_time TIMESTAMP WITH TIME ZONE,
-    seat_id INT8,
-    check_in_time TIMESTAMP WITH TIME ZONE,
-    temporary_leave_time TIMESTAMP WITH TIME ZONE,
-    user_id UUID,
-    email TEXT,
-    user_role TEXT,
-    admin_role TEXT,
-    is_in BOOLEAN,
-    name TEXT,
-    phone TEXT,
-    id_card TEXT,
-    point INT,
-    reason TEXT,
-    end_at TIMESTAMP WITH TIME ZONE
+  id UUID,
+  begin_time TIMESTAMP WITH TIME ZONE,
+  end_time TIMESTAMP WITH TIME ZONE,
+  seat_id INT8,
+  check_in_time TIMESTAMP WITH TIME ZONE,
+  temporary_leave_time TIMESTAMP WITH TIME ZONE,
+  user_id UUID,
+  email TEXT,
+  user_role TEXT,
+  admin_role TEXT,
+  is_in BOOLEAN,
+  name TEXT,
+  phone TEXT,
+  id_card TEXT,
+  point INT,
+  reason TEXT,
+  end_at TIMESTAMP WITH TIME ZONE
 ) AS $$
 BEGIN
-    IF p_seat_id IS NULL THEN
-        RAISE EXCEPTION '需要提供座位ID參數';
-    END IF;
+  IF p_seat_id IS NULL THEN
+    RAISE EXCEPTION 'P0001';
+  END IF;
 
-    RETURN QUERY
-    SELECT
-        res.id,
-        res.begin_time,
-        res.end_time,
-        res.seat_id,
-        res.check_in_time,
-        res.temporary_leave_time,
-        user_data.id,
-        user_data.email,
-        user_data.user_role,
-        user_data.admin_role,
-        user_data.is_in,
-        user_data.name,
-        user_data.phone,
-        user_data.id_card,
-        user_data.point,
-        user_data.reason,
-        user_data.end_at
-    FROM
-        active_reservations res
-    CROSS JOIN LATERAL get_user_data(res.user_id) AS user_data
-    WHERE res.seat_id = p_seat_id;
+  RETURN QUERY
+  SELECT
+    res.id,
+    res.begin_time,
+    res.end_time,
+    res.seat_id,
+    res.check_in_time,
+    res.temporary_leave_time,
+    user_data.u_id,
+    user_data.u_email,
+    user_data.u_user_role,
+    user_data.u_admin_role,
+    user_data.u_is_in,
+    user_data.u_name,
+    user_data.u_phone,
+    user_data.u_id_card,
+    user_data.u_point,
+    user_data.u_reason,
+    user_data.u_end_at
+  FROM
+    active_reservations res,
+    LATERAL (
+      SELECT 
+        u.id AS u_id,
+        u.email AS u_email,
+        u.user_role AS u_user_role,
+        u.admin_role AS u_admin_role,
+        u.is_in AS u_is_in,
+        u.name AS u_name,
+        u.phone AS u_phone,
+        u.id_card AS u_id_card,
+        u.point AS u_point,
+        u.reason AS u_reason,
+        u.end_at AS u_end_at
+      FROM
+        get_user_data(10, 0, res.user_id, NULL, NULL, NULL, NULL, NULL) u
+    ) AS user_data
+  WHERE res.seat_id = p_seat_id;
 END;
 $$ LANGUAGE plpgsql STABLE SECURITY INVOKER;

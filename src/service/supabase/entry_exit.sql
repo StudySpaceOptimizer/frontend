@@ -22,7 +22,7 @@ DECLARE
 BEGIN
     -- 檢查是否為管理員，非管理員則拋出異常
     IF NOT is_claims_admin() THEN
-        RAISE EXCEPTION '須為管理員才能執行此操作';
+        RAISE EXCEPTION 'U0001';
     END IF;
 
     -- 查找用戶當前正在進行的有效預約

@@ -74,11 +74,11 @@ BEGIN
        NEW.user_id != OLD.user_id OR
        NEW.seat_id != OLD.seat_id OR
        NEW.check_in_time != OLD.check_in_time THEN
-        RAISE EXCEPTION '使用者只能更新 end_time 欄位';
+        RAISE EXCEPTION 'U0001';
     END IF;
 
     IF auth.uid() != OLD.user_id THEN
-        RAISE EXCEPTION '用戶只能更新自己的記錄';
+        RAISE EXCEPTION 'U0001';
     END IF;
 
     RETURN NEW;
@@ -103,7 +103,7 @@ BEGIN
     END IF;
 
     IF NEW.check_in_time IS NULL THEN
-        RAISE EXCEPTION '尚未報到';
+        RAISE EXCEPTION 'R0001';
     END IF;
 
     RETURN NEW;
@@ -125,17 +125,17 @@ BEGIN
 
     -- 檢查預約的開始時間和結束時間是否在同一天
     IF DATE(NEW.begin_time) != DATE(NEW.end_time) THEN 
-        RAISE EXCEPTION '開始和結束時間必須在同一天';
+        RAISE EXCEPTION 'R0002';
     END IF;
 
     -- 檢查預約的結束時間是否晚於開始時間
     IF NEW.end_time <= NEW.begin_time THEN
-        RAISE EXCEPTION '結束時間必須晚於開始時間';
+        RAISE EXCEPTION 'R0003';
     END IF;
 
     -- 如果是新增操作，進一步檢查預約開始時間必須大於當前時間
     IF TG_OP = 'INSERT' AND NEW.begin_time <= current_timestamp THEN
-        RAISE EXCEPTION '預約開始時間必須大於當前時間';
+        RAISE EXCEPTION 'R0004';
     END IF;
 
     RETURN NEW;
@@ -158,7 +158,7 @@ BEGIN
 
     -- 檢查選定座位是否可用
     IF NOT (SELECT available FROM seats WHERE id = NEW.seat_id) THEN
-        RAISE EXCEPTION '所選座位不可用';
+        RAISE EXCEPTION 'R0005';
     END IF;
 
     -- 檢查預約時間是否與同一座位的其他預約重疊
@@ -168,7 +168,7 @@ BEGIN
         AND reservation_id <> NEW.id -- 確保不檢查當前行
         AND (NEW.begin_time, NEW.end_time) OVERLAPS (begin_time, end_time)
     ) THEN
-        RAISE EXCEPTION '預約時間與現有預約重疊';
+        RAISE EXCEPTION 'R0006';
     END IF;
 
     RETURN NEW;
@@ -219,11 +219,11 @@ BEGIN
     -- 判斷是否為工作日或周末，並檢查開放時間
     IF EXTRACT(ISODOW FROM NEW.begin_time) BETWEEN 1 AND 5 THEN -- 工作日
         IF NEW.begin_time::TIME < weekday_opening OR NEW.end_time::TIME > weekday_closing THEN
-            RAISE EXCEPTION '預約時間必須在工作日的開放時間內';
+            RAISE EXCEPTION 'RS0001';
         END IF;
     ELSE -- 周末
         IF NEW.begin_time::TIME < weekend_opening OR NEW.end_time::TIME > weekend_closing THEN
-            RAISE EXCEPTION '預約時間必須在周末的開放時間內';
+            RAISE EXCEPTION 'RS0002';
         END IF;
     END IF;
 
@@ -231,11 +231,11 @@ BEGIN
     IF TG_OP = 'INSERT' THEN -- 開始、結束能被整除
         IF (EXTRACT(EPOCH FROM NEW.begin_time) / 60) % reservation_time_unit != 0 OR
            (EXTRACT(EPOCH FROM NEW.end_time) / 60) % reservation_time_unit != 0 THEN
-            RAISE EXCEPTION '預約時間必須以 % 分鐘為單位', reservation_time_unit;
+            RAISE EXCEPTION 'RS0003', reservation_time_unit;
         END IF;
 
         IF reservation_duration > maximum_duration THEN
-            RAISE EXCEPTION '預約時長必須少於 % 小時', maximum_duration;
+            RAISE EXCEPTION 'RS0004', maximum_duration;
         END IF;
     END IF;
 
@@ -244,12 +244,12 @@ BEGIN
     -- 若不是管理員
     IF NOT is_claims_admin() THEN -- 檢查學生預約是否在可提前預約的日期內
         IF user_role = 'student' AND ((NEW.begin_time::DATE - CURRENT_DATE) > student_limit) THEN
-            RAISE EXCEPTION '學生只能提前 % 天進行預約', student_limit;
+            RAISE EXCEPTION 'RS0005', student_limit;
         END IF;
 
         -- 檢查校外人士預約是否在可提前預約的日期內
         IF user_role = 'outsider' AND ((NEW.begin_time::DATE - CURRENT_DATE) > outsider_limit) THEN
-            RAISE EXCEPTION '校外人士只能提前 % 天進行預約', outsider_limit;
+            RAISE EXCEPTION 'RS0006', outsider_limit;
         END IF;
     END IF;
 
@@ -276,7 +276,7 @@ BEGIN
         FROM active_closed_periods
         WHERE (NEW.begin_time, NEW.end_time) OVERLAPS (begin_time, end_time)
     ) THEN 
-        RAISE EXCEPTION '預約時間與關閉時段重疊';
+        RAISE EXCEPTION 'RS0007';
     END IF;
 
     RETURN NEW;
@@ -323,7 +323,7 @@ BEGIN
         AND end_time <= end_of_day
         AND end_time > next_time_unit -- 如果結束時間在下一個時間段之後，則視為未完成
     ) THEN 
-        RAISE EXCEPTION '用戶在預約當天有未完成的預約';
+        RAISE EXCEPTION 'R0007';
     END IF;
 
     RETURN NEW;
@@ -346,7 +346,7 @@ BEGIN
 
     -- 檢查是否嘗試刪除的預約的開始時間在當前時間後
     IF (OLD.begin_time <= current_timestamp) THEN 
-        RAISE EXCEPTION '只能刪除尚未開始的預約';
+        RAISE EXCEPTION 'R0008';
     END IF;
 
     RETURN OLD;
@@ -409,7 +409,7 @@ CREATE OR REPLACE FUNCTION get_reservations (
     filter_begin_time_start TIMESTAMP WITH TIME ZONE DEFAULT NULL,
     filter_begin_time_end TIMESTAMP WITH TIME ZONE DEFAULT NULL,
     filter_end_time_start TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-    filter_end_time_end TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+    filter_end_time_end TIMESTAMP WITH TIME ZONE DEFAULT NULL
 ) RETURNS TABLE (
     -- 預約相關字段
     id UUID,
@@ -455,6 +455,7 @@ BEGIN
         reservations res
         CROSS JOIN LATERAL get_user_data() AS user_data
     WHERE
+        (res.user_id = user_data.id) AND
         (filter_user_id IS NULL OR user_data.id = filter_user_id) AND
         (filter_user_role IS NULL OR user_data.user_role = filter_user_role) AND
         (filter_seat_id IS NULL OR res.seat_id = filter_seat_id) AND
@@ -514,7 +515,7 @@ CREATE OR REPLACE FUNCTION get_active_reservations (
     filter_begin_time_start TIMESTAMP WITH TIME ZONE DEFAULT NULL,
     filter_begin_time_end TIMESTAMP WITH TIME ZONE DEFAULT NULL,
     filter_end_time_start TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-    filter_end_time_end TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+    filter_end_time_end TIMESTAMP WITH TIME ZONE DEFAULT NULL
 ) RETURNS TABLE (
     -- reservation
     id UUID,
@@ -559,6 +560,7 @@ CREATE OR REPLACE FUNCTION get_active_reservations (
         active_reservations res
         CROSS JOIN LATERAL get_user_data() AS user_data
     WHERE
+        (res.user_id = user_data.id) AND
         (filter_user_id IS NULL OR user_data.id = filter_user_id) AND
         (filter_user_role IS NULL OR user_data.user_role = filter_user_role) AND
         (filter_seat_id IS NULL OR res.seat_id = filter_seat_id) AND

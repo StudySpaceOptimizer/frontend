@@ -101,6 +101,7 @@ export default {
   RS0006: '校外人士只能提前 % 天進行預約',
   RS0007: '預約時間與關閉時段重疊',
   P0001: '參數格式錯誤',
+
   '42501': '權限不足',
   '23505': '資料已存在',
   '23502': '部分必填欄位缺失',
@@ -108,6 +109,7 @@ export default {
   '23514': '資料不符合要求的條件',
   '22P02': '資料格式錯誤',
   PGRST116: '權限不足',
+
   bad_json: 'JSON格式錯誤',
   bad_jwt: 'JWT token無效',
   email_exists: '電子郵件地址已存在',
@@ -123,5 +125,12 @@ export default {
   over_request_rate_limit: '請求過多，請稍後再試',
   over_sms_send_rate_limit: '請求過多，請稍後再試',
   captcha_failed: '驗證碼驗證失敗',
-  reauthentication_needed: '需要重新驗證身份'
+  reauthentication_needed: '需要重新驗證身份',
+
+  seat01: '開始時間和結束時間必須同時提供或同時不提供',
+  seat02: '座位不存在',
+
+  user01: '找不到使用者資料',
+
+  default: '由於未知錯誤，操作失敗，請稍後再試'
 }

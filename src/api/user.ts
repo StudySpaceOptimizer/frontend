@@ -1,6 +1,7 @@
 import type * as Types from '../types'
 import { supabase } from '../service/supabase/supabase'
 import type { User } from './index'
+import { errorHandler } from './common'
 
 export class SupabaseUser implements User {
   async verifyWithPOP3(email: string, password: string): Promise<string> {
@@ -18,13 +19,12 @@ export class SupabaseUser implements User {
 
     if (!res.ok) {
       console.log(res)
-      throw new Error('學號或密碼錯誤')
+      throw new Error(errorHandler('default'))
     }
 
     console.log(res)
     const data = await res.json()
 
-    console.log(data)
     return data.password
   }
 
@@ -50,23 +50,23 @@ export class SupabaseUser implements User {
         })
 
         if (signUpError) {
-          console.error(signUpError.message)
-          throw new Error(signUpError.message)
+          console.log(signUpError)
+          throw new Error(errorHandler(signUpError.message))
         }
 
         if (!signUpData.user || !signUpData.user.id) {
-          throw new Error('系統錯誤：無法創建用戶')
+          throw new Error(errorHandler('default'))
         }
 
         return signUpData.user.id
       } else {
-        console.error(signInError.message)
-        throw new Error(signInError.message)
+        console.log(signInError)
+        throw new Error(errorHandler(signInError.message))
       }
     }
 
     if (!signInData.user || !signInData.user.id) {
-      throw new Error('系統錯誤：無法獲取用戶信息')
+      throw new Error(errorHandler('default'))
     }
     return signInData.user.id
   }
@@ -79,7 +79,8 @@ export class SupabaseUser implements User {
     const { error } = await supabase.auth.signOut()
 
     if (error) {
-      throw new Error(error.message)
+      console.log(error)
+      throw new Error(errorHandler(error.message))
     }
   }
 
@@ -116,7 +117,8 @@ export class SupabaseUser implements User {
     ])
 
     if (error) {
-      throw new Error(error.message)
+      console.log(error)
+      throw new Error(errorHandler(error.code))
     }
   }
 
@@ -136,7 +138,8 @@ export class SupabaseUser implements User {
     })
 
     if (checkError) {
-      throw new Error(checkError.message)
+      console.log(checkError)
+      throw new Error(errorHandler(checkError.code))
     }
 
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
@@ -145,18 +148,12 @@ export class SupabaseUser implements User {
     })
 
     if (signUpError) {
-      console.error(signUpError)
-
-      switch (signUpError.code) {
-        case 'user_already_exists':
-          throw new Error('用戶已經存在')
-        default:
-          throw new Error(signUpError.message)
-      }
+      console.log(signUpError)
+      throw new Error(errorHandler(signUpError.message))
     }
 
     if (!signUpData.user || !signUpData.user.id) {
-      throw new Error('系統錯誤：無法創建用戶')
+      throw new Error(errorHandler('default'))
     }
 
     const user_id = signUpData.user.id
@@ -188,7 +185,8 @@ export class SupabaseUser implements User {
     )
 
     if (error) {
-      throw new Error(error.message)
+      console.log(error)
+      throw new Error(errorHandler(error.code))
     }
 
     return (
@@ -214,7 +212,7 @@ export class SupabaseUser implements User {
   ): Promise<Types.UserData[]> {
     const { pageSize, pageOffset, userId, email, userRole, adminRole, isIn, name } = options
 
-    const { data: userProfiles, error } = await supabase.rpc('get_user_data', {
+    const { data: userProfiles, error } = await supabase.rpc('get_use r_data', {
       page_size: pageSize,
       page_offset: pageOffset,
       filter_user_id: userId,
@@ -226,7 +224,8 @@ export class SupabaseUser implements User {
     })
 
     if (error) {
-      throw new Error(error.message)
+      console.log(error)
+      throw new Error(errorHandler(error.code))
     }
 
     return (
@@ -258,11 +257,15 @@ export class SupabaseUser implements User {
       error: getUserError
     } = await supabase.auth.getUser()
 
-    if (getUserError || !user) {
-      throw new Error(getUserError?.message)
+    if (getUserError) {
+      console.log(getUserError)
+      throw new Error(errorHandler(getUserError.message))
+    }
+    if (!user) {
+      throw new Error(errorHandler('user_not_found'))
     }
 
-    const { data: userProfiles, error } = await supabase.rpc('get_user_data', {
+    const { data: userProfiles, error: getUserDataError } = await supabase.rpc('get_user_data', {
       page_size: undefined,
       page_offset: undefined,
       filter_user_id: user.id,
@@ -273,13 +276,14 @@ export class SupabaseUser implements User {
       filter_name: undefined
     })
 
-    if (error) {
-      throw new Error(error.message)
+    if (getUserDataError) {
+      console.log(getUserDataError)
+      throw new Error(errorHandler(getUserDataError.code))
     }
 
     const userProfile = userProfiles?.[0]
     if (!userProfile) {
-      throw new Error('找不到使用者資料')
+      throw new Error(errorHandler('user01'))
     }
 
     return {
@@ -309,7 +313,8 @@ export class SupabaseUser implements User {
     const { data, error } = await supabase.from('user_profiles').select('count', { count: 'exact' })
 
     if (error) {
-      throw new Error(error.message)
+      console.log(error)
+      throw new Error(errorHandler(error.code))
     }
 
     return data?.at(0)?.count || 0
@@ -336,7 +341,8 @@ export class SupabaseUser implements User {
       .eq('id', id)
 
     if (error) {
-      throw new Error(error.message)
+      console.log(error)
+      throw new Error(errorHandler(error.code))
     }
   }
 
@@ -357,7 +363,8 @@ export class SupabaseUser implements User {
     ])
 
     if (error) {
-      throw new Error(error.message)
+      console.log(error)
+      throw new Error(errorHandler(error.code))
     }
   }
 
@@ -370,7 +377,8 @@ export class SupabaseUser implements User {
     const { error } = await supabase.from('active_blacklist').delete().eq('user_id', id)
 
     if (error) {
-      throw new Error(error.message)
+      console.log(error)
+      throw new Error(errorHandler(error.code))
     }
   }
 
@@ -381,13 +389,11 @@ export class SupabaseUser implements User {
    * @returns 無返回值，操作失敗將拋出錯誤
    */
   async updatePointUser(id: string, point: number): Promise<void> {
-    const { error: updateError } = await supabase
-      .from('user_profiles')
-      .update({ point: point })
-      .eq('id', id)
+    const { error } = await supabase.from('user_profiles').update({ point: point }).eq('id', id)
 
-    if (updateError) {
-      throw new Error(updateError.message)
+    if (error) {
+      console.log(error)
+      throw new Error(errorHandler(error.code))
     }
   }
 
@@ -398,7 +404,10 @@ export class SupabaseUser implements User {
   async getSettings(): Promise<Types.SettingsData> {
     const { data, error } = await supabase.from('settings').select('*')
 
-    if (error) throw new Error(error.message)
+    if (error) {
+      console.log(error)
+      throw new Error(errorHandler(error.code))
+    }
 
     const settings: Partial<Types.SettingsData> = {}
 
@@ -444,7 +453,7 @@ export class SupabaseUser implements User {
           settings.reservation_time_unit = parseInt(item.value, 10)
           break
         default:
-          throw new Error(`設定名稱不匹配: ${item.key_name}`)
+          throw new Error(errorHandler('default'))
       }
     })
 
@@ -459,13 +468,15 @@ export class SupabaseUser implements User {
   async updateSettings(newSettings: Types.SettingsData): Promise<void> {
     for (const key in newSettings) {
       const value = JSON.stringify(newSettings[key as keyof Types.SettingsData])
+
       const { error } = await supabase
         .from('settings')
         .update({ value: camelToSnakeCase(value) })
         .eq('key_name', camelToSnakeCase(key))
 
       if (error) {
-        throw new Error(error.message)
+        console.log(error)
+        throw new Error(errorHandler(error.code))
       }
     }
   }
@@ -484,7 +495,8 @@ export class SupabaseUser implements User {
     })
 
     if (error) {
-      throw new Error(error.message)
+      console.log(error)
+      throw new Error(errorHandler(error.code))
     }
   }
 }

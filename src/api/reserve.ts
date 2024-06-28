@@ -1,7 +1,7 @@
 import type * as Types from '../types'
 import { supabase } from '../service/supabase/supabase'
 import { seatConverterToDB, seatConverterFromDB } from '../utils'
-
+import { errorHandler } from './common'
 import type { Reserve } from './index'
 
 export class SupabaseReserve implements Reserve {
@@ -16,15 +16,16 @@ export class SupabaseReserve implements Reserve {
     const { data: authData, error: getUserError } = await supabase.auth.getUser()
 
     // 檢查是否成功獲取用戶資訊，或用戶是否存在
-    if (getUserError || !authData.user) {
-      throw new Error('Failed to get user data:' + getUserError?.message)
+    if (getUserError) {
+      console.log(getUserError)
+      throw new Error(errorHandler(getUserError.message))
     }
 
     const seatIdNumber = seatConverterToDB(seatId)
     // 提取用戶ID
     const userID = authData.user.id
 
-    const { data, error } = await supabase
+    const { data: reservation, error: insertError } = await supabase
       .from('reservations')
       .insert([
         {
@@ -36,17 +37,12 @@ export class SupabaseReserve implements Reserve {
       ])
       .select()
 
-    if (error) {
-      switch (error.code) {
-        case '42501':
-          throw new Error('權限不足')
-        default:
-          console.error(error.message)
-          throw new Error('遇到未知錯誤，請稍後再試')
-      }
+    if (insertError) {
+      console.log(insertError)
+      throw new Error(errorHandler(insertError.code))
     } else {
-      console.log(data)
-      return data[0].id
+      console.log(reservation)
+      return reservation[0].id
     }
   }
 
@@ -71,16 +67,16 @@ export class SupabaseReserve implements Reserve {
       .eq('id_card', idCard)
       .single()
 
-    if (getUserDataError || !userData) {
-      throw new Error('Failed to get user data by id_card:' + getUserDataError?.message)
+    if (getUserDataError) {
+      console.log(getUserDataError)
+      throw new Error(errorHandler(getUserDataError.message))
     }
 
     const userID = userData.id
-
     const seatIdNumber = seatConverterToDB(seatId)
 
     // 插入預約
-    const { data, error } = await supabase
+    const { data: reservation, error: insertError } = await supabase
       .from('reservations')
       .insert([
         {
@@ -92,11 +88,12 @@ export class SupabaseReserve implements Reserve {
       ])
       .select()
 
-    if (error) {
-      throw new Error(error.message)
+    if (insertError) {
+      console.log(insertError)
+      throw new Error(errorHandler(insertError.code))
     } else {
-      console.log(data)
-      return data[0].id
+      console.log(reservation)
+      return reservation[0].id
     }
   }
 
@@ -134,7 +131,8 @@ export class SupabaseReserve implements Reserve {
     })
 
     if (error) {
-      throw new Error(error.message)
+      console.log(error)
+      throw new Error(errorHandler(error.code))
     }
 
     return (
@@ -174,8 +172,12 @@ export class SupabaseReserve implements Reserve {
       error: getUserError
     } = await supabase.auth.getUser()
 
-    if (getUserError || !user) {
-      throw new Error(getUserError?.message)
+    if (getUserError) {
+      console.log(getUserError)
+      throw new Error(errorHandler(getUserError.message))
+    }
+    if (!user) {
+      throw new Error(errorHandler('user_not_found'))
     }
 
     return await this.getReservations({ userId: user.id, ...options })
@@ -192,7 +194,8 @@ export class SupabaseReserve implements Reserve {
       .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
 
     if (error) {
-      throw new Error(error.message)
+      console.log(error)
+      throw new Error(errorHandler(error.code))
     }
 
     return data?.at(0)?.count || 0
@@ -208,7 +211,8 @@ export class SupabaseReserve implements Reserve {
       .select('count', { count: 'exact' })
 
     if (error) {
-      throw new Error(error.message)
+      console.log(error)
+      throw new Error(errorHandler(error.code))
     }
 
     return data?.at(0)?.count || 0
@@ -220,16 +224,16 @@ export class SupabaseReserve implements Reserve {
    * @returns 操作無回傳值，失敗將拋出錯誤
    */
   async deleteReservation(id: string): Promise<void> {
-    const { error } = await supabase.from('reservations').delete().eq('id', id)
+    const { error: deleteError } = await supabase.from('reservations').delete().eq('id', id)
 
-    if (error) {
-      throw new Error(error.message)
+    if (deleteError) {
+      throw new Error(errorHandler(deleteError.code))
     }
 
     const { data } = await supabase.from('reservations').select('*').eq('id', id)
 
     if (data?.length != 0) {
-      throw new Error('刪除預約失敗')
+      throw new Error(errorHandler('default'))
     }
   }
 
@@ -247,7 +251,8 @@ export class SupabaseReserve implements Reserve {
       .select()
 
     if (error) {
-      throw new Error(error.message)
+      console.log(error)
+      throw new Error(errorHandler(error.code))
     }
   }
 }

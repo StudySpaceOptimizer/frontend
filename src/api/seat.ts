@@ -1,7 +1,7 @@
 import type * as Types from '../types'
 import { supabase } from '../service/supabase/supabase'
 import { seatConverterFromDB, seatConverterToDB } from '../utils'
-import { toLocalDateTime, parseTimeString } from './common'
+import { toLocalDateTime, parseTimeString, errorHandler } from './common'
 import type { Seat } from './index'
 import { useSettingStore } from '../stores/setting'
 
@@ -18,7 +18,7 @@ export class SupabaseSeat implements Seat {
 
     // 檢查時間參數是否同時提供或同時不提供
     if (Boolean(beginTime) !== Boolean(endTime)) {
-      throw new Error('開始時間和結束時間必須同時提供或同時不提供')
+      throw new Error('seat01')
     }
 
     /*
@@ -27,8 +27,9 @@ export class SupabaseSeat implements Seat {
       如果 now > 營業結束時間，返回 'unavailable'
     */
     const settingStore = useSettingStore()
-    if (!settingStore.settings) throw new Error('系統錯誤，找不到設定')
-
+    if (!settingStore.settings) {
+      throw new Error('default')
+    }
     const now = new Date()
     const isWeekend = now.getDay() === 0 || now.getDay() === 6
     const openingHours = isWeekend
@@ -68,12 +69,15 @@ export class SupabaseSeat implements Seat {
       .order('id', { ascending: true })
 
     if (getSeatsError) {
-      throw new Error(getSeatsError.message)
+      console.log(getSeatsError)
+      throw new Error(getSeatsError.code)
     }
 
     const seatData: { [key: string]: Types.SeatData } = {}
 
-    if (seatInfo == null) throw new Error('找不到座位')
+    if (!seatInfo) {
+      throw new Error('seat02')
+    }
 
     seatInfo.forEach((seat: any) => {
       const seatID = seatConverterFromDB(seat.id)
@@ -94,7 +98,8 @@ export class SupabaseSeat implements Seat {
       .order('begin_time', { ascending: true })
 
     if (getActiveReservationError) {
-      throw new Error(getActiveReservationError.message)
+      console.log(getActiveReservationError)
+      throw new Error(getActiveReservationError.code)
     }
 
     interface TimeRange {
@@ -144,18 +149,17 @@ export class SupabaseSeat implements Seat {
    * @param reservationFilter 包含座位和用戶的過濾條件
    *@returns 返回詳細的座位預約信息
    */
-  async getSeatStatus(
-    seatId: string | number,
-  ): Promise<Types.SeatDetail> {
+  async getSeatStatus(seatId: string | number): Promise<Types.SeatDetail> {
     const seatIdNum = typeof seatId === 'number' ? seatId : seatConverterToDB(seatId)
     const seatIdStr = typeof seatId === 'string' ? seatId : seatConverterFromDB(seatId)
 
     const { data: reservations, error } = await supabase.rpc('get_seat_active_reservations', {
-      p_seat_id: seatIdNum,
+      p_seat_id: seatIdNum
     })
 
     if (error) {
-      throw new Error(error.message)
+      console.log(error)
+      throw new Error(error.code)
     }
 
     const seatDetail: Types.SeatDetail = {
@@ -211,7 +215,8 @@ export class SupabaseSeat implements Seat {
       .eq('id', id)
 
     if (error) {
-      throw new Error(`更新座位失敗: ${error.message}`)
+      console.log(error)
+      throw new Error(error.code)
     }
   }
 }

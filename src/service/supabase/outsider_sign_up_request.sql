@@ -43,19 +43,19 @@ BEGIN
   -- 檢查電子郵件唯一性
   SELECT email INTO existing_email FROM user_profiles WHERE email = NEW.email;
   IF existing_email IS NOT NULL THEN
-    RAISE EXCEPTION '插入失敗：電子郵件已存在';
+    RAISE EXCEPTION 'D0001';
   END IF;
 
   -- 檢查電話號碼唯一性
   SELECT phone INTO existing_phone FROM user_profiles WHERE phone = NEW.phone;
   IF existing_phone IS NOT NULL THEN
-    RAISE EXCEPTION '插入失敗：電話號碼已存在';
+    RAISE EXCEPTION 'D0001';
   END IF;
 
   -- 檢查身份證號碼唯一性
   SELECT id_card INTO existing_id_card FROM user_profiles WHERE id_card = NEW.id_card;
   IF existing_id_card IS NOT NULL THEN
-    RAISE EXCEPTION '插入失敗：身份證號碼已存在';
+    RAISE EXCEPTION 'D0001';
   END IF;
 
   RETURN NEW;
@@ -102,14 +102,14 @@ BEGIN
   -- 檢查電子郵件唯一性
   SELECT email INTO existing_email FROM user_profiles WHERE email = _email;
   IF existing_email IS NOT NULL THEN
-    RAISE EXCEPTION '電子郵件已存在';
+    RAISE EXCEPTION 'D0001';
   END IF;
 
   -- 檢查電話號碼唯一性
   IF _phone IS NOT NULL THEN
     SELECT phone INTO existing_phone FROM user_profiles WHERE phone = _phone;
     IF existing_phone IS NOT NULL THEN
-      RAISE EXCEPTION '電話號碼已存在';
+      RAISE EXCEPTION 'D0001';
     END IF;
   END IF;
 
@@ -117,7 +117,7 @@ BEGIN
   IF _id_card IS NOT NULL THEN
     SELECT id_card INTO existing_id_card FROM user_profiles WHERE id_card = _id_card;
     IF existing_id_card IS NOT NULL THEN
-      RAISE EXCEPTION '身份證號碼已存在';
+      RAISE EXCEPTION 'D0001';
     END IF;
   END IF;
 END;

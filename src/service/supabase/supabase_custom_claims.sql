@@ -131,7 +131,7 @@ Example:
 CREATE OR REPLACE FUNCTION set_claim (uid UUID, claim TEXT, value jsonb) RETURNS TEXT AS $$
 BEGIN
 	IF NOT is_claims_admin() THEN
-		RAISE EXCEPTION '不具有管理員權限';
+		RAISE EXCEPTION 'U0001';
 	ELSE        
 		UPDATE auth.users SET raw_app_meta_data = raw_app_meta_data || json_build_object(claim, value)::jsonb WHERE id = uid;
 		RETURN 'OK';
@@ -150,7 +150,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE FUNCTION delete_claim (uid UUID, claim TEXT) RETURNS TEXT AS $$
 BEGIN
 	IF NOT is_claims_admin() THEN
-		RAISE EXCEPTION '不具有管理員權限';
+		RAISE EXCEPTION 'U0001';
 	ELSE        
 		UPDATE auth.users SET raw_app_meta_data = raw_app_meta_data - claim WHERE id = uid;
 		RETURN 'OK';

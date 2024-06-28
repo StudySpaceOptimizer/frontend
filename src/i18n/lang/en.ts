@@ -101,6 +101,7 @@ export default {
   RS0006: 'Non-school individuals can only make reservations up to % days in advance',
   RS0007: 'Reservation time overlaps with closed periods',
   P0001: 'Parameter format error',
+
   '42501': 'Insufficient Permissions',
   '23505': 'Data Already Exists',
   '23502': 'Some Required Fields Are Missing',
@@ -108,6 +109,7 @@ export default {
   '23514': 'Data Does Not Meet Required Conditions',
   '22P02': 'Data Format Error',
   PGRST116: 'Insufficient Permissions',
+
   bad_json: 'Invalid JSON format',
   bad_jwt: 'Invalid JWT token',
   email_exists: 'Email address already exists',
@@ -123,5 +125,12 @@ export default {
   over_request_rate_limit: 'Too many requests sent. Please try again later.',
   over_sms_send_rate_limit: 'Too many requests sent. Please try again later.',
   captcha_failed: 'Captcha verification failed',
-  reauthentication_needed: 'Reauthentication required'
+  reauthentication_needed: 'Reauthentication required',
+
+  seat01: 'Start time and end time must either both be provided or both be omitted',
+  seat02: 'seat not found',
+
+  user01: 'user data not found',
+
+  default: 'Unknown error, please try again later'
 }

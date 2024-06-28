@@ -46,7 +46,7 @@ async function testReserveSuccess() {
   const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
 
-  const beginTime = new Date(tomorrow.setHours(13, 0, 0, 0))
+  const beginTime = new Date(tomorrow.setHours(0, 0, 0, 0))
   const endTime = new Date(tomorrow.setHours(14, 0, 0, 0))
   const seatID = 'A5'
   let reservationId
@@ -318,8 +318,8 @@ async function testRecordUserEntryExit() {
 // await testReserveOverTwoWeeks()
 // await testBannedUserReserve()
 
-// await testReserveSuccess()
-await testReserveForUser()
+await testReserveSuccess()
+// await testReserveForUser()
 
 async function getAllReservations() {
   const pageSize = 10,
@@ -327,9 +327,9 @@ async function getAllReservations() {
 
   const user = await signIn(admin, password)
 
-  const userID = undefined
+  const userId = undefined
   const userRole = 'student'
-  const seatID = seatConverterToDB('A2')
+  const seatId = seatConverterToDB('A2')
   const beginTimeStart = new Date('2024-06-21T13:00:00')
   // const beginTimeStart = undefined
   // const beginTimeEnd = new Date('2024-06-21T07:00:00')
@@ -340,35 +340,22 @@ async function getAllReservations() {
   const supabaseReserve = new SupabaseReserve()
 
   try {
-    // const result = await supabaseReserve.getAllReservations(
-    //   { pageSize, pageOffset },
-    //   {
-    //     userID,
-    //     userRole,
-    //     seatID,
-    //     beginTimeStart,
-    //     beginTimeEnd,
-    //     endTimeStart,
-    //     endTimeEnd
-    //   }
-    // )
+    const result = await supabaseReserve.getReservations({
+      pageSize,
+      pageOffset,
+      userId,
+      userRole,
+      seatId,
+      beginTimeStart,
+      beginTimeEnd,
+      endTimeStart,
+      endTimeEnd
+    })
 
-    // console.log(result)
+    console.log(result)
   } catch (e) {
     console.log(e)
   }
 }
 
-// await getAllReservations()
-
-// await signIn(admin, password)
-
-// const { error } = await supabase.rpc('set_claim', {
-//   uid: 'e31510cc-c7ad-4da1-8148-f809bdd1fca0',
-//   claim: 'is_verified',
-//   value: true
-// })
-
-// if (error) {
-//   console.log(error)
-// }
+await getAllReservations()
