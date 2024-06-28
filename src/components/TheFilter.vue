@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 
 import type { Filter } from '@/types'
 import { useFilterStore } from '@/stores/filter'
 import { useSettingStore } from '@/stores/setting'
 import { useRoute } from 'vue-router'
 
+const { t } = useI18n()
 const settingStore = useSettingStore()
 const filterStore = useFilterStore()
 const route = useRoute()
@@ -204,25 +206,7 @@ onMounted(() => {
         />
       </div>
     </template>
-
-    <template v-if="show.identity">
-      <label>身份</label>
-      <select v-model="filter.identity">
-        <option value="student">學生</option>
-        <option value="others">校外人士</option>
-      </select>
-    </template>
-
-    <template v-if="show.seat">
-      <label for="seat">座位編號</label>
-      <input v-model="filter.seat" type="text" name="seat" />
-    </template>
-
-    <template v-if="show.username">
-      <label for="username">使用者</label>
-      <input v-model="filter.username" type="text" name="username" />
-    </template>
-    <el-button type="primary" style="margin: 0 10px">開始篩選</el-button>
+    <el-button type="primary" style="margin: 0 10px">{{ t('filter') }}</el-button>
   </form>
 </template>
 

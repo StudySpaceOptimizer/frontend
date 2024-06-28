@@ -11,7 +11,7 @@ const users = ref<any[]>([])
 
 async function getUserData(page: number) {
   try {
-    const data = await userApi.getUsers({
+    const data = await userApi.getUserData({
       pageSize: 10,
       pageOffset: Math.max(0, (page - 1) * 10)
     })

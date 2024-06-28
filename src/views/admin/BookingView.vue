@@ -54,7 +54,7 @@ async function cancelBooking(id: string) {
 
 async function getReservationData(filterCondition?: any) {
   try {
-    const data = await reserveApi.getAllReservations({
+    const data = await reserveApi.getReservations({
       pageSize: filterCondition?.pageSize || 10,
       pageOffset: filterCondition?.pageOffset
     })

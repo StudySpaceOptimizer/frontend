@@ -31,31 +31,13 @@ export const useAccountStore = defineStore(
 
     async function signIn({ email, password }: { email: string; password: string }): Promise<void> {
       try {
-        userId.value = await api.signIn(email, password)
+        userId.value = await api.studentSignIn(email, password)
         isSignIn.value = true
         toggleDialog()
         ElMessage.success('登入成功')
       } catch (error: any) {
         isSignIn.value = false
         ElMessage.error(`登入失敗: ${error.message}`)
-      }
-    }
-
-    async function studentSignUp({
-      name,
-      email,
-      password
-    }: {
-      name: string
-      email: string
-      password: string
-    }): Promise<void> {
-      try {
-        await api.studentSignUp(email, password)
-        toggleDialog()
-        ElMessage.success('註冊成功')
-      } catch (error: any) {
-        ElMessage.error(`註冊失敗: ${error.message}`)
       }
     }
 
@@ -101,7 +83,7 @@ export const useAccountStore = defineStore(
 
     async function fetchUserProfile() {
       try {
-        const userData = await api.getMyUser(userId.value)
+        const userData = await api.getMyUserData()
         updateUserProfile(userData)
         settingStore.getSettings()
       } catch (error) {
@@ -135,7 +117,6 @@ export const useAccountStore = defineStore(
       signIn,
       signOut,
       checkIsSignIn,
-      studentSignUp,
       outsiderSignUp,
       toggleDialog,
       fetchUserProfile

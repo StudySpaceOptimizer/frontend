@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { computed, watchEffect } from 'vue'
-import { useSeatStore } from '@/stores/seat'
 import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n';
 
+import { useSeatStore } from '@/stores/seat'
+
+const { t } = useI18n()
 const seatStore = useSeatStore()
 
 const props = defineProps({
@@ -26,8 +29,13 @@ function checkIsSeat(): boolean {
 
 let isSeat = false
 
+let originText = ''
 watchEffect(async () => {
+  if (originText === '') {
+    originText = components.value[1].config.text
+  }
   if (!checkIsSeat()) {
+    components.value[1].config.text = t(`seat.${originText}`)
     setSeatStatus(false, '#354876')
     return
   }

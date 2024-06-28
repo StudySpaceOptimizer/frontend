@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import { useAccountStore } from '@/stores/account'
 
+const { t } = useI18n()
 const accountStore = useAccountStore()
 const email = ref('')
 const password = ref('')
@@ -19,17 +22,25 @@ function signIn(): void {
 </script>
 
 <template>
-  <el-dialog v-model="accountStore.dialogStatus.signIn" title="登入" width="400" height="800">
+  <el-dialog
+    v-model="accountStore.dialogStatus.signIn"
+    :title="t('signInModal.title')"
+    width="400"
+    height="800"
+  >
     <el-form @submit.prevent="signIn" label-width="auto" style="max-width: 600px">
-      <el-form-item label="信箱">
-        <el-input v-model="email" placeholder="請輸入信箱" autofocus></el-input>
+      <el-form-item :label="t('signInModal.emailLabel')">
+        <el-input
+          v-model="email"
+          :placeholder="t('signInModal.emailPlaceholder')"
+          autofocus
+        ></el-input>
       </el-form-item>
-
-      <el-form-item label="密碼">
+      <el-form-item :label="t('signInModal.passwordLabel')">
         <el-input
           type="password"
           v-model="password"
-          placeholder="請輸入密碼"
+          :placeholder="t('signInModal.passwordPlaceholder')"
           show-password
         ></el-input>
       </el-form-item>
@@ -37,9 +48,11 @@ function signIn(): void {
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="accountStore.toggleDialog('signUp')" text>
-          還沒有帳號？ 註冊</el-button
+          {{ t('signInModal.signUp') }}</el-button
         >
-        <el-button type="primary" @click="signIn" :loading="loading"> 登入 </el-button>
+        <el-button type="primary" @click="signIn" :loading="loading">
+          {{ t('signInModal.signIn') }}
+        </el-button>
       </div>
     </template>
   </el-dialog>

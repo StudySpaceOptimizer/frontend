@@ -39,21 +39,27 @@ function handleCommand(command: LangEnum) {
   >
     <el-menu-item index="/"> 全興書苑 預約系統 </el-menu-item>
     <div class="flex-grow"></div>
-    <el-sub-menu index="">
+    <el-sub-menu index="#">
       <template #title>{{ langType[language] }}</template>
       <el-menu-item index="" @click="handleCommand('zh-tw')">中文</el-menu-item>
       <el-menu-item index="" @click="handleCommand('en')">English</el-menu-item>
     </el-sub-menu>
     <el-sub-menu index="" v-if="accountStore.isSignIn">
-      <template #title>Hi, {{ accountStore.userDisplayName }}</template>
-      <el-menu-item index="" @click="signOutHandler">{{ t('navbar.signIn') }}</el-menu-item>
+      <template #title>{{
+        t('navbar.title', {
+          name: accountStore.userDisplayName
+        })
+      }}</template>
+      <el-menu-item index="" @click="signOutHandler">{{ t('navbar.signOut') }}</el-menu-item>
       <el-menu-item index="/profile?tabs=person">{{ t('navbar.profile') }}</el-menu-item>
       <el-menu-item index="/profile?tabs=reservation">{{ t('navbar.reservation') }}</el-menu-item>
       <el-menu-item index="/admin" v-if="accountStore.adminRole !== 'non-admin'">
         管理員介面
       </el-menu-item>
     </el-sub-menu>
-    <el-menu-item index="" v-else @click="accountStore.toggleDialog('signIn')"> {{ t('navbar.signIn') }} </el-menu-item>
+    <el-menu-item index="" v-else @click="accountStore.toggleDialog('signIn')">
+      {{ t('navbar.signIn') }}
+    </el-menu-item>
   </el-menu>
 </template>
 

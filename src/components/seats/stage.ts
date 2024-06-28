@@ -143,7 +143,7 @@ export default class DrawStage {
         width: 100,
         height: 100,
         fill: '#242873',
-        text: '樓梯門',
+        text: 'StairDoor',
         fontSize: 28,
         concerRadius: 5
       })
@@ -153,7 +153,7 @@ export default class DrawStage {
         width: 100,
         height: 900,
         fill: '#242873',
-        text: '大門',
+        text: 'MainDoor',
         fontSize: 28,
         concerRadius: 5
       })
@@ -163,7 +163,7 @@ export default class DrawStage {
         width: 100,
         height: 300,
         fill: '#242873',
-        text: '男廁',
+        text: 'MenToilet',
         fontSize: 28,
         concerRadius: 5
       })
@@ -173,7 +173,7 @@ export default class DrawStage {
         width: 150,
         height: 150,
         fill: '#242873',
-        text: '電梯',
+        text: 'Elevator',
         fontSize: 28,
         concerRadius: 5
       })

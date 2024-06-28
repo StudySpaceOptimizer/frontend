@@ -80,7 +80,7 @@ export function useReservation() {
 
   const getReservationData = async (filterCondition?: any) => {
     try {
-      const data = await reserveApi.getPersonalReservations({
+      const data = await reserveApi.getMyReservations({
         pageSize: filterCondition?.pageSize || 10,
         pageOffset: filterCondition?.pageOffset
       })
