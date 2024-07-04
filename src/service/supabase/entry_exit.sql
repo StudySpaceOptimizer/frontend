@@ -57,7 +57,7 @@ END;
 $$ LANGUAGE plpgsql VOLATILE SECURITY INVOKER;
 
 -- 記錄學生進出場狀態
-CREATE OR REPLACE FUNCTION record_student_user_entry_exit(p_account TEXT) RETURNS VOID AS $$
+CREATE OR REPLACE FUNCTION record_student_entry_exit(p_account TEXT) RETURNS VOID AS $$
 DECLARE
     user_id UUID;
     p_email TEXT := p_account || '@mail.ntou.edu.tw';
@@ -77,7 +77,7 @@ END;
 $$ LANGUAGE plpgsql VOLATILE SECURITY INVOKER;
 
 -- 記錄校外人士進出場狀態
-CREATE OR REPLACE FUNCTION record_outsider_user_entry_exit(p_phone TEXT) RETURNS VOID AS $$
+CREATE OR REPLACE FUNCTION record_outsider_entry_exit(p_phone TEXT) RETURNS VOID AS $$
 DECLARE
     user_id UUID;
 BEGIN
