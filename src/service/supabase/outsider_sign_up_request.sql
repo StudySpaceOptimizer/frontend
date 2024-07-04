@@ -1,5 +1,5 @@
 -- 創建校外人士註冊申請表
-CREATE TABLE outsider_sign_up_request (
+CREATE TABLE IF NOT EXISTS outsider_sign_up_request (
     id SERIAL PRIMARY KEY,
     email TEXT NOT NULL,
     name TEXT NOT NULL,
@@ -23,7 +23,7 @@ USING (is_claims_admin())
 WITH CHECK (is_claims_admin());
 
 -- 允許任何人新增資料
-DROP POLICY IF EXISTS anyone_insert ON outsider_sign_up_request;
+DROP POLICY IF EXISTS allow_insert_on_outsider_sign_up_request ON outsider_sign_up_request;
 CREATE POLICY allow_insert_on_outsider_sign_up_request ON outsider_sign_up_request FOR INSERT
 WITH CHECK (true);
 
@@ -43,19 +43,19 @@ BEGIN
   -- 檢查電子郵件唯一性
   SELECT email INTO existing_email FROM user_profiles WHERE email = NEW.email;
   IF existing_email IS NOT NULL THEN
-    RAISE EXCEPTION 'D0001';
+    RAISE EXCEPTION '{"code":"D0001"}';
   END IF;
 
   -- 檢查電話號碼唯一性
   SELECT phone INTO existing_phone FROM user_profiles WHERE phone = NEW.phone;
   IF existing_phone IS NOT NULL THEN
-    RAISE EXCEPTION 'D0001';
+    RAISE EXCEPTION '{"code":"D0001"}';
   END IF;
 
   -- 檢查身份證號碼唯一性
   SELECT id_card INTO existing_id_card FROM user_profiles WHERE id_card = NEW.id_card;
   IF existing_id_card IS NOT NULL THEN
-    RAISE EXCEPTION 'D0001';
+    RAISE EXCEPTION '{"code":"D0001"}';
   END IF;
 
   RETURN NEW;
@@ -102,14 +102,14 @@ BEGIN
   -- 檢查電子郵件唯一性
   SELECT email INTO existing_email FROM user_profiles WHERE email = _email;
   IF existing_email IS NOT NULL THEN
-    RAISE EXCEPTION 'D0001';
+    RAISE EXCEPTION '{"code":"D0001"}';
   END IF;
 
   -- 檢查電話號碼唯一性
   IF _phone IS NOT NULL THEN
     SELECT phone INTO existing_phone FROM user_profiles WHERE phone = _phone;
     IF existing_phone IS NOT NULL THEN
-      RAISE EXCEPTION 'D0001';
+      RAISE EXCEPTION '{"code":"D0001"}';
     END IF;
   END IF;
 
@@ -117,7 +117,7 @@ BEGIN
   IF _id_card IS NOT NULL THEN
     SELECT id_card INTO existing_id_card FROM user_profiles WHERE id_card = _id_card;
     IF existing_id_card IS NOT NULL THEN
-      RAISE EXCEPTION 'D0001';
+      RAISE EXCEPTION '{"code":"D0001"}';
     END IF;
   END IF;
 END;

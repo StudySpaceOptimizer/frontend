@@ -84,7 +84,7 @@ CREATE OR REPLACE FUNCTION get_seat_active_reservations (p_seat_id INT DEFAULT N
 ) AS $$
 BEGIN
   IF p_seat_id IS NULL THEN
-    RAISE EXCEPTION 'P0001';
+    RAISE EXCEPTION '{"code":"P0001"}';
   END IF;
 
   RETURN QUERY

@@ -46,15 +46,20 @@ async function testReserveSuccess() {
   const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
 
-  const beginTime = new Date(tomorrow.setHours(0, 0, 0, 0))
-  const endTime = new Date(tomorrow.setHours(14, 0, 0, 0))
+  const beginTime = new Date(tomorrow.setHours(9, 0, 0, 0))
+  const endTime = new Date(tomorrow.setHours(8, 0, 0, 0))
   const seatID = 'A5'
   let reservationId
 
   try {
     reservationId = await supabaseReserve.reserve(seatID, beginTime, endTime)
-  } catch (e) {
+  } catch (e: any) {
+    // const jsonString = e.message
     console.log(e)
+
+    const parsedData = JSON.parse(e.message)
+
+    console.log(parsedData.code)
   } finally {
     if (reservationId) {
       await supabaseReserve.deleteReservation(reservationId)
@@ -358,4 +363,4 @@ async function getAllReservations() {
   }
 }
 
-await getAllReservations()
+// await getAllReservations()

@@ -74,11 +74,11 @@ BEGIN
        NEW.user_id != OLD.user_id OR
        NEW.seat_id != OLD.seat_id OR
        NEW.check_in_time != OLD.check_in_time THEN
-        RAISE EXCEPTION 'U0001';
+        RAISE EXCEPTION '{"code": "U0001"}';
     END IF;
 
     IF auth.uid() != OLD.user_id THEN
-        RAISE EXCEPTION 'U0001';
+        RAISE EXCEPTION '{"code": "U0001"}';
     END IF;
 
     RETURN NEW;
@@ -103,7 +103,7 @@ BEGIN
     END IF;
 
     IF NEW.check_in_time IS NULL THEN
-        RAISE EXCEPTION 'R0001';
+        RAISE EXCEPTION '{"code": "R0001"}';
     END IF;
 
     RETURN NEW;
@@ -125,17 +125,17 @@ BEGIN
 
     -- 檢查預約的開始時間和結束時間是否在同一天
     IF DATE(NEW.begin_time) != DATE(NEW.end_time) THEN 
-        RAISE EXCEPTION 'R0002';
+        RAISE EXCEPTION '{"code": "R0002"}';
     END IF;
 
     -- 檢查預約的結束時間是否晚於開始時間
     IF NEW.end_time <= NEW.begin_time THEN
-        RAISE EXCEPTION 'R0003';
+        RAISE EXCEPTION '{"code": "R0003"}';
     END IF;
 
     -- 如果是新增操作，進一步檢查預約開始時間必須大於當前時間
     IF TG_OP = 'INSERT' AND NEW.begin_time <= current_timestamp THEN
-        RAISE EXCEPTION 'R0004';
+        RAISE EXCEPTION '{"code": "R0004"}';
     END IF;
 
     RETURN NEW;
@@ -158,7 +158,7 @@ BEGIN
 
     -- 檢查選定座位是否可用
     IF NOT (SELECT available FROM seats WHERE id = NEW.seat_id) THEN
-        RAISE EXCEPTION 'R0005';
+        RAISE EXCEPTION '{"code": "R0005"}';
     END IF;
 
     -- 檢查預約時間是否與同一座位的其他預約重疊
@@ -168,7 +168,7 @@ BEGIN
         AND reservation_id <> NEW.id -- 確保不檢查當前行
         AND (NEW.begin_time, NEW.end_time) OVERLAPS (begin_time, end_time)
     ) THEN
-        RAISE EXCEPTION 'R0006';
+        RAISE EXCEPTION '{"code": "R0006"}';
     END IF;
 
     RETURN NEW;
@@ -219,11 +219,11 @@ BEGIN
     -- 判斷是否為工作日或周末，並檢查開放時間
     IF EXTRACT(ISODOW FROM NEW.begin_time) BETWEEN 1 AND 5 THEN -- 工作日
         IF NEW.begin_time::TIME < weekday_opening OR NEW.end_time::TIME > weekday_closing THEN
-            RAISE EXCEPTION 'RS0001';
+            RAISE EXCEPTION '{"code": "RS0001"}';
         END IF;
     ELSE -- 周末
         IF NEW.begin_time::TIME < weekend_opening OR NEW.end_time::TIME > weekend_closing THEN
-            RAISE EXCEPTION 'RS0002';
+            RAISE EXCEPTION '{"code": "RS0002"}';
         END IF;
     END IF;
 
@@ -231,11 +231,12 @@ BEGIN
     IF TG_OP = 'INSERT' THEN -- 開始、結束能被整除
         IF (EXTRACT(EPOCH FROM NEW.begin_time) / 60) % reservation_time_unit != 0 OR
            (EXTRACT(EPOCH FROM NEW.end_time) / 60) % reservation_time_unit != 0 THEN
-            RAISE EXCEPTION 'RS0003', reservation_time_unit;
+           
+            RAISE EXCEPTION '{"code": "RS0003", "data": ["%"]}', reservation_time_unit;
         END IF;
 
         IF reservation_duration > maximum_duration THEN
-            RAISE EXCEPTION 'RS0004', maximum_duration;
+            RAISE EXCEPTION '{"code":"RS0004", "data": ["%"]}', maximum_duration;
         END IF;
     END IF;
 
@@ -244,12 +245,12 @@ BEGIN
     -- 若不是管理員
     IF NOT is_claims_admin() THEN -- 檢查學生預約是否在可提前預約的日期內
         IF user_role = 'student' AND ((NEW.begin_time::DATE - CURRENT_DATE) > student_limit) THEN
-            RAISE EXCEPTION 'RS0005', student_limit;
+            RAISE EXCEPTION '{"code":"RS0005", "data": ["%"]}', student_limit;
         END IF;
 
         -- 檢查校外人士預約是否在可提前預約的日期內
         IF user_role = 'outsider' AND ((NEW.begin_time::DATE - CURRENT_DATE) > outsider_limit) THEN
-            RAISE EXCEPTION 'RS0006', outsider_limit;
+            RAISE EXCEPTION '{"code":"RS0006", "data": ["%"]}', outsider_limit;
         END IF;
     END IF;
 
@@ -276,7 +277,7 @@ BEGIN
         FROM active_closed_periods
         WHERE (NEW.begin_time, NEW.end_time) OVERLAPS (begin_time, end_time)
     ) THEN 
-        RAISE EXCEPTION 'RS0007';
+        RAISE EXCEPTION '{"code":"RS0007"}';
     END IF;
 
     RETURN NEW;
@@ -323,7 +324,7 @@ BEGIN
         AND end_time <= end_of_day
         AND end_time > next_time_unit -- 如果結束時間在下一個時間段之後，則視為未完成
     ) THEN 
-        RAISE EXCEPTION 'R0007';
+        RAISE EXCEPTION '{"code":"R0007"}';
     END IF;
 
     RETURN NEW;
@@ -346,7 +347,7 @@ BEGIN
 
     -- 檢查是否嘗試刪除的預約的開始時間在當前時間後
     IF (OLD.begin_time <= current_timestamp) THEN 
-        RAISE EXCEPTION 'R0008';
+        RAISE EXCEPTION '{"code":"R0008"}';
     END IF;
 
     RETURN OLD;

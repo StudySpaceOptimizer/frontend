@@ -39,7 +39,8 @@ export class SupabaseReserve implements Reserve {
 
     if (insertError) {
       console.log(insertError)
-      throw new Error(errorHandler(insertError.code))
+      // throw new Error(errorHandler(insertError.code))
+      throw new Error(insertError.message)
     } else {
       console.log(reservation)
       return reservation[0].id
