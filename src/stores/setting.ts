@@ -1,12 +1,14 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 
-import * as Api from '../api'
-import * as Type from '../types'
-import DependencyContainer from '../DependencyContainer'
+import * as Api from '@/api'
+import * as Type from '@/types'
+import DependencyContainer from '@/DependencyContainer'
 
 export const useSettingStore = defineStore('settings', () => {
+  const { t } = useI18n()
   const api = DependencyContainer.inject<Api.User>(Api.API_SERVICE.USER)
 
   const settings = ref<Type.SettingsData>()
@@ -15,7 +17,7 @@ export const useSettingStore = defineStore('settings', () => {
     try {
       settings.value = await api.getSettings()
     } catch (error: any) {
-      ElMessage.error(`取得設定失敗: ${error.message}`)
+      ElMessage.error(error.message)
     }
   }
 
@@ -23,9 +25,9 @@ export const useSettingStore = defineStore('settings', () => {
     try {
       await api.updateSettings(newSettings)
       settings.value = newSettings
-      ElMessage.success('更新設定成功')
+      ElMessage.success(t('account.updateSettingsSuccess'))
     } catch (error: any) {
-      ElMessage.error(`更新設定失敗: ${error.message}`)
+      ElMessage.error(error.message)
     }
   }
 

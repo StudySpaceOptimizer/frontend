@@ -61,3 +61,20 @@ export function getHourAndMinute(time?: Date): string | undefined {
   if (!time) return undefined
   return time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
 }
+
+export function isJsonString(str: string): boolean {
+  try {
+    JSON.parse(str)
+  } catch (e) {
+    return false
+  }
+  return true
+}
+
+export function errorHandler(errorMessage: string, t: (key: string, ...data: any[]) => string, defaultError: string = 'default'): string {
+  if (isJsonString(errorMessage)) {
+    const { code, data = [] } = JSON.parse(errorMessage);
+    return t(code, ...data);
+  }
+  return t(errorMessage) || t(defaultError);
+}

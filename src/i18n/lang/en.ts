@@ -32,7 +32,8 @@ export default {
     StairDoor: 'Stair Door',
     MainDoor: 'Main Door',
     MenToilet: "Men's Toilet",
-    Elevator: 'Elevator'
+    Elevator: 'Elevator',
+    selectOthers: 'Please select other seats'
   },
   profileView: {
     personalData: 'Personal Data',
@@ -52,7 +53,8 @@ export default {
 
     cancel: 'Cancel Reservation',
     cancelSuccess: 'Reservation canceled successfully',
-    cancelConfirmation: 'Are you sure you want to cancel the reservation for seat {seatID} on {date} from {beginTime} to {endTime}?',
+    cancelConfirmation:
+      'Are you sure you want to cancel the reservation for seat {seatID} on {date} from {beginTime} to {endTime}?',
 
     terminate: 'Early Termination',
     terminateSuccess: 'Termination successful',
@@ -76,6 +78,22 @@ export default {
     notSelectable: 'Not Selectable',
     cancelSelection: 'Cancel Selection',
     select: 'Select',
+
+    invalidTimeRange: 'Start time must be earlier than end time',
+    oneTimeRange: 'Only one time range can be selected',
+    cancelBookedSuccess: 'Reservation canceled successfully'
+  },
+  account: {
+    unauthorized: 'Unauthorized',
+    signInSuccess: 'Sign in successful',
+    signOutSuccess: 'Sign out successful',
+    signOutFailed: 'Sign out failed',
+    needSignIn: 'Please sign in first',
+    needAddDisplayName: 'You can modify your name in personal data',
+
+    checkSignInFailed: 'Failed to check sign in status',
+
+    updateSettingsSuccess: 'Update settings successful'
   },
   warning: 'Warning',
   confirm: 'Confirm',

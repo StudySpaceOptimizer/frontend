@@ -89,7 +89,7 @@ export function useReservation() {
       return transformReservations(data)
     } catch (error: any) {
       console.error(error)
-      ElMessage.error("無法取得個人預約記錄")
+      ElMessage.error(error.message)
       return []
     }
   }

@@ -78,7 +78,7 @@ function updateSeatColor(status?: string) {
 
 function seatHandler(): void {
   if (!isSeat) {
-    ElMessage.warning('請選擇其他座位')
+    ElMessage.warning(t('seat.selectOthers'))
     return
   }
 

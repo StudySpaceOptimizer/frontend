@@ -1,9 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
+// import { useI18n } from 'vue-i18n'
+
 import HomeView from '@/views/HomeView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import AdminViewVue from '@/views/AdminView.vue'
 import { useAccountStore } from '@/stores/account'
 import { ElMessage } from 'element-plus'
+import { translate } from '@/i18n'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -62,6 +65,7 @@ const router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
   const accountStore = useAccountStore();
+  // const { t } = useI18n();
 
   if (to.matched.some(record => record.meta.requiresAuth)) {
     await accountStore.checkIsSignIn();
@@ -77,7 +81,7 @@ router.beforeEach(async (to, from, next) => {
     if (accountStore.isSignIn && accountStore.adminRole === 'admin') {
       next();
     } else {
-      ElMessage.error('權限不足');
+      ElMessage.error(translate('account.unauthorized'));
       next({ name: 'home' });
     }
   } else {

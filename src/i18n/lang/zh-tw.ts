@@ -32,7 +32,8 @@ export default {
     StairDoor: '樓梯門',
     MainDoor: '大門',
     MenToilet: '男廁',
-    Elevator: '電梯'
+    Elevator: '電梯',
+    selectOthers: '請選擇其他座位',
   },
   profileView: {
     personalData: '個人資料',
@@ -76,6 +77,23 @@ export default {
     notSelectable: '不可選擇',
     cancelSelection: '取消選擇',
     select: '選擇',
+
+    invalidTimeRange: '開始時間不得晚於結束時間',
+    oneTimeRange: '只能選擇一個時段',
+
+    cancelBookedSuccess: '取消預約成功',
+  },
+  account: {
+    unauthorized: '授權不足',
+    signInSuccess: '登入成功',
+    signOutSuccess: '登出成功',
+    signOutFailed: '登出失敗',
+    needSignIn: '請先登入',
+    needAddDisplayName: '可以到個人資料修改名稱',
+
+    checkSignInFailed: '檢查登入狀態失敗',
+
+    updateSettingsSuccess: '更新設定成功',
   },
   warning: '警告',
   confirm: '確認',

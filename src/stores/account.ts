@@ -1,6 +1,7 @@
 import { reactive, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 
 import * as API from '@/api'
 import DependencyContainer from '@/DependencyContainer'
@@ -10,6 +11,7 @@ export const useAccountStore = defineStore(
   'account',
   () => {
     const settingStore = useSettingStore()
+    const { t } = useI18n()
     const api = DependencyContainer.inject<API.User>(API.API_SERVICE.USER)
     const isSignIn = ref(false)
     const userDisplayName = ref('guest')
@@ -34,10 +36,10 @@ export const useAccountStore = defineStore(
         userId.value = await api.studentSignIn(email, password)
         isSignIn.value = true
         toggleDialog()
-        ElMessage.success('登入成功')
+        ElMessage.success(t('account.signInSuccess'))
       } catch (error: any) {
         isSignIn.value = false
-        ElMessage.error(`登入失敗: ${error.message}`)
+        ElMessage.error(error.message)
       }
     }
 
@@ -61,23 +63,23 @@ export const useAccountStore = defineStore(
         isSignIn.value = false
         userDisplayName.value = ''
         userId.value = ''
-        ElMessage.success('登出成功')
+        ElMessage.success(t('account.signOutSuccess'))
       } catch (error) {
-        ElMessage.error('登出失敗')
+        ElMessage.error(t('account.signOutFailed'))
       }
     }
 
     async function checkIsSignIn(): Promise<void> {
       try {
         isSignIn.value = await api.checkIsSignIn()
-      } catch (error) {
-        ElMessage.error('登入狀態檢查失敗')
+      } catch (error: any) {
+        ElMessage.error(error.message)
       }
 
       if (!isSignIn.value) {
         userId.value = ''
         userDisplayName.value = ''
-        ElMessage.error('請先登入')
+        ElMessage.error(t('account.needSignIn'))
       }
     }
 
@@ -86,8 +88,8 @@ export const useAccountStore = defineStore(
         const userData = await api.getMyUserData()
         updateUserProfile(userData)
         settingStore.getSettings()
-      } catch (error) {
-        ElMessage.error('取得使用者資料失敗')
+      } catch (error: any) {
+        ElMessage.error(error.message)
       }
     }
     
@@ -96,7 +98,7 @@ export const useAccountStore = defineStore(
       userRole.value = userData.userRole ?? 'student'
       adminRole.value = userData.adminRole ?? 'non-admin'
       if (userData.name === undefined) {
-        ElMessage.warning('可以到個人資料修改名稱')
+        ElMessage.warning(t('account.needAddDisplayName'))
       }
     }
     
