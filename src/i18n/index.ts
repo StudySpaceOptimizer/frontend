@@ -4,7 +4,7 @@ import en from './lang/en'
 import zhTw from './lang/zh-tw'
 
 const i18n = createI18n({
-  locale: sessionStorage.getItem("lang")|| 'zh-tw',
+  locale: sessionStorage.getItem('lang') || 'zh-tw',
   allowComposition: true,
   legacy: false,
   messages: {
@@ -12,5 +12,9 @@ const i18n = createI18n({
     'zh-tw': zhTw
   }
 })
+
+export function translate(key: string, values?: any): string {
+  return i18n.global.t(key, values) as string
+}
 
 export default i18n

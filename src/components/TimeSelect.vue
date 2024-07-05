@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useFilterStore } from '@/stores/filter'
 import { useSettingStore } from '@/stores/setting'
@@ -18,6 +19,7 @@ const props = defineProps<{
   disabledTimes: string[]
 }>()
 
+const { t } = useI18n()
 const { getFilter } = useFilterStore()
 const { getReservationTimeUnit, getMaximumReservationDuration } = useSettingStore()
 function isDisabledTime(beginTime: string, endTime: string): boolean {
@@ -143,7 +145,7 @@ function updateRangeTimeDisabled() {
 const emit = defineEmits(['selectTimeRange'])
 function handlerTimeSelect(timeRange: TimeRange): void {
   if (!setBeginAndEndRange(timeRange)) {
-    ElMessage.warning('你ㄧ次只能選擇一個連續區間')
+    ElMessage.warning(t('bookingModel.oneTimeRange'))
     return
   }
   updateRangeTimeSelected()

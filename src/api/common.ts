@@ -1,4 +1,5 @@
-import { useI18n } from 'vue-i18n'
+import { translate } from "@/i18n"
+import { isJsonString } from "@/utils"
 
 export function toLocalDateTime(time: string): Date {
   // 將 ISO 字符串轉為 UTC Date 對象
@@ -17,10 +18,9 @@ export function parseTimeString(timeStr: string): { hours: number; minutes: numb
 }
 
 export function errorHandler(errorMessage: string): string {
-  const { t } = useI18n()
-  const message = t(errorMessage)
-  if (!message) {
-    return t('default')
+  if (isJsonString(errorMessage)) {
+    const { code, data = [] } = JSON.parse(errorMessage);
+    return translate(code, ...data);
   }
-  return message
+  return translate(errorMessage) || translate('default');
 }

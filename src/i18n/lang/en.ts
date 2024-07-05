@@ -32,7 +32,8 @@ export default {
     StairDoor: 'Stair Door',
     MainDoor: 'Main Door',
     MenToilet: "Men's Toilet",
-    Elevator: 'Elevator'
+    Elevator: 'Elevator',
+    selectOthers: 'Please select other seats'
   },
   profileView: {
     personalData: 'Personal Data',
@@ -52,7 +53,8 @@ export default {
 
     cancel: 'Cancel Reservation',
     cancelSuccess: 'Reservation canceled successfully',
-    cancelConfirmation: 'Are you sure you want to cancel the reservation for seat {seatID} on {date} from {beginTime} to {endTime}?',
+    cancelConfirmation:
+      'Are you sure you want to cancel the reservation for seat {seatID} on {date} from {beginTime} to {endTime}?',
 
     terminate: 'Early Termination',
     terminateSuccess: 'Termination successful',
@@ -76,6 +78,22 @@ export default {
     notSelectable: 'Not Selectable',
     cancelSelection: 'Cancel Selection',
     select: 'Select',
+
+    invalidTimeRange: 'Start time must be earlier than end time',
+    oneTimeRange: 'Only one time range can be selected',
+    cancelBookedSuccess: 'Reservation canceled successfully'
+  },
+  account: {
+    unauthorized: 'Unauthorized',
+    signInSuccess: 'Sign in successful',
+    signOutSuccess: 'Sign out successful',
+    signOutFailed: 'Sign out failed',
+    needSignIn: 'Please sign in first',
+    needAddDisplayName: 'You can modify your name in personal data',
+
+    checkSignInFailed: 'Failed to check sign in status',
+
+    updateSettingsSuccess: 'Update settings successful'
   },
   warning: 'Warning',
   confirm: 'Confirm',
@@ -99,10 +117,10 @@ export default {
   R0008: 'Only reservations that have not yet started can be deleted',
   RS0001: 'Reservation time must be within the working hours on weekdays',
   RS0002: 'Reservation time must be within the opening hours on weekends',
-  RS0003: 'Reservation time must be in % minute increments',
-  RS0004: 'Reservation duration must be less than % hours',
-  RS0005: 'Students can only make reservations up to % days in advance',
-  RS0006: 'Non-school individuals can only make reservations up to % days in advance',
+  RS0003: 'Reservation time must be in {data} minute increments',
+  RS0004: 'Reservation duration must be less than {data} hours',
+  RS0005: 'Students can only make reservations up to {data} days in advance',
+  RS0006: 'Non-school individuals can only make reservations up to {data} days in advance',
   RS0007: 'Reservation time overlaps with closed periods',
   P0001: 'Parameter format error',
 

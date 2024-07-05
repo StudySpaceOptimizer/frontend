@@ -14,8 +14,8 @@ export function useProfile() {
   const getUserProfile = async (): Promise<Type.UserData | undefined> => {
     try {
       return await userApi.getMyUserData()
-    } catch (error) {
-      ElMessage.error(t('profileView.fetchProfileFailed'))
+    } catch (error: any) {
+      ElMessage.error(error.message)
     }
 
     return undefined
@@ -26,8 +26,8 @@ export function useProfile() {
       await userApi.updateProfile(data.id, data.name, data.phone, data.idCard)
       await accountStore.fetchUserProfile()
       ElMessage.success(t('profileView.saveChangesSuccess'))
-    } catch (error) {
-      ElMessage.error(t('profileView.saveChangesFailed'))
+    } catch (error: any) {
+      ElMessage.error(error.message)
     }
   }
 

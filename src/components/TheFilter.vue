@@ -116,7 +116,7 @@ const filter = reactive<Filter>({
 function doFilter(): void {
   if (!filter.beginTime || !filter.endTime) return
   if (filter.beginTime > filter.endTime) {
-    ElMessage.error('開始時間不得晚於結束時間')
+    ElMessage.error(t('filter.invalidTimeRange'))
     return
   } else if (filter.beginTime.getTime() === filter.endTime.getTime()) {
     return

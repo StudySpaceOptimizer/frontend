@@ -32,7 +32,8 @@ export default {
     StairDoor: '樓梯門',
     MainDoor: '大門',
     MenToilet: '男廁',
-    Elevator: '電梯'
+    Elevator: '電梯',
+    selectOthers: '請選擇其他座位',
   },
   profileView: {
     personalData: '個人資料',
@@ -76,6 +77,23 @@ export default {
     notSelectable: '不可選擇',
     cancelSelection: '取消選擇',
     select: '選擇',
+
+    invalidTimeRange: '開始時間不得晚於結束時間',
+    oneTimeRange: '只能選擇一個時段',
+
+    cancelBookedSuccess: '取消預約成功',
+  },
+  account: {
+    unauthorized: '授權不足',
+    signInSuccess: '登入成功',
+    signOutSuccess: '登出成功',
+    signOutFailed: '登出失敗',
+    needSignIn: '請先登入',
+    needAddDisplayName: '可以到個人資料修改名稱',
+
+    checkSignInFailed: '檢查登入狀態失敗',
+
+    updateSettingsSuccess: '更新設定成功',
   },
   warning: '警告',
   confirm: '確認',
@@ -99,10 +117,10 @@ export default {
   R0008: '只能刪除尚未開始的預約',
   RS0001: '預約時間必須在工作日的開放時間',
   RS0002: '預約時間必須在周末的開放時間內',
-  RS0003: '預約時間必須以 % 分鐘為單位',
-  RS0004: '預約時長必須少於 % 小時',
-  RS0005: '學生只能提前 % 天進行預約',
-  RS0006: '校外人士只能提前 % 天進行預約',
+  RS0003: '預約時間必須以 {data} 分鐘為單位',
+  RS0004: '預約時長必須少於 {data} 小時',
+  RS0005: '學生只能提前 {data} 天進行預約',
+  RS0006: '校外人士只能提前 {data} 天進行預約',
   RS0007: '預約時間與關閉時段重疊',
   P0001: '參數格式錯誤',
 

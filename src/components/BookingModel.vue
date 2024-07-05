@@ -68,7 +68,7 @@ async function handleBooking(): Promise<void> {
     clearTimeSetting()
     await fetchSeatsStatus()
   } catch (e: any) {
-    ElMessage.error('預約失敗: ' + e.message)
+    ElMessage.error(e.message)
   }
 }
 
@@ -76,7 +76,7 @@ async function fetchSeatsStatus() {
   try {
     await seatStore.fetchSeatsStatus(filterStore.getFilter(route.name?.toString() || 'default'))
   } catch (e: any) {
-    ElMessage.error('獲取座位狀態失敗: ' + e.message)
+    ElMessage.error(e.message)
   }
 }
 
@@ -109,7 +109,7 @@ watch(dialogVisible, async (value) => {
       })
     } catch (e: any) {
       console.error('獲取座位預約紀錄失敗: ', e.message)
-      ElMessage.error('獲取座位預約紀錄失敗，該座位可能已被預約')
+      ElMessage.error(e.message)
     }
   }
 })

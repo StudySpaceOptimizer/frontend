@@ -27,10 +27,10 @@ container.register(api.API_SERVICE.USER, api.SupabaseUser)
 container.register(api.API_SERVICE.SEAT, api.SupabaseSeat)
 container.register(api.API_SERVICE.RESERVE, api.SupabaseReserve)
 
+app.use(i18n)
 app.use(pinia)
 app.use(router)
 app.use(VueKonva)
 app.use(ElementPlus)
-app.use(i18n)
 
 app.mount('#app')

@@ -1,7 +1,7 @@
 import type * as Types from '../types'
 import { supabase } from '../service/supabase/supabase'
 import { seatConverterFromDB, seatConverterToDB } from '../utils'
-import { toLocalDateTime, parseTimeString, errorHandler } from './common'
+import { parseTimeString, errorHandler } from './common'
 import type { Seat } from './index'
 import { useSettingStore } from '../stores/setting'
 
@@ -18,7 +18,7 @@ export class SupabaseSeat implements Seat {
 
     // 檢查時間參數是否同時提供或同時不提供
     if (Boolean(beginTime) !== Boolean(endTime)) {
-      throw new Error('seat01')
+      throw new Error(errorHandler('seat01'))
     }
 
     /*
@@ -28,7 +28,7 @@ export class SupabaseSeat implements Seat {
     */
     const settingStore = useSettingStore()
     if (!settingStore.settings) {
-      throw new Error('default')
+      throw new Error(errorHandler('default'))
     }
     const now = new Date()
     const isWeekend = now.getDay() === 0 || now.getDay() === 6
@@ -76,7 +76,7 @@ export class SupabaseSeat implements Seat {
     const seatData: { [key: string]: Types.SeatData } = {}
 
     if (!seatInfo) {
-      throw new Error('seat02')
+      throw new Error(errorHandler('seat02'))
     }
 
     seatInfo.forEach((seat: any) => {
@@ -206,7 +206,7 @@ export class SupabaseSeat implements Seat {
    */
   async updateSeat(seatId: string, available: boolean, otherInfo?: string): Promise<void> {
     const id = seatConverterToDB(seatId)
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('seats')
       .update({
         available: available,

@@ -1,6 +1,6 @@
-import type * as Types from '../types'
-import { supabase } from '../service/supabase/supabase'
-import { seatConverterToDB, seatConverterFromDB } from '../utils'
+import type * as Types from '@/types'
+import { supabase } from '@/service/supabase/supabase'
+import { seatConverterToDB, seatConverterFromDB } from '@/utils'
 import { errorHandler } from './common'
 import type { Reserve } from './index'
 
@@ -39,8 +39,7 @@ export class SupabaseReserve implements Reserve {
 
     if (insertError) {
       console.log(insertError)
-      // throw new Error(errorHandler(insertError.code))
-      throw new Error(insertError.message)
+      throw new Error(errorHandler(insertError.message))
     } else {
       console.log(reservation)
       return reservation[0].id
