@@ -454,11 +454,18 @@ BEGIN
         user_data.end_at
     FROM
         reservations res
-        CROSS JOIN LATERAL get_user_data() AS user_data
+        CROSS JOIN LATERAL get_user_data(
+            2147483647, 
+            NULL, 
+            filter_user_id, 
+            NULL, 
+            filter_user_role, 
+            NULL, 
+            NULL, 
+            NULL
+        ) AS user_data
     WHERE
         (res.user_id = user_data.id) AND
-        (filter_user_id IS NULL OR user_data.id = filter_user_id) AND
-        (filter_user_role IS NULL OR user_data.user_role = filter_user_role) AND
         (filter_seat_id IS NULL OR res.seat_id = filter_seat_id) AND
         (filter_begin_time_start IS NULL OR res.begin_time >= filter_begin_time_start) AND
         (filter_begin_time_end IS NULL OR res.begin_time <= filter_begin_time_end) AND
@@ -559,11 +566,18 @@ CREATE OR REPLACE FUNCTION get_active_reservations (
         user_data.end_at
     FROM
         active_reservations res
-        CROSS JOIN LATERAL get_user_data() AS user_data
+        CROSS JOIN LATERAL get_user_data(
+            2147483647, 
+            NULL, 
+            filter_user_id, 
+            NULL, 
+            filter_user_role, 
+            NULL, 
+            NULL, 
+            NULL
+        ) AS user_data
     WHERE
         (res.user_id = user_data.id) AND
-        (filter_user_id IS NULL OR user_data.id = filter_user_id) AND
-        (filter_user_role IS NULL OR user_data.user_role = filter_user_role) AND
         (filter_seat_id IS NULL OR res.seat_id = filter_seat_id) AND
         (filter_begin_time_start IS NULL OR res.begin_time >= filter_begin_time_start) AND
         (filter_begin_time_end IS NULL OR res.begin_time <= filter_begin_time_end) AND

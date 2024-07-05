@@ -218,7 +218,8 @@ BEGIN
     (filter_is_in IS NULL OR up.is_in = filter_is_in) AND
     (filter_name IS NULL OR up.name ILIKE '%' || filter_name || '%')
   ORDER BY up.id  -- 添加排序以確保結果一致
-  LIMIT page_size OFFSET page_offset;
+  LIMIT
+    page_size OFFSET page_offset;
 
 END;
 $$ LANGUAGE plpgsql STABLE SECURITY INVOKER;

@@ -122,7 +122,7 @@ BEGIN
         u.reason AS u_reason,
         u.end_at AS u_end_at
       FROM
-        get_user_data(10, 0, res.user_id, NULL, NULL, NULL, NULL, NULL) u
+        get_user_data(2147483647, 0, res.user_id, NULL, NULL, NULL, NULL, NULL) u
     ) AS user_data
   WHERE res.seat_id = p_seat_id;
 END;
