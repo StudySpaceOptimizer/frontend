@@ -6,8 +6,7 @@ import { errorHandler } from './common'
 export class SupabaseUser implements User {
   async verifyWithPOP3(email: string, password: string): Promise<string> {
     const res = await fetch(
-      '/authenticate', // 測試的時候改成 http://localhost:8080
-      // 'http://localhost:8080/authenticate',
+      '/authenticate',
       {
         method: 'POST',
         headers: {
