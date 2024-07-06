@@ -70,11 +70,3 @@ export function isJsonString(str: string): boolean {
   }
   return true
 }
-
-export function errorHandler(errorMessage: string, t: (key: string, ...data: any[]) => string, defaultError: string = 'default'): string {
-  if (isJsonString(errorMessage)) {
-    const { code, data = [] } = JSON.parse(errorMessage);
-    return t(code, ...data);
-  }
-  return t(errorMessage) || t(defaultError);
-}
