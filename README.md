@@ -320,7 +320,7 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
 
 ### 使用者 Claims 函數：
 
-請參閱 [github](https://github.com/supabase-community/supabase-custom-claims/blob/main/README.md)
+請參閱 [supabase-custom-claims](https://github.com/supabase-community/supabase-custom-claims/blob/main/README.md)
 
 ### 用戶進出場記錄函數
 
