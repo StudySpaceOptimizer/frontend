@@ -86,7 +86,8 @@ const isCompleteSelectTime = computed(() => {
 
 function getTime(time: string) {
   const dateTime = new Date(time)
-  return dateTime.toLocaleTimeString('en', {
+  dateTime.setHours(dateTime.getHours() + 8)
+  return dateTime.toLocaleTimeString('zh-tw', {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false
@@ -102,8 +103,12 @@ watch(dialogVisible, async (value) => {
 
       disabledTimes.value = []
       reservationsTime.forEach((reservation: any) => {
+        console.log(reservation)
         const beginTime = getTime(reservation.beginTime)
         const endTime = getTime(reservation.endTime)
+
+        console.log('beginTime: ', beginTime)
+        console.log('endTime: ', endTime)
 
         disabledTimes.value.push(`${beginTime}-${endTime}`)
       })

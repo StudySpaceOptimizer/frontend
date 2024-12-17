@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, watchEffect } from 'vue'
 import { ElMessage } from 'element-plus'
-import { useI18n } from 'vue-i18n';
+import { useI18n } from 'vue-i18n'
 
 import { useSeatStore } from '@/stores/seat'
 
@@ -31,9 +31,18 @@ let isSeat = false
 
 let originText = ''
 watchEffect(async () => {
+  if (components.value.length < 2) {
+    return
+  }
+
   if (originText === '') {
     originText = components.value[1].config.text
   }
+
+  if (originText === undefined) {
+    return
+  }
+
   if (!checkIsSeat()) {
     components.value[1].config.text = t(`seat.${originText}`)
     setSeatStatus(false, '#354876')
@@ -43,11 +52,11 @@ watchEffect(async () => {
   const seatStatus = seatStore.seatsStatus.find(
     (seat) => seat.seatCode === components.value[1].config.text
   )
-  if (!seatStatus || seatStatus.status !== 'available') {
+  if (!seatStatus || seatStatus.status === 'unavailable') {
     setSeatStatus(false, '#808080')
     return
   }
-
+  
   isSeat = true
   updateSeatColor(seatStatus.status)
 })

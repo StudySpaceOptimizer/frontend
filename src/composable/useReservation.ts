@@ -10,27 +10,25 @@ export function useReservation() {
   const reserveApi = DependencyContainer.inject<Api.Reserve>(Api.API_SERVICE.RESERVE)
 
   const reservations = ref<any[]>([])
+  const count = ref(0)
 
   const transformReservations = (res: any[]) => {
     return res.map((item) => {
       delete item.user
+      console.log(item)
 
       const nowTime = new Date()
       const beginTime = new Date(item.beginTime)
       const endTime = new Date(item.endTime)
 
+      beginTime.setHours(beginTime.getHours() + 8)
+      endTime.setHours(endTime.getHours() + 8)
+
       if (beginTime > nowTime) {
         item.actions = [
           {
             text: t('profileView.cancel'),
-            handler: () => cancelBooking(item.id)
-          }
-        ]
-      } else if (beginTime < nowTime && nowTime < endTime && !item.exit) {
-        item.actions = [
-          {
-            text: t('profileView.terminate'),
-            handler: () => terminateBooking(item.id)
+            handler: () => cancelBooking(item.reservationId)
           }
         ]
       }
@@ -43,9 +41,9 @@ export function useReservation() {
   }
 
   const cancelBooking = async (id: string) => {
-    const reservation = reservations.value.find((item) => item.id === id)
+    const reservation = reservations.value.find((item) => item.reservationId === id)
 
-    const confirmText = `${t('profileView.cancelConfirmation', { seatID: reservation.seatID, date: reservation.date, beginTime: reservation.beginTime, endTime: reservation.endTime })}`
+    const confirmText = `${t('profileView.cancelConfirmation', { seatID: reservation.seatId, date: reservation.date, beginTime: reservation.beginTime, endTime: reservation.endTime })}`
 
     await ElMessageBox.confirm(confirmText, t('warning'), {
       confirmButtonText: t('confirm'),
@@ -64,20 +62,7 @@ export function useReservation() {
   }
 
   const terminateBooking = async (id: string) => {
-    const { t } = useI18n()
-    await ElMessageBox.confirm(t('profileView.terminateConfirmation'), t('warning'), {
-      confirmButtonText: t('confirm'),
-      cancelButtonText: t('cancel'),
-      type: 'warning'
-    }).then(async () => {
-      try {
-        await reserveApi.terminateReservation(id)
-        updateReservationData(1)
-        ElMessage.success(t('profileView.terminateSuccess'))
-      } catch (error: any) {
-        ElMessage.error(error.message)
-      }
-    })
+    throw new Error('Not implemented')
   }
 
   const getReservationData = async (filterCondition?: any) => {
@@ -86,7 +71,8 @@ export function useReservation() {
         pageSize: filterCondition?.pageSize || 10,
         pageOffset: filterCondition?.pageOffset
       })
-      return transformReservations(data)
+      count.value = data.total
+      return transformReservations(data.data)
     } catch (error: any) {
       console.error(error)
       ElMessage.error(error.message)
@@ -102,12 +88,7 @@ export function useReservation() {
   }
 
   const getCount = async () => {
-    try {
-      return await reserveApi.getPersonalReservationsCount()
-    } catch (error: any) {
-      console.error(error)
-      return 0
-    }
+    return count.value
   }
 
   return { reservations, getReservationData, updateReservationData, getCount }

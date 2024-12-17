@@ -4,6 +4,7 @@ export { SupabaseUser } from './user'
 export { SupabaseReserve } from './reserve'
 export { LaravelUser } from './user2'
 export { LaravelSeat } from './seat2'
+export { LaravelReserve } from './reserve2'
 import type * as Types from '../types'
 
 export interface User {
@@ -29,16 +30,12 @@ export interface Seat {
 }
 
 export interface Reserve {
-  reserve(seatId: string, beginTime: Date, endTime: Date): Promise<string>
-  reserveForUser(idCard: string, seatId: string, beginTime: Date, endTime: Date): Promise<string>
+  reserve(seatCode: string, beginTime: Date, endTime: Date): Promise<string>
   getReservations(
     options?: Types.PageFilter & Types.ReservationFilter
   ): Promise<Types.Reservation[]>
-  getMyReservations(options?: Types.PageFilter): Promise<Types.Reservation[]>
-  getPersonalReservationsCount(): Promise<number>
-  getAllReservationsCount(): Promise<number>
+  getMyReservations(options?: Types.PageFilter): Promise<any>
   deleteReservation(id: string): Promise<void>
-  terminateReservation(id: string): Promise<void>
 }
 
 export const API_SERVICE = {

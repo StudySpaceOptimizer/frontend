@@ -15,7 +15,8 @@ export class LaravelSeat implements Seat {
 
     const res = await fetch(`/api/seats?${params.toString()}`)
     if (!res.ok) {
-      throw new Error('Failed to get seat data')
+      const { error } = await res.json()
+      throw new Error(error)
     }
 
     return await res.json()
@@ -30,10 +31,7 @@ export class LaravelSeat implements Seat {
     const reservations = await res.json()
     return {
       seatCode,
-      reservations: reservations.map((reservation: any) => ({
-        beginTime: parseTimeString(reservation.beginTime),
-        endTime: parseTimeString(reservation.endTime)
-      }))
+      reservations: reservations
     }
   }
 
