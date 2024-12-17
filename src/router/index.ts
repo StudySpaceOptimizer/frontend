@@ -59,26 +59,25 @@ const router = createRouter({
           component: () => import('@/views/admin/BookingView.vue')
         }
       ]
+    },
+    {
+      path: '/oauth/callback',
+      name: 'oauth-callback',
+      component: () => import('@/views/OAuthCallbackView.vue')
     }
   ]
 })
 
 router.beforeEach(async (to, from, next) => {
   const accountStore = useAccountStore();
-  // const { t } = useI18n();
-
   if (to.matched.some(record => record.meta.requiresAuth)) {
-    await accountStore.checkIsSignIn();
-
     if (accountStore.isSignIn) {
       next();
     } else {
       next({ name: 'home' });
     }
   } else if (to.matched.some(record => record.meta.requiresAdmin)) {
-    await accountStore.checkIsSignIn();
-
-    if (accountStore.isSignIn && accountStore.adminRole === 'admin') {
+    if (accountStore.isSignIn && accountStore.role === 'admin') {
       next();
     } else {
       ElMessage.error(translate('account.unauthorized'));

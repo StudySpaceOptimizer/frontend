@@ -14,47 +14,29 @@ export const useAccountStore = defineStore(
     const { t } = useI18n()
     const api = DependencyContainer.inject<API.User>(API.API_SERVICE.USER)
     const isSignIn = ref(false)
-    const userDisplayName = ref('guest')
-    const userRole = ref('student')
-    const adminRole = ref('non-admin')
+    const userDisplayName = ref('')
+    const role = ref('user')
+    const userEmail = ref('')
 
-    const userId = ref('')
-
-    const dialogStatus = reactive({
-      signIn: false,
-      signUp: false
-    })
-
-    function toggleDialog(dialog?: 'signIn' | 'signUp'): void {
-      for (const key in dialogStatus) {
-        dialogStatus[key as keyof typeof dialogStatus] = key == dialog
-      }
+    async function signIn(): Promise<void> {
+      const clientId = import.meta.env.VITE_OAUTH_CLIENT_ID
+      const redirectUri = encodeURIComponent(import.meta.env.VITE_OAUTH_REDIRECT_URI)
+      const authUrl = import.meta.env.VITE_OAUTH_AUTH_URL
+    
+      const url = `${authUrl}?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=profile`
+    
+      window.location.href = url;
     }
 
-    async function signIn({ email, password }: { email: string; password: string }): Promise<void> {
+    async function oAuthCallback(code: string): Promise<void> {
       try {
-        userId.value = await api.studentSignIn(email, password)
+        await api.oAuthCallback(code)
         isSignIn.value = true
-        toggleDialog()
+        fetchUserProfile()
         ElMessage.success(t('account.signInSuccess'))
       } catch (error: any) {
-        isSignIn.value = false
-        ElMessage.error(error.message)
+        ElMessage.error(t('account.signInFailed'))
       }
-    }
-
-    async function outsiderSignUp({
-      name,
-      phone,
-      idCard,
-      email
-    }: {
-      name: string
-      phone: string
-      idCard: string
-      email: string
-    }): Promise<void> {
-      throw new Error('尚未開放註冊校外人士')
     }
 
     function signOut(): void {
@@ -62,30 +44,17 @@ export const useAccountStore = defineStore(
         api.signOut()
         isSignIn.value = false
         userDisplayName.value = ''
-        userId.value = ''
+        userEmail.value = ''
         ElMessage.success(t('account.signOutSuccess'))
       } catch (error) {
         ElMessage.error(t('account.signOutFailed'))
       }
     }
 
-    async function checkIsSignIn(): Promise<void> {
-      try {
-        isSignIn.value = await api.checkIsSignIn()
-      } catch (error: any) {
-        ElMessage.error(error.message)
-      }
-
-      if (!isSignIn.value) {
-        userId.value = ''
-        userDisplayName.value = ''
-        ElMessage.error(t('account.needSignIn'))
-      }
-    }
-
     async function fetchUserProfile() {
       try {
         const userData = await api.getMyUserData()
+        console.log(userData)
         updateUserProfile(userData)
         settingStore.getSettings()
       } catch (error: any) {
@@ -94,33 +63,29 @@ export const useAccountStore = defineStore(
     }
     
     function updateUserProfile(userData: any) {
-      userDisplayName.value = userData.name ?? 'guest'
-      userRole.value = userData.userRole ?? 'student'
-      adminRole.value = userData.adminRole ?? 'non-admin'
+      userEmail.value = userData.email
+      userDisplayName.value = userData.name
+      role.value = userData.role
       if (userData.name === undefined) {
         ElMessage.warning(t('account.needAddDisplayName'))
       }
     }
     
     watch(isSignIn, (newValue, oldValue) => {
-      if (!oldValue && newValue && userId.value) {
+      if (!oldValue && newValue && userEmail.value) {
         fetchUserProfile()
       }
     })
 
     return {
       isSignIn,
+      role,
       userDisplayName,
-      userRole,
-      adminRole,
-      dialogStatus,
-      userId,
+      userId: userEmail,
 
       signIn,
+      oAuthCallback,
       signOut,
-      checkIsSignIn,
-      outsiderSignUp,
-      toggleDialog,
       fetchUserProfile
     }
   },

@@ -1,5 +1,5 @@
 export default {
-  system: '預約系統',
+  system: '國立陽明交通大學 座位預約系統',
   navbar: {
     signIn: '登入',
     signOut: '登出',

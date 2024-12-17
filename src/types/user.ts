@@ -1,15 +1,10 @@
-export type userRole = 'student' | 'outsider'
-export type adminRole = 'admin' | 'assistant'
+export type userRole = 'user' | 'admin'
 
 export interface UserData {
-  id: string
   email: string
-  userRole: userRole
-  adminRole?: adminRole
+  role: userRole
   isIn: boolean
   name?: string
-  phone?: string
-  idCard?: string
   point: number
   ban?: {
     reason: string

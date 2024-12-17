@@ -7,8 +7,6 @@ import en from 'element-plus/es/locale/lang/en'
 import { useLangStore } from '@/stores/lang'
 import TheFooter from '@/components/TheFooter.vue'
 import TheNavbar from '@/components/TheNavbar.vue'
-import SignInModal from '@/components/SignInModal.vue'
-import SignUpModal from '@/components/SignUpModal.vue'
 
 const langStore = useLangStore()
 const language = computed(() => langStore.lang)
@@ -25,10 +23,6 @@ const langType = {
       <RouterView />
     </main>
     <TheFooter />
-
-    <!-- Dialog -->
-    <SignInModal />
-    <SignUpModal />
   </el-config-provider>
 </template>
 

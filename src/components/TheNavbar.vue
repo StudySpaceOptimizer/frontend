@@ -11,10 +11,11 @@ const { t } = useI18n()
 const router = useRouter()
 const accountStore = useAccountStore()
 const langStore = useLangStore()
+
 const language = computed(() => langStore.lang)
 const activeIndex = ref('/')
 
-const langType = {
+const langType: Record<LangEnum, string> = {
   'zh-tw': '中文',
   en: 'English'
 }
@@ -27,6 +28,20 @@ function signOutHandler() {
 function handleCommand(command: LangEnum) {
   langStore.setLang(command)
 }
+
+function signInHandler() {
+  accountStore.signIn()
+}
+
+const userTitle = computed(() => {
+  return t('navbar.title', {
+    name: accountStore.userDisplayName
+  })
+})
+
+const selectedLanguage = computed(() => {
+  return langType[language.value]
+})
 </script>
 
 <template>
@@ -37,27 +52,31 @@ function handleCommand(command: LangEnum) {
     :router="true"
     :ellipsis="false"
   >
-    <el-menu-item index="/"> 全興書苑 {{ t('system') }} </el-menu-item>
+    <el-menu-item index="/">
+      {{ t('system') }}
+    </el-menu-item>
+    
     <div class="flex-grow"></div>
-    <el-sub-menu index="#">
-      <template #title>{{ langType[language] }}</template>
-      <el-menu-item index="" @click="handleCommand('zh-tw')">中文</el-menu-item>
-      <el-menu-item index="" @click="handleCommand('en')">English</el-menu-item>
+    
+    <el-sub-menu index="#language">
+      <template #title>{{ selectedLanguage }}</template>
+      <el-menu-item index="#language-chinese" @click="handleCommand('zh-tw')">中文</el-menu-item>
+      <el-menu-item index="#language-english" @click="handleCommand('en')">English</el-menu-item>
     </el-sub-menu>
-    <el-sub-menu index="" v-if="accountStore.isSignIn">
-      <template #title>{{
-        t('navbar.title', {
-          name: accountStore.userDisplayName
-        })
-      }}</template>
-      <el-menu-item index="" @click="signOutHandler">{{ t('navbar.signOut') }}</el-menu-item>
+    
+    <el-sub-menu index="#account" v-if="accountStore.isSignIn">
+      <template #title>{{ userTitle }}</template>
+      <el-menu-item index="#account-signOut" @click="signOutHandler">
+        {{ t('navbar.signOut') }}
+      </el-menu-item>
       <el-menu-item index="/profile?tabs=person">{{ t('navbar.profile') }}</el-menu-item>
       <el-menu-item index="/profile?tabs=reservation">{{ t('navbar.reservation') }}</el-menu-item>
-      <el-menu-item index="/admin" v-if="accountStore.adminRole !== 'non-admin'">
+      <el-menu-item index="/admin" v-if="accountStore.role !== 'non-admin'">
         管理員介面
       </el-menu-item>
     </el-sub-menu>
-    <el-menu-item index="" v-else @click="accountStore.toggleDialog('signIn')">
+    
+    <el-menu-item index="#account-signIn" v-else @click="signInHandler">
       {{ t('navbar.signIn') }}
     </el-menu-item>
   </el-menu>

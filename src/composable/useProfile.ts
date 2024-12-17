@@ -23,7 +23,7 @@ export function useProfile() {
 
   const updateUserProfile = async (data: any): Promise<void> => {
     try {
-      await userApi.updateProfile(data.id, data.name, data.phone, data.idCard)
+      await userApi.updateProfile(data.name)
       await accountStore.fetchUserProfile()
       ElMessage.success(t('profileView.saveChangesSuccess'))
     } catch (error: any) {

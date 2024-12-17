@@ -2,32 +2,21 @@ export * from './common'
 export { SupabaseSeat } from './seat'
 export { SupabaseUser } from './user'
 export { SupabaseReserve } from './reserve'
+export { LaravelUser } from './user2'
 import type * as Types from '../types'
 
 export interface User {
-  studentSignIn(username: string, password: string): Promise<string>
-  signOut(): Promise<any>
-  checkIsSignIn(): Promise<boolean>
-  insertOutsiderSignUpRequest(
-    name: string,
-    phone: string,
-    idCard: string,
-    email: string
-  ): Promise<void>
-  outsiderSignUp(name: string, phone: string, idCard: string, email: string): Promise<void>
-  getOutsiderSignUpData(
-    options?: Types.PageFilter & Types.OutsiderSignUpDataFilter
-  ): Promise<Types.OutsiderSignUpData[]>
+  oAuthCallback(code: string): Promise<void>
+  signOut(): Promise<void>
   getUserData(options?: Types.PageFilter & Types.UserDataFilter): Promise<Types.UserData[]>
   getMyUserData(): Promise<Types.UserData>
-  getUsersCount(): Promise<number>
-  updateProfile(id: string, name: string, phone: string, idCard: string): Promise<void>
+  updateProfile(name: string): Promise<void>
   banUser(id: string, reason: string, end_at: Date): Promise<void>
   unbanUser(id: string): Promise<void>
   updatePointUser(id: string, point: number): Promise<void>
   getSettings(): Promise<Types.SettingsData>
   updateSettings(settings: Types.SettingsData): Promise<void>
-  grantAdminRole(userId: string, adminRole: Types.adminRole): Promise<void>
+  grantAdminRole(userId: string, role: Types.userRole): Promise<void>
 }
 
 export interface Seat {

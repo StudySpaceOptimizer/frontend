@@ -1,5 +1,5 @@
 export default {
-  system: 'Reservation System',
+  system: 'NYCU Reservation System',
   navbar: {
     signIn: 'Sign In',
     signOut: 'Sign Out',

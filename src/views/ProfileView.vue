@@ -26,10 +26,7 @@ async function onGetUserProfile(): Promise<void> {
 
 async function onUpdateUserProfile(): Promise<void> {
   const data = {
-    id: userProfile.value?.id,
     name: userProfile.value?.name,
-    phone: userProfile.value?.phone,
-    idCard: userProfile.value?.idCard
   }
   await updateUserProfile(data)
 }

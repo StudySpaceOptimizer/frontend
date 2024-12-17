@@ -7,12 +7,10 @@ export interface Filter {
 }
 
 export interface UserDataFilter {
-  userId?: string
   email?: string
-  userRole?: string
-  adminRole?: string
   isIn?: boolean
   name?: string
+  role?: string
 }
 
 export interface OutsiderSignUpDataFilter {

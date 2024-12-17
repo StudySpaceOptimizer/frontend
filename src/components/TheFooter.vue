@@ -14,8 +14,8 @@ const formattedVersion = computed(() => {
 <template>
   <footer>
     <div class="wrapper">
-      <p>全興書苑 {{ $t('system') }}</p>
-      <p>© 2024 全興書苑</p>
+      <p>{{ $t('system') }}</p>
+      <p>© 2024 WeiHua Chien-Programing</p>
       <p>{{ formattedVersion }}</p>
     </div>
   </footer>
