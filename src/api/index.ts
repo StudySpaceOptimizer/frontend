@@ -3,6 +3,7 @@ export { SupabaseSeat } from './seat'
 export { SupabaseUser } from './user'
 export { SupabaseReserve } from './reserve'
 export { LaravelUser } from './user2'
+export { LaravelSeat } from './seat2'
 import type * as Types from '../types'
 
 export interface User {
@@ -23,7 +24,7 @@ export interface Seat {
   getSeatsStatus(
     seatReservationFilterByTime: Types.SeatReservationFilterByTime
   ): Promise<Types.SeatData[]>
-  getSeatStatus(seatId: string | number): Promise<Types.SeatDetail>
+  getSeatStatus(seatCode: string): Promise<Types.SeatDetail>
   updateSeat(seatId: string, available: boolean, otherInfo?: string): Promise<void>
 }
 

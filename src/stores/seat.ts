@@ -36,8 +36,8 @@ export const useSeatStore = defineStore('seat', () => {
     }
   }
 
-  async function getSeatStatus(seatID: string): Promise<any> {
-    return computed(() => seatsStatus.value.find(seat => seat.id === seatID))
+  async function getSeatStatus(seatCode: string): Promise<any> {
+    return computed(() => seatsStatus.value.find(seat => seat.seatCode === seatCode))
   }
 
   return {

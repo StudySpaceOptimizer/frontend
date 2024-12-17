@@ -4,8 +4,7 @@ import type { UserData } from './user'
  * This file contains all the api calls to the backend
  */
 export interface SeatData {
-  id: string
-  available: boolean
+  seatCode: string
 
   otherInfo?: string
 
@@ -20,7 +19,7 @@ export interface SeatData {
 }
 
 export interface SeatDetail {
-  id: string
+  seatCode: string
   /**
    * The booked range of the seat
    */

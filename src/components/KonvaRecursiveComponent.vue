@@ -41,9 +41,9 @@ watchEffect(async () => {
   }
 
   const seatStatus = seatStore.seatsStatus.find(
-    (seat) => seat.id === components.value[1].config.text
+    (seat) => seat.seatCode === components.value[1].config.text
   )
-  if (!seatStatus || !seatStatus.available) {
+  if (!seatStatus || seatStatus.status !== 'available') {
     setSeatStatus(false, '#808080')
     return
   }

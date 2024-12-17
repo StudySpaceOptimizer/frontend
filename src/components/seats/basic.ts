@@ -26,10 +26,11 @@ export class DrawUntil {
 
   static seat_id_gen(type: string = 'A') {
     if (DrawUntil.seat_id[type] !== undefined) {
-      return `${type}${++DrawUntil.seat_id[type]}`
+      const seatNumber = ++DrawUntil.seat_id[type]
+      return `${type}${seatNumber.toString().padStart(2, '0')}`
     } else {
       DrawUntil.seat_id[type] = 1
-      return `${type}1`
+      return `${type}01`
     }
   }
 }

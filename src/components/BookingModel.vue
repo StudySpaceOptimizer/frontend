@@ -99,12 +99,12 @@ watch(dialogVisible, async (value) => {
     try {
       const data = await seatApi.getSeatStatus(seatName.value)
       const reservationsTime = data.reservations
-  
+
       disabledTimes.value = []
       reservationsTime.forEach((reservation: any) => {
         const beginTime = getTime(reservation.beginTime)
         const endTime = getTime(reservation.endTime)
-  
+
         disabledTimes.value.push(`${beginTime}-${endTime}`)
       })
     } catch (e: any) {
@@ -130,18 +130,18 @@ function selectTimeRange(timeRange: {
     :before-close="handleClose"
     destroy-on-close
   >
-    <div class="date">{{$t('bookingModel.reserveDate')}}: {{ nowFilterDate }}</div>
+    <div class="date">{{ $t('bookingModel.reserveDate') }}: {{ nowFilterDate }}</div>
     <p>
-      {{$t('bookingModel.reserveTime')}}:
+      {{ $t('bookingModel.reserveTime') }}:
       <template v-if="beginTime && endTime"> {{ beginTime }} ~ {{ endTime }} </template>
-      <template v-else>{{$t('bookingModel.notSelectedTime')}}</template>
+      <template v-else>{{ $t('bookingModel.notSelectedTime') }}</template>
     </p>
     <TimeSelect @selectTimeRange="selectTimeRange" :disabledTimes="disabledTimes" />
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="handleClose">{{$t('cancel')}}</el-button>
+        <el-button @click="handleClose">{{ $t('cancel') }}</el-button>
         <el-button type="primary" @click="handleBooking" :disabled="!isCompleteSelectTime">
-          {{$t('bookingModel.reserve')}}
+          {{ $t('bookingModel.reserve') }}
         </el-button>
       </div>
     </template>

@@ -24,7 +24,7 @@ pinia.use(piniaPluginPersistedstate)
 // Dependency Injection
 const container = DependencyContainer.getInstance()
 container.register(api.API_SERVICE.USER, api.LaravelUser)
-container.register(api.API_SERVICE.SEAT, api.SupabaseSeat)
+container.register(api.API_SERVICE.SEAT, api.LaravelSeat)
 container.register(api.API_SERVICE.RESERVE, api.SupabaseReserve)
 
 app.use(i18n)
