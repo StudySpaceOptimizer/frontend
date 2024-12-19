@@ -47,13 +47,25 @@ function UpdateDrawStagePosition(x: number, y: number): void {
 const route = useRoute()
 const filterStore = useFilterStore()
 const seatStore = useSeatStore()
-watchEffect(() => {
+let isInitiated = false
+
+function fetchSeatsStatus() {
   const filter = filterStore.getFilter(route.name?.toString() || 'default')
   seatStore.fetchSeatsStatus(filter)
+}
+
+watchEffect(() => {
+  if (!isInitiated) {
+    isInitiated = true
+    return
+  }
+
+  fetchSeatsStatus()
 })
 
 onMounted(() => {
   getSettings()
+  fetchSeatsStatus()
 })
 </script>
 
