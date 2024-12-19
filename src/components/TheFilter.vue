@@ -154,6 +154,14 @@ watch(() => DateTimePicker.value.date, () => {
   pickingDateChangeHandler()
 })
 
+watch(() => DateTimePicker.value, () => {
+  const date: string = DateTimePicker.value.date.toLocaleDateString().split('T')[0]
+
+  filter.beginTime = new Date(`${date} ${DateTimePicker.value.beginTime}`)
+  filter.endTime = new Date(`${date} ${DateTimePicker.value.endTime}`)
+  doFilter()
+}, { deep: true })
+
 function checkDisabledDate(time: Date): boolean {
   const now = new Date()
   now.setHours(0, 0, 0, 0)
