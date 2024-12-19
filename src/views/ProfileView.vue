@@ -93,7 +93,7 @@ function handleCurrentChange(val: number) {
         <el-table-column prop="date" :label="$t('profileView.date')" width="120" />
         <el-table-column prop="beginTime" :label="$t('profileView.beginTime')" width="120" />
         <el-table-column prop="endTime" :label="$t('profileView.endTime')" width="120" />
-        <el-table-column prop="seatId" :label="$t('profileView.seatId')" />
+        <el-table-column prop="seatCode" :label="$t('profileView.seatId')" />
         <el-table-column fixed="right" :label="$t('profileView.actions')">
           <template #default="scope">
             <div v-for="action in reservations[scope.$index].actions" :key="action">

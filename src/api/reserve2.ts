@@ -46,23 +46,7 @@ export class LaravelReserve implements Reserve {
       throw new Error('Failed to get reservations')
     }
 
-    const data = await res.json()
-
-    const ret = {
-      total: data.total,
-      data: data.data.map((item: any) => {
-        const seatId = item.seatId + 1
-        if (seatId < 140) {
-          item.seatId = `B${seatId.toString().padStart(2, '0')}`
-        } else {
-          item.seatId = `A${(seatId - 140).toString().padStart(2, '0')}`
-        }
-
-        return item
-      }),
-    }
-
-    return ret
+    return await res.json()
   }
   
   async deleteReservation(id: string): Promise<void> {
