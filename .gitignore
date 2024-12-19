@@ -30,3 +30,4 @@ coverage
 *.tsbuildinfo
 db.json
 .env
+.env.production
