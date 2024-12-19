@@ -51,7 +51,7 @@ export class LaravelReserve implements Reserve {
     const ret = {
       total: data.total,
       data: data.data.map((item: any) => {
-        const seatId = item.seatId
+        const seatId = item.seatId + 1
         if (seatId < 140) {
           item.seatId = `B${seatId.toString().padStart(2, '0')}`
         } else {
