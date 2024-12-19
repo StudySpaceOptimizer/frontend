@@ -103,13 +103,9 @@ watch(dialogVisible, async (value) => {
 
       disabledTimes.value = []
       reservationsTime.forEach((reservation: any) => {
-        console.log(reservation)
         const beginTime = getTime(reservation.beginTime)
         const endTime = getTime(reservation.endTime)
-
-        console.log('beginTime: ', beginTime)
-        console.log('endTime: ', endTime)
-
+        
         disabledTimes.value.push(`${beginTime}-${endTime}`)
       })
     } catch (e: any) {

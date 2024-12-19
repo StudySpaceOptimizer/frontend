@@ -54,7 +54,6 @@ export const useAccountStore = defineStore(
     async function fetchUserProfile() {
       try {
         const userData = await api.getMyUserData()
-        console.log(userData)
         updateUserProfile(userData)
         settingStore.getSettings()
       } catch (error: any) {

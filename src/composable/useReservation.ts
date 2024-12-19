@@ -15,7 +15,6 @@ export function useReservation() {
   const transformReservations = (res: any[]) => {
     return res.map((item) => {
       delete item.user
-      console.log(item)
 
       const nowTime = new Date()
       const beginTime = new Date(item.beginTime)
