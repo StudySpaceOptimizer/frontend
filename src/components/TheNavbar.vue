@@ -71,7 +71,7 @@ const selectedLanguage = computed(() => {
       </el-menu-item>
       <el-menu-item index="/profile?tabs=person">{{ t('navbar.profile') }}</el-menu-item>
       <el-menu-item index="/profile?tabs=reservation">{{ t('navbar.reservation') }}</el-menu-item>
-      <el-menu-item index="/admin" v-if="accountStore.role !== 'non-admin'">
+      <el-menu-item index="/admin" v-if="accountStore.role === 'admin'">
         管理員介面
       </el-menu-item>
     </el-sub-menu>
