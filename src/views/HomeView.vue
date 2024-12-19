@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, watchEffect, onMounted } from 'vue'
+import { ref, reactive, watchEffect, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useResizeObserver } from '@vueuse/core'
 
@@ -54,12 +54,7 @@ function fetchSeatsStatus() {
   seatStore.fetchSeatsStatus(filter)
 }
 
-watchEffect(() => {
-  if (!isInitiated) {
-    isInitiated = true
-    return
-  }
-
+watch(() => filterStore.getFilter(route.name?.toString() || 'default'), () => {
   fetchSeatsStatus()
 })
 
