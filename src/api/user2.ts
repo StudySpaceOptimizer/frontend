@@ -7,8 +7,6 @@ export class LaravelUser implements User {
     if (!res.ok) {
       throw new Error('Failed to login')
     }
-
-    console.log(await res.json())
   }
   async signOut(): Promise<void> {
     
