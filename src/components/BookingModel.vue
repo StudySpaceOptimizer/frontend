@@ -103,6 +103,10 @@ watch(dialogVisible, async (value) => {
 
       disabledTimes.value = []
       reservationsTime.forEach((reservation: any) => {
+        const beginDate = new Date(reservation.beginTime).getDate()
+        const nowDate = new Date(nowFilterDate.value).getDate()
+        if (beginDate !== nowDate) return
+
         const beginTime = getTime(reservation.beginTime)
         const endTime = getTime(reservation.endTime)
         

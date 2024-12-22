@@ -144,7 +144,7 @@ function pickingDateChangeHandler() {
   } else {
     DateTimePicker.value.beginTime = getCanBookingTime()
   }
-
+ㄈ
   filter.beginTime = new Date(`${date} ${DateTimePicker.value.beginTime}`)
   filter.endTime = new Date(`${date} ${DateTimePicker.value.endTime}`)
   doFilter()
@@ -210,7 +210,7 @@ onMounted(() => {
           placeholder="結束時間"
           :start="timeSelectBeginTime"
           :step="getReservationTimeUnit()"
-          :end="latestEndTime"
+          :end="getOpeningHours(new Date()).endTime"
         />
       </div>
     </template>
